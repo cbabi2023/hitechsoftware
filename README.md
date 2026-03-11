@@ -14,23 +14,24 @@
 1. [Introduction](#1-introduction)
 2. [Monorepo Structure](#2-monorepo-structure)
 3. [Tech Stack](#3-tech-stack)
-4. [User Roles & Permissions](#4-user-roles--permissions)
-5. [Module 1 — Add Service Subject](#5-module-1--add-service-subject)
-6. [Module 2 — Service Allocation](#6-module-2--service-allocation)
-7. [Module 3 — Technician Attendance & Availability](#7-module-3--technician-attendance--availability)
-8. [Module 4 — On-Site Visit & Incomplete Service](#8-module-4--on-site-visit--incomplete-service)
-9. [Module 5 — Warranty Verification](#9-module-5--warranty-verification)
-10. [Module 6 — In-Warranty Service Documentation](#10-module-6--in-warranty-service-documentation)
-11. [Module 7 — Out-of-Warranty Service & Charge Collection](#11-module-7--out-of-warranty-service--charge-collection)
-12. [Module 8 — Annual Maintenance Contract (AMC)](#12-module-8--annual-maintenance-contract-amc)
-13. [Module 9 — Inventory Module](#13-module-9--inventory-module)
-14. [Module 10 — Stock Module](#14-module-10--stock-module)
-15. [Module 11 — Product Distribution (Digital Bag)](#15-module-11--product-distribution-digital-bag)
-16. [End-to-End Workflow](#16-end-to-end-workflow)
-17. [Business Rules & Constraints](#17-business-rules--constraints)
-18. [Open Items & Questions](#18-open-items--questions)
-19. [Getting Started](#19-getting-started)
-20. [Revision History](#20-revision-history)
+4. [API Documentation](#4-api-documentation)
+5. [User Roles & Permissions](#5-user-roles--permissions)
+6. [Module 1 — Add Service Subject](#6-module-1--add-service-subject)
+7. [Module 2 — Service Allocation](#7-module-2--service-allocation)
+8. [Module 3 — Technician Attendance & Availability](#8-module-3--technician-attendance--availability)
+9. [Module 4 — On-Site Visit & Incomplete Service](#9-module-4--on-site-visit--incomplete-service)
+10. [Module 5 — Warranty Verification](#10-module-5--warranty-verification)
+11. [Module 6 — In-Warranty Service Documentation](#11-module-6--in-warranty-service-documentation)
+12. [Module 7 — Out-of-Warranty Service & Charge Collection](#12-module-7--out-of-warranty-service--charge-collection)
+13. [Module 8 — Annual Maintenance Contract (AMC)](#13-module-8--annual-maintenance-contract-amc)
+14. [Module 9 — Inventory Module](#14-module-9--inventory-module)
+15. [Module 10 — Stock Module](#15-module-10--stock-module)
+16. [Module 11 — Product Distribution (Digital Bag)](#16-module-11--product-distribution-digital-bag)
+17. [End-to-End Workflow](#17-end-to-end-workflow)
+18. [Business Rules & Constraints](#18-business-rules--constraints)
+19. [Open Items & Questions](#19-open-items--questions)
+20. [Getting Started](#20-getting-started)
+21. [Revision History](#21-revision-history)
 
 ---
 
@@ -90,7 +91,17 @@ HitechSoftware/
 
 ---
 
-## 4. User Roles & Permissions
+## 4. API Documentation
+
+Complete API contract for Next.js backend and Flutter clients:
+
+- `web/docs/API_DOCUMENTATION.md`
+
+This document is the single source of truth for endpoint paths, request/response contracts, auth rules, and Flutter integration guidance.
+
+---
+
+## 5. User Roles & Permissions
 
 | Feature | Office Staff | Technician |
 |---|---|---|
@@ -108,7 +119,7 @@ HitechSoftware/
 
 ---
 
-## 5. Module 1 — Add Service Subject
+## 6. Module 1 — Add Service Subject
 
 Office staff manually log service requests (called **Subjects**) into the system.
 
@@ -146,7 +157,7 @@ Upon successful submission: **`PENDING`** — Awaiting allocation to a technicia
 
 ---
 
-## 6. Module 2 — Service Allocation
+## 7. Module 2 — Service Allocation
 
 ### Allocation Flow
 
@@ -176,7 +187,7 @@ Upon successful submission: **`PENDING`** — Awaiting allocation to a technicia
 
 ---
 
-## 7. Module 3 — Technician Attendance & Availability
+## 8. Module 3 — Technician Attendance & Availability
 
 ### Availability Toggle
 
@@ -238,7 +249,7 @@ Real-time panel showing:
 
 ---
 
-## 8. Module 4 — On-Site Visit & Incomplete Service
+## 9. Module 4 — On-Site Visit & Incomplete Service
 
 ### Incomplete Visit Reasons
 
@@ -256,7 +267,7 @@ Collects: Part Name / Part Number, Quantity Required, Estimated Delivery Date, S
 
 ---
 
-## 9. Module 5 — Warranty Verification
+## 10. Module 5 — Warranty Verification
 
 | Condition | Next Step |
 |---|---|
@@ -267,7 +278,7 @@ Collects: Part Name / Part Number, Quantity Required, Estimated Delivery Date, S
 
 ---
 
-## 10. Module 6 — In-Warranty Service Documentation
+## 11. Module 6 — In-Warranty Service Documentation
 
 No charges are collected from the customer. Comprehensive documentation must be uploaded before the subject can be marked **Completed**.
 
@@ -325,7 +336,7 @@ Auto-generated invoice captures: Invoice Number, Brand/Dealer Name, Subject Refe
 
 ---
 
-## 11. Module 7 — Out-of-Warranty Service & Charge Collection
+## 12. Module 7 — Out-of-Warranty Service & Charge Collection
 
 ### Required Documentation (3 mandatory images)
 
@@ -350,7 +361,7 @@ A receipt/acknowledgment is generated upon successful payment recording. Payment
 
 ---
 
-## 12. Module 8 — Annual Maintenance Contract (AMC)
+## 13. Module 8 — Annual Maintenance Contract (AMC)
 
 ### AMC Registration Fields
 
@@ -399,7 +410,7 @@ A receipt/acknowledgment is generated upon successful payment recording. Payment
 
 ---
 
-## 13. Module 9 — Inventory Module
+## 14. Module 9 — Inventory Module
 
 Master product catalogue. Every product must be registered here before it can appear in stock entries or be distributed to technicians.
 
@@ -427,7 +438,7 @@ Master product catalogue. Every product must be registered here before it can ap
 
 ---
 
-## 14. Module 10 — Stock Module
+## 15. Module 10 — Stock Module
 
 Records physical receipt of products into the warehouse. Each entry is validated by a supplier invoice.
 
@@ -464,7 +475,7 @@ Combination of **Invoice Number + Supplier** must be unique. Duplicate entries a
 
 ---
 
-## 15. Module 11 — Product Distribution (Digital Bag)
+## 16. Module 11 — Product Distribution (Digital Bag)
 
 Manages how products and spare parts are issued from central stock to individual technicians each working day.
 
@@ -526,7 +537,7 @@ Manages how products and spare parts are issued from central stock to individual
 
 ---
 
-## 16. End-to-End Workflow
+## 17. End-to-End Workflow
 
 | Step | Actor | Action | Status |
 |---|---|---|---|
@@ -547,7 +558,7 @@ Manages how products and spare parts are issued from central stock to individual
 
 ---
 
-## 17. Business Rules & Constraints
+## 18. Business Rules & Constraints
 
 1. All fields in the Subject Entry Form are mandatory; system prevents submission if any field is empty.
 2. Availability Toggle defaults to **OFF** at midnight every day; technicians must manually toggle ON each working day.
@@ -576,7 +587,7 @@ Manages how products and spare parts are issued from central stock to individual
 
 ---
 
-## 18. Open Items & Questions
+## 19. Open Items & Questions
 
 | # | Open Item | Owner | Status |
 |---|---|---|---|
@@ -600,7 +611,7 @@ Manages how products and spare parts are issued from central stock to individual
 
 ---
 
-## 19. Getting Started
+## 20. Getting Started
 
 ### Prerequisites
 - Node.js v24+ / npm 11+
@@ -638,7 +649,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
 ---
 
-## 20. Revision History
+## 21. Revision History
 
 | Version | Date | Changes | Author |
 |---|---|---|---|
