@@ -7,6 +7,16 @@
 
 const { createClient } = require('@supabase/supabase-js');
 
+const ADMIN_EMAIL = 'Varghesejoby2003@gmail.com';
+const ADMIN_PASSWORD = 'admin123';
+const ADMIN_PROFILE = {
+  display_name: 'Joby Sir',
+  phone_number: '+919876543210',
+  role: 'super_admin',
+  is_active: true,
+  is_deleted: false,
+};
+
 async function createSuperAdmin() {
   // Get credentials from command line or environment
   const SUPABASE_URL = process.argv[2] || process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -31,53 +41,78 @@ async function createSuperAdmin() {
       },
     });
 
-    console.log('🔐 Creating superadmin user...');
-    console.log('   Email: Varghesejoby2003@gmail.com');
+    console.log('🔐 Ensuring superadmin user exists...');
+    console.log(`   Email: ${ADMIN_EMAIL}`);
     console.log('   Role: super_admin');
 
-    // Create user in auth.users
-    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-      email: 'Varghesejoby2003@gmail.com',
-      password: 'admin123',
-      email_confirm: true,
-      user_metadata: {
-        display_name: 'Joby Sir',
-        role: 'super_admin',
-      },
-    });
+    const { data: existingUsers, error: listError } = await supabase.auth.admin.listUsers();
 
-    if (authError) {
-      console.error('❌ Auth Error:', authError.message);
+    if (listError) {
+      console.error('❌ Auth List Error:', listError.message);
       process.exit(1);
     }
 
-    const userId = authUser.user.id;
-    console.log('✅ Auth user created successfully');
+    let authUser = existingUsers.users.find((user) => user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+
+    if (!authUser) {
+      const { data: createdUserData, error: authError } = await supabase.auth.admin.createUser({
+        email: ADMIN_EMAIL,
+        password: ADMIN_PASSWORD,
+        email_confirm: true,
+        user_metadata: {
+          display_name: ADMIN_PROFILE.display_name,
+          role: ADMIN_PROFILE.role,
+        },
+      });
+
+      if (authError || !createdUserData.user) {
+        console.error('❌ Auth Create Error:', authError?.message || 'User was not created');
+        process.exit(1);
+      }
+
+      authUser = createdUserData.user;
+      console.log('✅ Auth user created successfully');
+    } else {
+      const { data: updatedUserData, error: updateError } = await supabase.auth.admin.updateUserById(authUser.id, {
+        password: ADMIN_PASSWORD,
+        email_confirm: true,
+        user_metadata: {
+          ...(authUser.user_metadata || {}),
+          display_name: ADMIN_PROFILE.display_name,
+          role: ADMIN_PROFILE.role,
+        },
+      });
+
+      if (updateError || !updatedUserData.user) {
+        console.error('❌ Auth Update Error:', updateError?.message || 'User was not updated');
+        process.exit(1);
+      }
+
+      authUser = updatedUserData.user;
+      console.log('✅ Auth user already existed; credentials and metadata refreshed');
+    }
+
+    const userId = authUser.id;
     console.log(`   User ID: ${userId}`);
 
-    // Create profile record
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .insert({
+      .upsert({
         id: userId,
-        email: 'Varghesejoby2003@gmail.com',
-        display_name: 'Joby Sir',
-        phone_number: '+919876543210',
-        role: 'super_admin',
-        is_active: true,
-        is_deleted: false,
+        email: ADMIN_EMAIL,
+        ...ADMIN_PROFILE,
       })
-      .select();
+      .select()
+      .single();
 
     if (profileError) {
       console.error('❌ Profile Error:', profileError.message);
-      // Still successful if profile creation fails (user auth exists)
-    } else {
-      console.log('✅ Profile created successfully');
-      console.log(`   Profile ID: ${profile[0].id}`);
+      process.exit(1);
     }
 
-    // Verify user exists
+    console.log('✅ Profile upserted successfully');
+    console.log(`   Profile ID: ${profile.id}`);
+
     console.log('\n🔍 Verifying user...');
     const { data: users, error: verifyError } = await supabase.auth.admin.listUsers();
 
@@ -86,42 +121,46 @@ async function createSuperAdmin() {
       process.exit(1);
     }
 
-    const createdUser = users.users.find((u) => u.email === 'Varghesejoby2003@gmail.com');
+    const createdUser = users.users.find((user) => user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase());
 
-    if (createdUser) {
-      console.log('✅ User verified in auth.users');
-      console.log(`   Email: ${createdUser.email}`);
-      console.log(`   User ID: ${createdUser.id}`);
-      console.log(`   Email Confirmed: ${createdUser.email_confirmed_at ? 'Yes' : 'No'}`);
-    } else {
-      console.error('❌ User not found in verification');
+    if (!createdUser) {
+      console.error('❌ User not found in auth verification');
       process.exit(1);
     }
 
-    // Verify profile in database
+    console.log('✅ User verified in auth.users');
+    console.log(`   Email: ${createdUser.email}`);
+    console.log(`   User ID: ${createdUser.id}`);
+    console.log(`   Email Confirmed: ${createdUser.email_confirmed_at ? 'Yes' : 'No'}`);
+
     console.log('\n📋 Verifying profile in database...');
     const { data: profileData, error: profileVerifyError } = await supabase
       .from('profiles')
       .select('*')
-      .eq('email', 'Varghesejoby2003@gmail.com');
+      .eq('id', userId)
+      .maybeSingle();
 
     if (profileVerifyError) {
       console.error('❌ Profile Verify Error:', profileVerifyError.message);
-    } else if (profileData && profileData.length > 0) {
-      console.log('✅ Profile verified in database');
-      console.log(`   ID: ${profileData[0].id}`);
-      console.log(`   Email: ${profileData[0].email}`);
-      console.log(`   Name: ${profileData[0].display_name}`);
-      console.log(`   Role: ${profileData[0].role}`);
-      console.log(`   Active: ${profileData[0].is_active}`);
-    } else {
-      console.error('❌ Profile not found in database');
+      process.exit(1);
     }
 
-    console.log('\n✨ Superadmin creation complete!');
+    if (profileData) {
+      console.log('✅ Profile verified in database');
+      console.log(`   ID: ${profileData.id}`);
+      console.log(`   Email: ${profileData.email}`);
+      console.log(`   Name: ${profileData.display_name}`);
+      console.log(`   Role: ${profileData.role}`);
+      console.log(`   Active: ${profileData.is_active}`);
+    } else {
+      console.error('❌ Profile not found in database');
+      process.exit(1);
+    }
+
+    console.log('\n✨ Superadmin is ready.');
     console.log('\nLogin Credentials:');
-    console.log('  Email: Varghesejoby2003@gmail.com');
-    console.log('  Password: admin123');
+    console.log(`  Email: ${ADMIN_EMAIL}`);
+    console.log(`  Password: ${ADMIN_PASSWORD}`);
   } catch (error) {
     console.error('❌ Unexpected error:', error.message);
     process.exit(1);
