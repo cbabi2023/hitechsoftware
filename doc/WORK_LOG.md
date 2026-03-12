@@ -3,6 +3,38 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-13 00:48:29 +05:30] Push Cleanup Documentation to GitHub Main
+
+- Summary: Pushed latest documentation updates to GitHub `main` branch.
+- Work done:
+  - Verified branch and pending changes before push.
+  - Added work-log entry for this push action.
+  - Committed updated work log and pushed to remote main.
+- Files changed:
+  - doc/WORK_LOG.md
+- Verification:
+  - Git push completed successfully to `origin/main`.
+- Issues/Bugs/Mistakes:
+  - None during push.
+- Next:
+  - Continue logging each completed task before every push.
+
+## [2026-03-13 00:47:45 +05:30] Remove Local JVM Crash/Replay Log Artifacts
+
+- Summary: Deleted local JVM crash and replay artifacts from the repository root to keep workspace clean.
+- Work done:
+  - Removed `hs_err_pid22656.log`, `hs_err_pid3228.log`, `hs_err_pid33096.log`.
+  - Removed `replay_pid22656.log`, `replay_pid3228.log`, `replay_pid33096.log`.
+  - Rechecked git status to confirm no remaining untracked crash/replay logs.
+- Files changed:
+  - doc/WORK_LOG.md
+- Verification:
+  - `git status --short --branch` shows clean working tree (`## main...origin/main`).
+- Issues/Bugs/Mistakes:
+  - None during cleanup.
+- Next:
+  - Optionally add ignore rules for `hs_err_pid*.log` and `replay_pid*.log` to prevent future accidental workspace clutter.
+
 ## [2026-03-13 00:45:19 +05:30] Push Latest Fixes to GitHub Main
 
 - Summary: Pushed the latest dashboard build-fix changes to `main` with complete documentation and issue tracking.
