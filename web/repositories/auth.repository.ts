@@ -3,6 +3,14 @@ import type { ProfileRow } from '@/types/database.types';
 
 const supabase = createClient();
 
+export interface AuthLogInsert {
+  user_id: string;
+  event: string;
+  role: string | null;
+  ip_address: string | null;
+  user_agent: string | null;
+}
+
 export async function getAuthSession() {
   return supabase.auth.getSession();
 }
@@ -25,4 +33,8 @@ export async function getProfileByUserId(userId: string) {
 
 export function onAuthStateChange(callback: Parameters<typeof supabase.auth.onAuthStateChange>[0]) {
   return supabase.auth.onAuthStateChange(callback);
+}
+
+export async function createAuthLog(log: AuthLogInsert) {
+  return supabase.from('auth_logs').insert(log);
 }

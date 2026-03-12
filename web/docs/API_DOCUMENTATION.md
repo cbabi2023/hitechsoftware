@@ -5,6 +5,32 @@ Base API for the Service Management System consumed by:
 - `hitech_admin` (Flutter)
 - `hitech_technician` (Flutter)
 
+## Auth & Permission Modules (MNC Standard)
+
+For the full implementation guide, see `web/docs/AUTH_MODULE_MNC_IMPLEMENTATION.md`.
+
+Module-wise permission domains used across web and Flutter clients:
+- customer
+- subject
+- inventory
+- stock
+- digital-bag
+- billing
+- amc
+- technician
+- payout
+- reports
+- settings
+- attendance
+- notifications
+- auth
+
+Key integration points:
+- Login returns role and a role-based landing route from auth service.
+- Route protection is enforced at middleware level for `/dashboard/**`.
+- Session expiry is handled via auth state events (`SIGNED_OUT`, `TOKEN_REFRESHED`).
+- Auth events are auditable in `auth_logs` with RLS-restricted read access for `super_admin`.
+
 ## 1. API Overview
 
 - API style: REST (JSON)

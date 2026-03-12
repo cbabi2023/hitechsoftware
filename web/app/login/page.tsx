@@ -25,10 +25,14 @@ export default function LoginPage() {
     e.preventDefault();
 
     try {
-      const result = await signIn({ email, password });
+      const result = await signIn({
+        email,
+        password,
+        userAgent: navigator.userAgent,
+      });
       
       if (result.ok) {
-        router.push('/dashboard');
+        router.push(result.data.redirectTo ?? '/dashboard');
       }
     } catch (err) {
       console.error(err);

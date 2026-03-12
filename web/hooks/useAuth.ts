@@ -2,7 +2,6 @@ import { useEffect, useMemo } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { getCurrentAuthState, signIn, signOut } from '@/modules/auth/auth.service';
 import { useAuthStore } from '@/stores/auth.store';
-import { onAuthStateChange } from '@/repositories/auth.repository';
 import type { SignInInput } from '@/modules/auth/auth.types';
 
 export function useAuth() {
@@ -16,7 +15,11 @@ export function useAuth() {
 
   useEffect(() => {
     if (authQuery.data?.ok) {
-      setAuth(authQuery.data.data);
+      setAuth({
+        user: authQuery.data.data.user,
+        session: authQuery.data.data.session,
+        role: authQuery.data.data.role,
+      });
       setHydrated(true);
       return;
     }
@@ -27,29 +30,15 @@ export function useAuth() {
     }
   }, [authQuery.data, clearAuth, setAuth, setHydrated]);
 
-  useEffect(() => {
-    const {
-      data: { subscription },
-    } = onAuthStateChange(async () => {
-      const refreshed = await getCurrentAuthState();
-      if (refreshed.ok) {
-        setAuth(refreshed.data);
-      } else {
-        clearAuth();
-      }
-      setHydrated(true);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [clearAuth, setAuth, setHydrated]);
-
   const signInMutation = useMutation({
     mutationFn: (input: SignInInput) => signIn(input),
     onSuccess: (result) => {
       if (result.ok) {
-        setAuth(result.data);
+        setAuth({
+          user: result.data.user,
+          session: result.data.session,
+          role: result.data.role,
+        });
       }
     },
   });

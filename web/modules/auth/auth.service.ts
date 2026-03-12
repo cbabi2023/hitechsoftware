@@ -1,12 +1,30 @@
 import type { AuthState, SignInInput } from '@/modules/auth/auth.types';
 import { signInSchema } from '@/modules/auth/auth.validation';
 import {
+  createAuthLog,
   getAuthSession,
   getProfileByUserId,
   signInWithPassword,
   signOutSession,
 } from '@/repositories/auth.repository';
 import type { ServiceResult } from '@/types/common.types';
+import { ROLES } from '@/lib/constants/roles';
+import { ROUTES } from '@/lib/constants/routes';
+
+export function getDashboardRouteByRole(role: string | null): string {
+  switch (role) {
+    case ROLES.SUPER_ADMIN:
+      return ROUTES.DASHBOARD;
+    case ROLES.OFFICE_STAFF:
+      return ROUTES.DASHBOARD_SUBJECTS;
+    case ROLES.STOCK_MANAGER:
+      return ROUTES.DASHBOARD_INVENTORY;
+    case ROLES.TECHNICIAN:
+      return ROUTES.DASHBOARD_TECHNICIAN;
+    default:
+      return ROUTES.DASHBOARD;
+  }
+}
 
 export async function getCurrentAuthState(): Promise<ServiceResult<AuthState>> {
   const { data, error } = await getAuthSession();
@@ -60,12 +78,24 @@ export async function signIn(input: SignInInput): Promise<ServiceResult<AuthStat
     return { ok: false, error: { message: profileResult.error.message } };
   }
 
+  const role = profileResult.data?.role ?? null;
+  const redirectTo = getDashboardRouteByRole(role);
+
+  await createAuthLog({
+    user_id: data.user.id,
+    event: 'LOGIN_SUCCESS',
+    role,
+    ip_address: input.ipAddress ?? null,
+    user_agent: input.userAgent ?? null,
+  });
+
   return {
     ok: true,
     data: {
       user: data.user,
       session: data.session,
-      role: profileResult.data?.role ?? null,
+      role,
+      redirectTo,
     },
   };
 }
