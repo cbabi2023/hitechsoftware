@@ -15,5 +15,9 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.99.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.1",
+    "tailwindcss": "^4.2.1"
   }
 }
