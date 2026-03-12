@@ -16,7 +16,7 @@ import {
   Zap,
   TrendingUp,
 } from 'lucide-react';
-import { useAuth } from '@/lib/auth-context';
+import { useAuth } from '@/hooks/useAuth';
 import { useState } from 'react';
 
 interface DashboardStats {
@@ -39,8 +39,10 @@ export default function DashboardPage() {
   }, [user, isLoading, router]);
 
   const handleLogout = async () => {
-    await signOut();
-    router.push('/login');
+    const result = await signOut();
+    if (result.ok) {
+      router.push('/login');
+    }
   };
 
   if (isLoading || !user) {

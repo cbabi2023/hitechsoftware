@@ -2,22 +2,25 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
+import { ROUTES } from '@/lib/constants/routes';
 
 export default function Home() {
   const router = useRouter();
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
-    // Check if user is authenticated
-    const token = localStorage.getItem('auth_token');
-    
-    if (token) {
-      // User is logged in, go to dashboard
-      router.push('/dashboard');
-    } else {
-      // User is not logged in, go to login
-      router.push('/login');
+    if (isLoading) {
+      return;
     }
-  }, [router]);
+
+    if (user) {
+      router.push(ROUTES.DASHBOARD);
+      return;
+    }
+
+    router.push(ROUTES.LOGIN);
+  }, [isLoading, router, user]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 to-blue-950">

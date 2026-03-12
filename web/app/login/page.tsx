@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '@/lib/auth-context';
+import { useAuth } from '@/hooks/useAuth';
 
 const DEFAULT_EMAIL = 'Varghesejoby2003@gmail.com';
 
@@ -11,41 +11,31 @@ export default function LoginPage() {
   const [email, setEmail] = useState(DEFAULT_EMAIL);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const router = useRouter();
-  const { signIn, user, isLoading: authLoading } = useAuth();
+  const { signIn, user, isLoading, error } = useAuth();
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user && !authLoading) {
+    if (user && !isLoading) {
       router.push('/dashboard');
     }
-  }, [user, authLoading, router]);
+  }, [user, isLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setIsLoading(true);
 
     try {
-      const { error: signInError } = await signIn(email, password);
+      const result = await signIn({ email, password });
       
-      if (signInError) {
-        setError(signInError);
-      } else {
-        // Auth context will redirect via useEffect
+      if (result.ok) {
         router.push('/dashboard');
       }
     } catch (err) {
-      setError('An error occurred. Please try again.');
       console.error(err);
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  if (authLoading) {
+  if (isLoading && !user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex items-center justify-center">
         <div className="text-center">
@@ -153,7 +143,7 @@ export default function LoginPage() {
             {/* Login Button */}
             <button
               type="submit"
-              disabled={isLoading || authLoading}
+              disabled={isLoading}
               className="flex w-full items-center justify-center space-x-2 rounded-xl bg-slate-950 py-3 font-semibold text-white transition hover:bg-blue-900 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isLoading ? (
