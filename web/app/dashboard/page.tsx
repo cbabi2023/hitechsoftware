@@ -5,6 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Users, ClipboardList, Package, ArrowRight } from 'lucide-react';
 import { getCustomerList } from '@/modules/customers/customer.service';
 import { CUSTOMER_QUERY_KEYS } from '@/modules/customers/customer.constants';
+import { getTeamMembers } from '@/modules/technicians/technician.service';
+import { TEAM_QUERY_KEYS } from '@/modules/technicians/technician.constants';
 import { ROUTES } from '@/lib/constants/routes';
 
 export default function DashboardPage() {
@@ -20,12 +22,30 @@ export default function DashboardPage() {
     staleTime: 30 * 1000,
   });
 
+  const teamMemberCountQuery = useQuery({
+    queryKey: [...TEAM_QUERY_KEYS.all, 'count'],
+    queryFn: async () => {
+      const result = await getTeamMembers();
+      if (!result.ok) {
+        throw new Error(result.error.message);
+      }
+      return result.data.length;
+    },
+    staleTime: 30 * 1000,
+  });
+
   const stats = [
     {
       label: 'Customers',
       value: customerCountQuery.isLoading ? '...' : customerCountQuery.data ?? 0,
       icon: Users,
       href: ROUTES.DASHBOARD_CUSTOMERS,
+    },
+    {
+      label: 'Team Members',
+      value: teamMemberCountQuery.isLoading ? '...' : teamMemberCountQuery.data ?? 0,
+      icon: Users,
+      href: ROUTES.DASHBOARD_TEAM,
     },
     {
       label: 'Subjects',
@@ -50,7 +70,7 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {stats.map((item) => (
           <Link
             key={item.label}
@@ -76,6 +96,10 @@ export default function DashboardPage() {
 
       {customerCountQuery.isError ? (
         <p className="mt-4 text-sm text-rose-600">Could not load customer count right now.</p>
+      ) : null}
+
+      {teamMemberCountQuery.isError ? (
+        <p className="mt-2 text-sm text-rose-600">Could not load team member count right now.</p>
       ) : null}
     </div>
   );

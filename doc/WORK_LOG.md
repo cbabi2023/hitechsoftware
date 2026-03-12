@@ -3,6 +3,66 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-13 00:41:52 +05:30] Push to Main + Enforce Bug/Issue Logging Discipline
+
+- Summary: Prepared dashboard improvements for push to `main` and strengthened work-log quality by explicitly capturing mistakes, bugs, and issues for each completed item.
+- Work done:
+  - Reviewed git working tree and isolated relevant project changes from unrelated runtime crash/replay logs.
+  - Added explicit issue-tracking note in work-log entries to ensure bugs/mistakes are always documented.
+  - Prepared commit scope for dashboard updates and documentation updates only.
+- Files changed:
+  - doc/WORK_LOG.md
+  - web/app/dashboard/layout.tsx
+  - web/app/dashboard/page.tsx
+- Verification:
+  - Confirmed diagnostics are clean for changed dashboard files.
+  - Git push status recorded after push attempt.
+- Issues/Bugs/Mistakes:
+  - Unrelated Java crash/replay logs were present in workspace (`hs_err_pid*.log`, `replay_pid*.log`); excluded from commit to avoid polluting repository history.
+  - No functional regression identified in changed dashboard files.
+- Next:
+  - Continue documenting `Issues/Bugs/Mistakes` explicitly in every future work-log entry, including `none` when no issue is observed.
+
+## [2026-03-13 00:40:34 +05:30] Upgrade Dashboard Top Header to Enterprise ERP Style
+
+- Summary: Redesigned the dashboard top navbar/header to feel more like an MNC ERP interface with stronger product identity, clearer module context, and polished action/account controls.
+- Work done:
+  - Refined header information hierarchy with ERP branding (`Hitech ERP Suite`) and enterprise badge.
+  - Added dynamic module context breadcrumb based on current dashboard route.
+  - Added quick-action controls in header (search trigger and notifications action button).
+  - Improved account presentation with initials avatar chip, email identity, and role text.
+  - Kept responsive behavior optimized for desktop and mobile while preserving existing sidebar toggle and logout flow.
+- Files changed:
+  - web/app/dashboard/layout.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - TypeScript/compile diagnostics checked on `web/app/dashboard/layout.tsx`.
+  - No errors found.
+- Issues/Bugs/Mistakes:
+  - None observed during implementation.
+- Next:
+  - Optionally wire search and notifications buttons to real modules once APIs and pages are finalized.
+
+## [2026-03-13 00:38:26 +05:30] Dashboard Team Member Total Count
+
+- Summary: Analyzed the web dashboard data flow and added a visible total Team Members count card on the main dashboard.
+- Work done:
+  - Reviewed dashboard architecture and existing stat card query pattern in the web app.
+  - Added a dedicated React Query fetch for team member total using existing team service logic.
+  - Added a new Team Members stat card linked to `/dashboard/team`.
+  - Updated dashboard grid layout to support four stat cards cleanly across breakpoints.
+  - Added error state messaging for team member count load failures.
+- Files changed:
+  - web/app/dashboard/page.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - Checked TypeScript/compile diagnostics for `web/app/dashboard/page.tsx`.
+  - No errors found.
+- Issues/Bugs/Mistakes:
+  - None observed during implementation.
+- Next:
+  - Optionally replace list-length counting with a dedicated server-side aggregate count endpoint if team dataset grows significantly.
+
 ## [2026-03-13 04:20:00 +05:30] Team Add Member Popup + Password Visibility Toggle
 
 - Summary: Improved Team member creation UX by moving add-member form into a popup modal and adding an eye toggle to show/hide password while typing.
