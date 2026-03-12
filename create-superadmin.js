@@ -9,7 +9,7 @@ const { createClient } = require('@supabase/supabase-js');
 
 async function createSuperAdmin() {
   // Get credentials from command line or environment
-  const SUPABASE_URL = process.argv[2] || process.env.SUPABASE_URL;
+  const SUPABASE_URL = process.argv[2] || process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const SUPABASE_SERVICE_KEY = process.argv[3] || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
