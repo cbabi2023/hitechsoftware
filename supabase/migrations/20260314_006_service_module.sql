@@ -122,16 +122,28 @@ ALTER TABLE public.subjects
   ADD COLUMN IF NOT EXISTS serial_number TEXT;
 
 ALTER TABLE public.subjects
+  DROP CONSTRAINT IF EXISTS subjects_source_type_chk;
+
+ALTER TABLE public.subjects
   ADD CONSTRAINT subjects_source_type_chk
   CHECK (source_type IN ('brand', 'dealer'));
+
+ALTER TABLE public.subjects
+  DROP CONSTRAINT IF EXISTS subjects_priority_chk;
 
 ALTER TABLE public.subjects
   ADD CONSTRAINT subjects_priority_chk
   CHECK (priority IN ('critical', 'high', 'medium', 'low'));
 
 ALTER TABLE public.subjects
+  DROP CONSTRAINT IF EXISTS subjects_type_of_service_chk;
+
+ALTER TABLE public.subjects
   ADD CONSTRAINT subjects_type_of_service_chk
   CHECK (type_of_service IN ('installation', 'service'));
+
+ALTER TABLE public.subjects
+  DROP CONSTRAINT IF EXISTS subjects_source_reference_chk;
 
 ALTER TABLE public.subjects
   ADD CONSTRAINT subjects_source_reference_chk

@@ -3,6 +3,28 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-13 18:08:06 +05:30] Fix 006 Migration Duplicate Constraint Error for Re-runs
+
+- Summary: Fixed migration `20260314_006_service_module.sql` to be re-runnable by preventing duplicate-constraint failures on existing subjects check constraints.
+- Work done:
+  - Added explicit `DROP CONSTRAINT IF EXISTS` statements before re-adding these constraints on `subjects`:
+    - `subjects_source_type_chk`
+    - `subjects_priority_chk`
+    - `subjects_type_of_service_chk`
+    - `subjects_source_reference_chk`
+  - Kept the existing safe drop/recreate flow for `subjects_service_charge_type_chk` and `subjects_billing_status_chk`.
+- Files changed:
+  - supabase/migrations/20260314_006_service_module.sql
+  - doc/WORK_LOG.md
+- Verification:
+  - Read-back verification of updated migration block confirms drop/recreate ordering for all target constraints.
+  - Diagnostics check on migration file returned no errors.
+- Issues/Bugs/Mistakes:
+  - Issue found: rerunning migration failed with `ERROR: 42710: constraint "subjects_source_type_chk" ... already exists`.
+  - Resolved by making check constraint operations idempotent.
+- Next:
+  - If needed, I can also add a short migration comment block documenting rerun/idempotency expectations for future schema updates.
+
 ## [2026-03-13 18:06:54 +05:30] Strengthen README for Developer Product Understanding During Ongoing Development
 
 - Summary: Improved README to make business logic and implementation expectations clearer for developers, and added a mandatory documentation-maintenance workflow section for future changes.
