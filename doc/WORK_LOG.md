@@ -3,6 +3,31 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-13 18:50:00 +05:30] Fix Action Button Clipping — Categories/Brands/Dealers Tables
+
+- Summary: Removed `overflow-hidden` from all three management table wrappers and replaced `ht-btn` utility classes with explicit Tailwind button styles to eliminate any rendering dependency on external CSS classes. Buttons are now fully inline with no dropdown — no clipping possible.
+- Work done:
+  - **Removed `overflow-hidden`** from the table wrapper `<div>` in all three pages (categories, brands, dealers). The `overflow-hidden` was clipping any content that could overflow the card boundary.
+  - **Replaced `ht-btn` classes** with direct Tailwind utility classes on all buttons across all three pages.
+  - **Button styles**: Rename = blue outline (`border-blue-200 bg-blue-50 text-blue-700`), Enable/Disable = neutral outline, Delete = rose outline (`border-rose-200 bg-rose-50 text-rose-700`). Save = solid blue, Cancel = neutral outline.
+  - **Permission gate on Delete**: Added `{can('service-settings:edit') && ...}` conditional wrapper around the Delete button on all three pages.
+  - **Status badge**: Replaced plain "Yes/No" text in Active column with colored pill badge (green=Active, slate=Inactive) on all three pages.
+  - **Input field improvements**: Improved inline rename input to `rounded-lg` with focus ring; improved add form input styling with placeholder text.
+  - **Row hover**: Added `hover:bg-slate-50/50` to table rows.
+  - **Empty state copy**: Improved empty state text to "No X yet. Add one above."
+- Files changed:
+  - web/app/dashboard/service/categories/page.tsx
+  - web/app/dashboard/service/brands/page.tsx
+  - web/app/dashboard/service/dealers/page.tsx
+- Verification:
+  - `get_errors` → zero TypeScript errors on all three files
+  - `npm run build` → all 18 routes compiled, zero failures
+- Issues:
+  - None
+- Next:
+  - Browser QA: confirm buttons are fully visible without clipping
+  - Verify Delete button hidden for non-super_admin roles
+
 ## [2026-03-13 18:38:14 +05:30] Subject Form UX Redesign
 
 - Summary: Completely rewrote the Add/Edit Subject form (SubjectForm.tsx) for a significantly cleaner, simpler, and more guided user experience. Replaced the cluttered flat form with a stepped, section-based layout.
