@@ -22,6 +22,7 @@ export async function listSubjects(filters: SubjectListFilters) {
       priority,
       status,
       allocated_date,
+      customer_name,
       customer_phone,
       type_of_service,
       service_charge_type,

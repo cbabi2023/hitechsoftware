@@ -72,6 +72,14 @@ export default function SubjectDetailPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          {can('subject:edit') && !subject.assigned_technician_id ? (
+            <Link
+              href={ROUTES.DASHBOARD_SUBJECTS_EDIT(subject.id)}
+              className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+            >
+              Quick Assign
+            </Link>
+          ) : null}
           {can('subject:edit') ? (
             <Link href={ROUTES.DASHBOARD_SUBJECTS_EDIT(subject.id)} className="ht-btn ht-btn-primary">
               Edit subject

@@ -13,6 +13,7 @@ export interface SubjectListItem {
   priority: SubjectPriority;
   status: string;
   allocated_date: string;
+  customer_name: string | null;
   customer_phone: string | null;
   category_name: string | null;
   type_of_service: SubjectTypeOfService;

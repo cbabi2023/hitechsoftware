@@ -70,6 +70,7 @@ function mapRawSubjectList(data: unknown[]): SubjectListItem[] {
       priority: 'critical' | 'high' | 'medium' | 'low';
       status: string;
       allocated_date: string;
+      customer_name: string | null;
       customer_phone: string | null;
       type_of_service: 'installation' | 'service';
       service_charge_type: 'customer' | 'brand_dealer';
@@ -93,6 +94,7 @@ function mapRawSubjectList(data: unknown[]): SubjectListItem[] {
       priority: typed.priority,
       status: typed.status,
       allocated_date: typed.allocated_date,
+      customer_name: typed.customer_name,
       customer_phone: typed.customer_phone,
       category_name: typed.service_categories?.name ?? null,
       type_of_service: typed.type_of_service,

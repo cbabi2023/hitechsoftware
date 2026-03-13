@@ -3,7 +3,47 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
-## [2026-03-13 18:50:00 +05:30] Fix Action Button Clipping — Categories/Brands/Dealers Tables
+## [2026-03-13 20:30:00 +05:30] Subjects List Table Redesign — 12-Point Spec + Quick Assign
+
+- Summary: Full redesign of the subjects list (`/dashboard/subjects`) table per a detailed 12-point specification for daily office-staff use. Added `customer_name` to the data pipeline (type → repository → service mapper). Replaced the old `...` dropdown action pattern with inline View/Edit buttons. Added a contextual "Quick Assign" button on the subject detail page.
+- Work done:
+  - **`SubjectListItem` type**: Added `customer_name: string | null` field between `allocated_date` and `customer_phone`.
+  - **Repository SELECT**: Added `customer_name` column to the `listSubjects` Supabase SELECT query so it is fetched from the database.
+  - **Service mapper (`mapRawSubjectList`)**: Added `customer_name: string | null` to the raw type annotation and `customer_name: typed.customer_name` to the mapped return object.
+  - **Subjects list page — imports**: Removed `useRouter`, `MoreHorizontal`, `PencilLine`, `Trash2` (no more dropdown). Removed `role` from `usePermission` destructure. Removed `deleteSubjectMutation` from `useSubjects` destructure.
+  - **Subjects list page — helper functions**: Removed `getCoverageMeta`. Updated `formatDate` to use `en-GB` locale (DD/MM/YYYY). Added `getStatusMeta` with 9 named status colors (PENDING=slate, ALLOCATED=blue, ACCEPTED=indigo, IN_PROGRESS=orange, COMPLETED=green, INCOMPLETE=rose, AWAITING_PARTS=yellow, RESCHEDULED=purple, CANCELLED=slate-200). Added `getServiceTypeMeta` (AMC Free=emerald, Warranty=blue, Chargeable=slate).
+  - **Subjects list page — table header**: New 9-column layout: Subject | Customer | Source | Priority | Status | Assigned To | Service Type | Date | Actions. Removed: Service Coverage, Billing, Allocated (renamed to Date).
+  - **Subjects list page — row logic**: Rows with `!subject.assigned_technician_id && status === 'PENDING'` get `border-l-4 border-l-rose-400` red left border. Removed click-to-navigate-on-row.
+  - **Subjects list page — cell contents**:
+    - Subject: bold blue number link + gray category below.
+    - Customer: name (bold) + gray phone below, or italic "Walk-in" if no customer name.
+    - Source: source name (bold) + "Brand"/"Dealer" gray label below.
+    - Priority: standalone colored badge.
+    - Status: standalone colored badge (8 named values).
+    - Assigned To: technician name text, or rose "Unassigned" badge if null.
+    - Service Type: colored badge (AMC Free / Warranty / Chargeable).
+    - Date: DD/MM/YYYY format.
+    - Actions: inline "View" (blue) + "Edit" (gray, only if `can('subject:edit')`). No dropdown, no delete.
+  - **Subjects list page — pagination buttons**: Replaced `ht-btn ht-btn-secondary ht-btn-sm` with direct Tailwind (`inline-flex items-center rounded-lg border...`).
+  - **Subjects list page — card wrapper**: Removed `overflow-hidden` from outer div (kept `overflow-x-auto` on inner table wrapper only).
+  - **Detail page — Quick Assign**: Added prominent "Quick Assign" button (solid blue, `bg-blue-600`) to the top-right action area, positioned before "Edit subject". Shown contextually only when `can('subject:edit')` AND `subject.assigned_technician_id` is null. Links to the edit page for technician assignment.
+- Files changed:
+  - web/modules/subjects/subject.types.ts
+  - web/repositories/subject.repository.ts
+  - web/modules/subjects/subject.service.ts
+  - web/app/dashboard/subjects/page.tsx
+  - web/app/dashboard/subjects/[id]/page.tsx
+- Verification:
+  - `npx tsc --noEmit` → zero TypeScript errors
+  - `npx next build` → all 18 routes compiled successfully, zero failures
+- Issues:
+  - None
+- Next:
+  - Browser QA: verify red border on unassigned+pending rows
+  - Browser QA: confirm "Walk-in" renders when customer_name is null
+  - Browser QA: confirm "Quick Assign" appears/disappears correctly by assignment state
+
+
 
 - Summary: Removed `overflow-hidden` from all three management table wrappers and replaced `ht-btn` utility classes with explicit Tailwind button styles to eliminate any rendering dependency on external CSS classes. Buttons are now fully inline with no dropdown — no clipping possible.
 - Work done:
