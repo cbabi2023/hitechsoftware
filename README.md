@@ -32,6 +32,7 @@
 19. [Open Items & Questions](#19-open-items--questions)
 20. [Getting Started](#20-getting-started)
 21. [Revision History](#21-revision-history)
+22. [Documentation Maintenance During Development](#22-documentation-maintenance-during-development)
 
 ---
 
@@ -147,6 +148,16 @@ All Product Details fields are optional.
 | Purchase Date | Date picker |
 | Warranty End Date | Date picker |
 | AMC End Date | Date picker |
+
+### Service Charge Determination (Developer Snapshot)
+
+| Condition | Subject Flags | UI Badge | Charged To | Billing Status at Creation/Update |
+|---|---|---|---|---|
+| `AMC End Date >= today` | `is_amc_service = true`, `is_warranty_service = false` | `Free Service — Under AMC` (green) | Brand/Dealer | `due` |
+| `Warranty End Date >= today` and AMC not active | `is_amc_service = false`, `is_warranty_service = true` | `Under Warranty` (blue) | Brand/Dealer | `due` |
+| AMC and Warranty both missing/expired | `is_amc_service = false`, `is_warranty_service = false` | `Out of Warranty` | Customer | `not_applicable` |
+
+**Precedence Rule:** AMC has higher priority than Warranty when both are active.
 
 ### Priority Levels
 
@@ -673,3 +684,26 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 | 1.0 | 2026-03-11 | Initial draft — Service Management module | Development Team |
 | 1.1 | 2026-03-11 | Added Module 3: Technician Attendance, Availability Toggle, Forward Scheduling & Reassignment | Development Team |
 | 1.2 | 2026-03-11 | Added Product & Warranty fields to Subject form; In-Warranty Brand/Dealer Billing; AMC Module; Inventory Module; Stock Module; Product Distribution (Digital Bag) | Development Team |
+| 1.3 | 2026-03-13 | Added Field 12 optional Product Details section, AMC/Warranty billing decision matrix, and developer documentation-maintenance workflow | Development Team |
+
+---
+
+## 22. Documentation Maintenance During Development
+
+To keep implementation aligned with business logic, developers must update this README whenever behavior changes.
+
+### Mandatory when business rules change
+
+1. Update relevant module section(s) with the exact field/flow changes.
+2. Update `18. Business Rules & Constraints` with any new rules or modified defaults.
+3. If logic affects billing/status/flags, update the Service Charge Determination table in Module 1.
+4. Add or update migration notes in code comments and ensure README reflects schema-impacting changes.
+5. Add an entry to `doc/WORK_LOG.md` with timestamp, summary, files changed, verification, and issues.
+
+### Developer checklist before pushing
+
+- README and implementation behavior are consistent.
+- UI labels and API/data model names match README terminology.
+- Role visibility and permissions in README match actual enforcement.
+- Lint/build checks pass after documentation-related code changes.
+- `doc/WORK_LOG.md` includes the completed task entry.

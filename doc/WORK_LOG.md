@@ -3,6 +3,26 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-13 18:06:54 +05:30] Strengthen README for Developer Product Understanding During Ongoing Development
+
+- Summary: Improved README to make business logic and implementation expectations clearer for developers, and added a mandatory documentation-maintenance workflow section for future changes.
+- Work done:
+  - Updated Table of Contents to include a dedicated documentation-maintenance section.
+  - Added a clear `Service Charge Determination (Developer Snapshot)` matrix under Module 1 showing AMC/Warranty/Out-of-Warranty behavior, flags, badges, charge target, and billing defaults.
+  - Added explicit AMC precedence rule over Warranty when both are active.
+  - Added `Documentation Maintenance During Development` section with mandatory update rules and a pre-push checklist for consistency.
+  - Updated revision history with a new version entry reflecting these documentation improvements.
+- Files changed:
+  - README.md
+  - doc/WORK_LOG.md
+- Verification:
+  - Ran diagnostics check on `README.md`.
+  - Ran `npm run lint` in `web` and it passed.
+- Issues/Bugs/Mistakes:
+  - None observed during this documentation refinement.
+- Next:
+  - If needed, I can split README into a business-facing spec and a developer implementation guide while keeping both in sync.
+
 ## [2026-03-13 18:04:50 +05:30] Add Product Details Fields and AMC/Warranty Auto-Billing Rules
 
 - Summary: Implemented the new optional Product Details section fields in the service subject form, added AMC/Warranty badge and billing visibility in subject detail, updated migration schema with requested columns and auto-calculation trigger logic, and updated README business rules.
