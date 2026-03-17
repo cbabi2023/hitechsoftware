@@ -11,8 +11,10 @@ import { CUSTOMER_QUERY_KEYS } from '@/modules/customers/customer.constants';
 import { deleteCustomer } from '@/modules/customers/customer.service';
 import { CustomerStatusBadge } from '@/components/customers/CustomerStatusBadge';
 import { useCustomer } from '@/hooks/customers/useCustomers';
+import { usePermission } from '@/hooks/auth/usePermission';
 
 export default function CustomerDetailPage() {
+  const { can } = usePermission();
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -34,6 +36,10 @@ export default function CustomerDetailPage() {
       toast.error('Failed to delete customer');
     },
   });
+
+  if (!can('customer:view')) {
+    return <div className="p-6 text-sm text-rose-600">You do not have access to customer details.</div>;
+  }
 
   if (isLoading) {
     return <div className="p-6 text-sm text-slate-600">Loading customer...</div>;

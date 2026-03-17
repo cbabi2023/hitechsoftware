@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { CustomerStatusBadge } from '@/components/customers/CustomerStatusBadge';
 import { KOTTAYAM_AREAS } from '@/modules/customers/customer.constants';
 import { useCustomers } from '@/hooks/customers/useCustomers';
+import { usePermission } from '@/hooks/auth/usePermission';
 
 export default function CustomersListPage() {
+  const { can, role } = usePermission();
   const {
     customers,
     pagination,
@@ -19,20 +21,30 @@ export default function CustomersListPage() {
     setPage,
   } = useCustomers();
 
+  if (!can('customer:view')) {
+    return <div className="p-6 text-sm text-rose-600">You do not have access to customer records.</div>;
+  }
+
   return (
     <div className="p-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Customers</h1>
-          <p className="mt-1 text-sm text-slate-600">Manage customer records, addresses, and status.</p>
+          <p className="mt-1 text-sm text-slate-600">
+            {role === 'technician'
+              ? "Only customers assigned to your today's services are visible."
+              : 'Manage customer records, addresses, and status.'}
+          </p>
         </div>
 
-        <Link
-          href="/dashboard/customers/new"
-          className="ht-btn ht-btn-primary"
-        >
-          New customer
-        </Link>
+        {can('customer:create') ? (
+          <Link
+            href="/dashboard/customers/new"
+            className="ht-btn ht-btn-primary"
+          >
+            New customer
+          </Link>
+        ) : null}
       </div>
 
       <div className="mb-4 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-4">

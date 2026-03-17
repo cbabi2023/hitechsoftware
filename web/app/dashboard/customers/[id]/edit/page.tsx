@@ -3,14 +3,20 @@
 import { useRouter, useParams } from 'next/navigation';
 import { CustomerForm } from '@/components/customers/CustomerForm';
 import { useCustomer, useCustomers } from '@/hooks/customers/useCustomers';
+import { usePermission } from '@/hooks/auth/usePermission';
 
 export default function EditCustomerPage() {
+  const { can } = usePermission();
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const customerId = params?.id;
 
   const { customer, isLoading, error } = useCustomer(customerId);
   const { updateCustomerMutation } = useCustomers();
+
+  if (!can('customer:edit')) {
+    return <div className="p-6 text-sm text-rose-600">You do not have permission to edit customers.</div>;
+  }
 
   if (isLoading) {
     return <div className="p-6 text-sm text-slate-600">Loading customer...</div>;

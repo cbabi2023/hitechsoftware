@@ -26,7 +26,7 @@ export type Permission = {
 }[ModuleName];
 
 export const PERMISSIONS: Record<Permission, UserRole[]> = {
-  'customer:view': [ROLES.SUPER_ADMIN, ROLES.OFFICE_STAFF],
+  'customer:view': [ROLES.SUPER_ADMIN, ROLES.OFFICE_STAFF, ROLES.TECHNICIAN],
   'customer:create': [ROLES.SUPER_ADMIN, ROLES.OFFICE_STAFF],
   'customer:edit': [ROLES.SUPER_ADMIN, ROLES.OFFICE_STAFF],
   'customer:delete': [ROLES.SUPER_ADMIN],

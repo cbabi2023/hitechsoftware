@@ -3,10 +3,16 @@
 import { useRouter } from 'next/navigation';
 import { CustomerForm } from '@/components/customers/CustomerForm';
 import { useCustomers } from '@/hooks/customers/useCustomers';
+import { usePermission } from '@/hooks/auth/usePermission';
 
 export default function NewCustomerPage() {
+  const { can } = usePermission();
   const router = useRouter();
   const { createCustomerMutation } = useCustomers();
+
+  if (!can('customer:create')) {
+    return <div className="p-6 text-sm text-rose-600">You do not have permission to create customers.</div>;
+  }
 
   return (
     <div className="p-6">

@@ -3,6 +3,38 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-17 19:40:00 +05:30] Technician Customer Visibility Restricted to Current-Day Assigned Services
+
+- Summary: Implemented strict customer visibility for technicians so only customers tied to today's assigned services are visible in the customer module. Added page-level permission guards for customer list/detail/new/edit routes.
+- Work done:
+  - Added migration `20260317_010_technician_customer_visibility.sql`.
+  - Replaced `customers_technician_read` RLS policy to allow technician `SELECT` only when an active subject exists where:
+    - `subjects.customer_id = customers.id`
+    - `subjects.assigned_technician_id = auth.uid()`
+    - `subjects.technician_allocated_date = CURRENT_DATE`
+    - `subjects.is_deleted = false`
+  - Updated permission config to allow technician `customer:view` (read only).
+  - Added customer module page guards:
+    - list/detail require `customer:view`
+    - new requires `customer:create`
+    - edit requires `customer:edit`
+  - Hid "New customer" button for roles without create permission.
+  - Added technician-facing context text on customer list page clarifying only today's assigned customers are visible.
+- Files changed:
+  - supabase/migrations/20260317_010_technician_customer_visibility.sql
+  - web/config/permissions.ts
+  - web/app/dashboard/customers/page.tsx
+  - web/app/dashboard/customers/[id]/page.tsx
+  - web/app/dashboard/customers/new/page.tsx
+  - web/app/dashboard/customers/[id]/edit/page.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - `npm run build` in `web/` passed successfully.
+- Bugs/issues encountered:
+  - none
+- Next:
+  - Apply latest Supabase migration in target environments so RLS enforcement is active in production.
+
 ## [2026-03-17 19:05:00 +05:30] Attendance Module End-to-End Implementation (Web + API + Cron)
 
 - Summary: Implemented the complete attendance module across database migration, backend architecture layers, cron automation, technician attendance UI, service access guard, dashboard/team live status updates, and realtime profile status subscription.
