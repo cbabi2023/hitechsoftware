@@ -3,6 +3,25 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-17 09:59:10 +05:30] Fix Subject History RLS Failure During Technician Assignment
+
+- Summary: Fixed the database-side RLS error that blocked technician assignment and other audited subject updates when trigger inserts into `subject_status_history` were executed under caller privileges.
+- Work done:
+  - Added new migration `supabase/migrations/20260317_009_fix_subject_history_rls.sql`.
+  - Recreated `log_subject_status_change`, `log_subject_assignment_change`, `log_subject_reschedule`, and `log_subject_priority_change` as `SECURITY DEFINER` functions with `SET search_path = public`.
+  - Preserved the existing audit behavior while allowing internal trigger-driven inserts to bypass app-level RLS on `subject_status_history`.
+  - Kept the table read-only from the application side instead of weakening it with a broad insert policy.
+- Files changed:
+  - supabase/migrations/20260317_009_fix_subject_history_rls.sql
+  - doc/WORK_LOG.md
+- Verification:
+  - Reviewed existing RLS policies and trigger definitions in the service module migrations.
+  - Confirmed the root cause: `subject_status_history` exposes only a `SELECT` policy, while authenticated subject updates trigger inserts into that table.
+- Issues encountered:
+  - None.
+- Next:
+  - Apply migration `20260317_009_fix_subject_history_rls.sql` to Supabase and retry technician assignment.
+
 ## [2026-03-17 12:05:00 +05:30] Technician Allocation Date — Full Feature Implementation
 
 - Summary: Added `technician_allocated_date` and `technician_allocated_notes` columns to subjects. Implemented full data layer (DB → repository → service → hooks) and replaced the old compact assignment card on the detail page with a proper three-field Assignment Section. Updated the list page date column to show the technician visit date (with blue "Tech" badge) when present, or the brand/dealer allocated date (with gray "Brand" badge) when not.
