@@ -82,11 +82,15 @@ function getStatusMeta(status: string) {
 }
 
 function getServiceTypeMeta(subject: SubjectListItem) {
-  if (subject.type_of_service === 'installation') {
-    return { label: 'Installation', className: 'bg-indigo-100 text-indigo-700' };
+  if (subject.is_amc_service) {
+    return { label: 'Free Service', className: 'bg-emerald-100 text-emerald-700' };
   }
 
-  return { label: 'Service', className: 'bg-cyan-100 text-cyan-700' };
+  if (subject.is_warranty_service) {
+    return { label: 'Under Warranty', className: 'bg-blue-100 text-blue-700' };
+  }
+
+  return { label: 'Chargeable Service', className: 'bg-slate-100 text-slate-600' };
 }
 
 export default function SubjectsDashboardPage() {
@@ -380,7 +384,7 @@ export default function SubjectsDashboardPage() {
                 <th className="w-[100px] whitespace-nowrap px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-600">Priority</th>
                 <th className="w-[110px] whitespace-nowrap px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-600">Status</th>
                 <th className="w-[130px] whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Assigned To</th>
-                <th className="w-[130px] whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Service Type</th>
+                <th className="w-[130px] whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Coverage</th>
                 <th className="w-[110px] whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Date</th>
                 <th className="w-[80px] whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Actions</th>
               </tr>

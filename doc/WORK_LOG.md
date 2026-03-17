@@ -3,6 +3,26 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-17 15:17:23 +05:30] Adjust Subject List Column to Coverage Status Labels
+
+- Summary: Updated subjects list to show service coverage status labels (Free Service / Under Warranty / Chargeable Service) as requested, instead of installation/service type labels.
+- Work done:
+  - Updated `getServiceTypeMeta` in `web/app/dashboard/subjects/page.tsx` to derive display from `is_amc_service` and `is_warranty_service`.
+  - Column now shows:
+    - `Free Service` for AMC-covered subjects
+    - `Under Warranty` for warranty-covered subjects
+    - `Chargeable Service` otherwise
+  - Renamed the table header from `Service Type` to `Coverage` for clarity.
+- Files changed:
+  - web/app/dashboard/subjects/page.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - `npm run build` passed successfully with zero errors.
+- Issues encountered:
+  - None.
+- Next:
+  - Confirm labels visually against sample AMC, warranty, and chargeable subjects in UI.
+
 ## [2026-03-17 15:13:51 +05:30] Fix Service Type Rendering in Subject Lists
 
 - Summary: Fixed incorrect service type display in subject listing and normalized type display in subject detail. The Service Type column was showing billing coverage labels (AMC/Warranty/Chargeable) instead of actual service type values (Installation/Service).
