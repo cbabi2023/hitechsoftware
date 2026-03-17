@@ -82,13 +82,11 @@ function getStatusMeta(status: string) {
 }
 
 function getServiceTypeMeta(subject: SubjectListItem) {
-  if (subject.is_amc_service) {
-    return { label: 'AMC Free', className: 'bg-emerald-100 text-emerald-700' };
+  if (subject.type_of_service === 'installation') {
+    return { label: 'Installation', className: 'bg-indigo-100 text-indigo-700' };
   }
-  if (subject.is_warranty_service) {
-    return { label: 'Under Warranty', className: 'bg-blue-100 text-blue-700' };
-  }
-  return { label: 'Chargeable', className: 'bg-slate-100 text-slate-600' };
+
+  return { label: 'Service', className: 'bg-cyan-100 text-cyan-700' };
 }
 
 export default function SubjectsDashboardPage() {

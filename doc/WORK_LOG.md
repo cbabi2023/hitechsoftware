@@ -3,6 +3,27 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-17 15:13:51 +05:30] Fix Service Type Rendering in Subject Lists
+
+- Summary: Fixed incorrect service type display in subject listing and normalized type display in subject detail. The Service Type column was showing billing coverage labels (AMC/Warranty/Chargeable) instead of actual service type values (Installation/Service).
+- Work done:
+  - Updated `getServiceTypeMeta` in `web/app/dashboard/subjects/page.tsx` to use `subject.type_of_service`.
+  - Service Type column now renders:
+    - `Installation` for `type_of_service = installation`
+    - `Service` for `type_of_service = service`
+  - Updated subject detail type label in `web/app/dashboard/subjects/[id]/page.tsx` to show user-friendly title case (`Installation` / `Service`) instead of raw enum text.
+  - Reviewed service settings list pages (brands, dealers, categories) and confirmed no service-type rendering bug there.
+- Files changed:
+  - web/app/dashboard/subjects/page.tsx
+  - web/app/dashboard/subjects/[id]/page.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - `npm run build` passed successfully with zero errors.
+- Issues encountered:
+  - None.
+- Next:
+  - Verify visually in UI with both installation and service subjects to confirm expected badges in the list.
+
 ## [2026-03-17 15:04:49 +05:30] Warranty and AMC Contracts Section for Subject Detail
 
 - Summary: Implemented a complete warranty and contract management flow for subject details across database, repository/service/hooks, and UI. Added live billing-type recomputation behavior tied to warranty/contract changes and shipped a new Warranty + Contracts experience on the detail page.
