@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Filter, Plus } from 'lucide-react';
@@ -95,9 +95,10 @@ function getServiceTypeMeta(subject: SubjectListItem) {
 }
 
 export default function SubjectsDashboardPage() {
-  const { can } = usePermission();
+  const { can, role } = usePermission();
   const queryClient = useQueryClient();
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const today = new Date().toISOString().split('T')[0];
   const brands = useBrands();
   const dealers = useDealers();
   const categories = useServiceCategories();
@@ -128,6 +129,20 @@ export default function SubjectsDashboardPage() {
     setPage,
     setPageSize,
   } = useSubjects();
+
+  useEffect(() => {
+    if (role !== 'technician') {
+      return;
+    }
+
+    if (fromDate !== today) {
+      setFromDate(today);
+    }
+
+    if (toDate !== today) {
+      setToDate(today);
+    }
+  }, [fromDate, role, setFromDate, setToDate, toDate, today]);
 
   const advancedFilterCount = [
     sourceType !== 'all',
@@ -162,7 +177,11 @@ export default function SubjectsDashboardPage() {
       <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-900">Service Subjects</h1>
-        <p className="mt-1 text-sm text-slate-600">Filter, track, and audit all service subjects.</p>
+        <p className="mt-1 text-sm text-slate-600">
+          {role === 'technician'
+            ? "Showing only today's allocated services for technicians."
+            : 'Filter, track, and audit all service subjects.'}
+        </p>
       </div>
 
       <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4">
@@ -357,6 +376,7 @@ export default function SubjectsDashboardPage() {
                   type="date"
                   value={fromDate}
                   onChange={(event) => setFromDate(event.target.value)}
+                  disabled={role === 'technician'}
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
                 />
               </div>
@@ -367,6 +387,7 @@ export default function SubjectsDashboardPage() {
                   type="date"
                   value={toDate}
                   onChange={(event) => setToDate(event.target.value)}
+                  disabled={role === 'technician'}
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
                 />
               </div>

@@ -208,10 +208,12 @@ export default function AttendancePage() {
               </button>
             </div>
             <p className="mt-2 text-sm text-slate-700">Service count: {selectedDay.service_count}</p>
-            {selectedDay.subject_numbers.length > 0 ? (
+            {selectedDay.is_today && selectedDay.subject_numbers.length > 0 ? (
               <p className="mt-1 text-xs text-slate-600">Subjects: {selectedDay.subject_numbers.join(', ')}</p>
-            ) : (
+            ) : selectedDay.is_today ? (
               <p className="mt-1 text-xs text-slate-500">No subjects assigned.</p>
+            ) : (
+              <p className="mt-1 text-xs text-slate-500">Only count is shown for non-current dates.</p>
             )}
             {!selectedDay.is_today ? (
               <p className="mt-2 text-xs text-slate-500">Full service details are accessible only for today.</p>

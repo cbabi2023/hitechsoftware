@@ -3,6 +3,29 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-17 20:25:00 +05:30] Technician Service Visibility Limited to Current Date + Calendar Behavior Update
+
+- Summary: Enforced technician-facing service visibility to current-date allocations on service screens and updated attendance calendar detail behavior to show full subject list only for current date while showing count-only for other dates.
+- Work done:
+  - Updated service list page to auto-lock technician date filters to today.
+  - Disabled technician manual change of From/To filter dates.
+  - Added technician-specific note on service list page clarifying current-day-only visibility.
+  - Updated subject detail page to block technician access when service date is not today.
+  - Updated attendance calendar detail drawer logic:
+    - current date: show full subject number list
+    - non-current dates: show count-only message
+- Files changed:
+  - web/app/dashboard/subjects/page.tsx
+  - web/app/dashboard/subjects/[id]/page.tsx
+  - web/app/dashboard/attendance/page.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - `npm run build` in `web/` passed successfully.
+- Bugs/issues encountered:
+  - none
+- Next:
+  - Optional hardening: move today-only technician subject visibility into DB RLS for backend-enforced protection.
+
 ## [2026-03-17 20:05:00 +05:30] Technician Dashboard Implemented on /dashboard
 
 - Summary: Added a technician-specific dashboard experience so technician users have a functional landing dashboard with attendance status, attendance toggle action, and today service visibility.
