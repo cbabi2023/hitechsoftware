@@ -3,6 +3,26 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-17 08:31:02 +05:30] Add Animated Loading Skeleton to Subjects Table
+
+- Summary: Replaced the plain loading text state on the subjects list page with a full table skeleton so users immediately see table structure while data is fetching.
+- Work done:
+  - Updated the loading branch in the subjects table body to render 5 placeholder rows.
+  - Added gray placeholder blocks across all columns to mirror the real table shape.
+  - Applied Tailwind `animate-pulse` to each skeleton row for the requested loading effect.
+  - Preserved existing error, empty-state, and loaded-data branches unchanged.
+  - Left API documentation unchanged because this task is UI-only and does not change routes or data contracts.
+- Files changed:
+  - web/app/dashboard/subjects/page.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - `get_errors` on `web/app/dashboard/subjects/page.tsx` returned no errors.
+  - `npm run build` passed for the web workspace.
+- Issues:
+  - None
+- Next:
+  - Browser QA: verify skeleton appears instantly on page load and while refetching list data.
+
 ## [2026-03-17 08:25:55 +05:30] Refine Service List UX and Hide Unfinished Demo Modules
 
 - Summary: Cleaned up the service subjects list for office staff by reducing default filter noise, restoring stronger visual hierarchy and urgency cues, correcting branding, and preventing unfinished modules from appearing as ready during demos.
