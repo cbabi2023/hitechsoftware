@@ -90,7 +90,7 @@ function getServiceTypeMeta(subject: SubjectListItem) {
     return { label: 'Under Warranty', className: 'bg-blue-100 text-blue-700' };
   }
 
-  return { label: 'Chargeable Service', className: 'bg-slate-100 text-slate-600' };
+  return { label: 'Chargeable', className: 'bg-slate-100 text-slate-600' };
 }
 
 export default function SubjectsDashboardPage() {

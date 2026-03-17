@@ -3,6 +3,22 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-17 15:20:28 +05:30] Shorten Coverage Label Text in Subject List
+
+- Summary: Refined the coverage badge wording to concise, proper English by shortening `Chargeable Service` to `Chargeable` in the subjects list.
+- Work done:
+  - Updated fallback coverage label in `web/app/dashboard/subjects/page.tsx` from `Chargeable Service` to `Chargeable`.
+  - Kept existing labels `Free Service` and `Under Warranty` unchanged.
+- Files changed:
+  - web/app/dashboard/subjects/page.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - TypeScript problems check on updated file: no errors.
+- Issues encountered:
+  - None.
+- Next:
+  - None.
+
 ## [2026-03-17 15:17:23 +05:30] Adjust Subject List Column to Coverage Status Labels
 
 - Summary: Updated subjects list to show service coverage status labels (Free Service / Under Warranty / Chargeable Service) as requested, instead of installation/service type labels.
