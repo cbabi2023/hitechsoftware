@@ -297,9 +297,13 @@ export async function removeSubject(id: string): Promise<ServiceResult<{ id: str
   const result = await deleteSubject(id);
 
   if (result.error || !result.data) {
+    const message = result.error?.code === '23503'
+      ? 'This subject cannot be deleted because related records exist. Remove linked billing or dependent records first.'
+      : result.error?.message ?? 'Failed to delete subject';
+
     return {
       ok: false,
-      error: { message: result.error?.message ?? 'Failed to delete subject', code: result.error?.code },
+      error: { message, code: result.error?.code },
     };
   }
 

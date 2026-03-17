@@ -220,7 +220,7 @@ export async function getSubjectTimeline(subjectId: string) {
 export async function deleteSubject(id: string) {
   return supabase
     .from('subjects')
-    .update({ is_deleted: true, is_active: false, deleted_at: new Date().toISOString() })
+    .delete()
     .eq('id', id)
     .select('id')
     .single<{ id: string }>();

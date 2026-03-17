@@ -3,6 +3,28 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-17 08:42:13 +05:30] Fix Subject Deletion to Remove Rows from Database
+
+- Summary: Corrected subject deletion behavior from soft delete to actual database row deletion, and improved error messaging for records blocked by foreign-key dependencies.
+- Work done:
+  - Identified root cause: `deleteSubject` was performing `.update({ is_deleted: true, ... })`, which only hid records and did not physically remove them.
+  - Updated `web/repositories/subject.repository.ts` to use Supabase `.delete()` for real row deletion from `public.subjects`.
+  - Updated `removeSubject` in `web/modules/subjects/subject.service.ts` to return a clear message when deletion is blocked by FK restrictions (`23503`) due to linked records.
+  - Confirmed `subject_status_history` is configured with `ON DELETE CASCADE`, so timeline rows are removed automatically when a subject is hard-deleted.
+  - Left API documentation unchanged because this behavior is implemented through repository/service flow and does not modify an exposed REST API contract.
+- Files changed:
+  - web/repositories/subject.repository.ts
+  - web/modules/subjects/subject.service.ts
+  - doc/WORK_LOG.md
+- Verification:
+  - `get_errors` returned no errors for modified repository and service files.
+  - `npm run build` passed for the web workspace.
+- Issues:
+  - Deletion may still be blocked for subjects referenced by FK-restricted tables (for example, billing-linked records), and the UI now shows a clear message instead of a generic failure.
+- Next:
+  - Browser QA: delete a normal subject and verify it is physically removed from the database table.
+  - Browser QA: try deleting a linked/billed subject and verify the dependency warning message appears.
+
 ## [2026-03-17 08:39:26 +05:30] Replace Subjects Action Dropdown with Inline Buttons
 
 - Summary: Removed the 3-dot dropdown from the subjects list actions column and replaced it with direct inline View, Edit, and Delete actions for better clarity and to avoid overflow clipping issues.
