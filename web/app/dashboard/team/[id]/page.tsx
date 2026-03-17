@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { DeleteConfirmModal } from '@/components/customers/DeleteConfirmModal';
@@ -28,6 +29,28 @@ export default function TeamMemberDetailPage() {
   const [technicianCode, setTechnicianCode] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const performanceQuery = useQuery({
+    queryKey: ['team-member-performance', params.id],
+    enabled: !!member && member.role === 'technician',
+    queryFn: async () => {
+      const response = await fetch(`/api/team/members/${params.id}/performance`);
+      const payload = (await response.json()) as {
+        ok: boolean;
+        data?: {
+          monthly: Array<{ month: string; label: string; rejections: number; reschedules: number }>;
+          totals: { rejections: number; reschedules: number };
+        };
+        error?: { message?: string };
+      };
+
+      if (!response.ok || !payload.ok || !payload.data) {
+        throw new Error(payload.error?.message ?? 'Failed to load technician performance stats');
+      }
+
+      return payload.data;
+    },
+  });
 
   useEffect(() => {
     if (!member) {
@@ -171,14 +194,57 @@ export default function TeamMemberDetailPage() {
       {member.role === 'technician' && member.technician && (
         <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Performance Stats</h2>
-          <div className="flex items-start gap-8">
-            <div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
               <p className="text-xs uppercase tracking-wide text-slate-500">Total Rejections</p>
               <p className={`mt-1 text-2xl font-bold ${member.technician.total_rejections > 0 ? 'text-rose-600' : 'text-slate-900'}`}>
                 {member.technician.total_rejections}
               </p>
-              <p className="mt-0.5 text-xs text-slate-400">Services rejected by this technician</p>
+              <p className="mt-0.5 text-xs text-slate-400">All-time rejected services</p>
             </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Rejections (Last 6 Months)</p>
+              <p className={`mt-1 text-2xl font-bold ${(performanceQuery.data?.totals.rejections ?? 0) > 0 ? 'text-rose-600' : 'text-slate-900'}`}>
+                {performanceQuery.data?.totals.rejections ?? 0}
+              </p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Reschedules From Rejections (Last 6 Months)</p>
+              <p className={`mt-1 text-2xl font-bold ${(performanceQuery.data?.totals.reschedules ?? 0) > 0 ? 'text-amber-700' : 'text-slate-900'}`}>
+                {performanceQuery.data?.totals.reschedules ?? 0}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200">
+            <table className="min-w-full divide-y divide-slate-200 text-sm">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th className="px-3 py-2 text-left font-semibold text-slate-600">Month</th>
+                  <th className="px-3 py-2 text-right font-semibold text-slate-600">Rejections</th>
+                  <th className="px-3 py-2 text-right font-semibold text-slate-600">Reschedules</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {(performanceQuery.data?.monthly ?? []).map((row) => (
+                  <tr key={row.month}>
+                    <td className="px-3 py-2 text-slate-700">{row.label}</td>
+                    <td className="px-3 py-2 text-right font-medium text-rose-700">{row.rejections}</td>
+                    <td className="px-3 py-2 text-right font-medium text-amber-700">{row.reschedules}</td>
+                  </tr>
+                ))}
+                {performanceQuery.isLoading && (
+                  <tr>
+                    <td className="px-3 py-3 text-slate-500" colSpan={3}>Loading monthly performance...</td>
+                  </tr>
+                )}
+                {performanceQuery.error && (
+                  <tr>
+                    <td className="px-3 py-3 text-rose-600" colSpan={3}>Unable to load monthly stats.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

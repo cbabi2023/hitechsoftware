@@ -156,6 +156,7 @@ function TimelineEventDetail({ item }: { item: SubjectTimelineItem }) {
           <span className="text-[11px] text-slate-400">{formatDate(item.changed_at)}</span>
         </div>
         {renderContent()}
+        {item.changed_by_name ? <p className="mt-1 text-[12px] text-slate-500">By: <span className="font-medium text-slate-700">{item.changed_by_name}</span></p> : null}
         {item.note ? <p className="mt-1 text-[12px] italic text-slate-500">{item.note}</p> : null}
       </div>
     </div>

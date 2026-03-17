@@ -2,6 +2,24 @@
 
 ## API Query Patterns by Role & Module
 
+### Recent API Updates (Technician Rejection Workflow)
+
+```javascript
+// 1) Technician respond to assigned subject (tech-only)
+// POST /api/subjects/:id/respond
+// body: { action: 'accept' }
+// body: { action: 'reject', rejection_reason: '...' }
+
+// 2) Technician monthly performance (super_admin-only)
+// GET /api/team/members/:id/performance
+// response.data.monthly => [{ month, label, rejections, reschedules }]
+// response.data.totals  => { rejections, reschedules }
+
+// Notes:
+// - Rejected subjects now persist status as 'REJECTED'.
+// - Subject detail/timeline shows who rejected via actor metadata.
+```
+
 ---
 
 ## 1. SUPER_ADMIN (Joby Sir) - Full Access

@@ -102,6 +102,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       status: 'REJECTED',
       technician_acceptance_status: 'rejected',
       technician_rejection_reason: rejection_reason!.trim(),
+      rejected_by_technician_id: userId,
       is_rejected_pending_reschedule: true,
     })
     .eq('id', subjectId)

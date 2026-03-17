@@ -188,6 +188,11 @@ export default function SubjectDetailPage() {
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600" />
           <div>
             <p className="text-sm font-semibold text-rose-800">Reschedule Urgently — Technician Rejected</p>
+            {subject.rejected_by_technician_name && (
+              <p className="mt-1 text-sm text-rose-700">
+                Rejected by: <span className="font-semibold">{subject.rejected_by_technician_name}</span>
+              </p>
+            )}
             {subject.technician_rejection_reason && (
               <p className="mt-1 text-sm text-rose-700">
                 Reason: <span className="italic">{subject.technician_rejection_reason}</span>

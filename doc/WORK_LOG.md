@@ -2,6 +2,35 @@
 
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
+## [2026-03-17 23:45:00 +05:30] Feat: Capture Rejector Identity and Monthly Technician Rejection/Reschedule Metrics
+
+- Summary: Service detail and timeline now show who rejected a service, and technician profile now reports monthly rejection and reschedule counts (last 6 months) using a new secured performance API.
+- Work done:
+  - Added `rejected_by_technician_id` tracking on `subjects` via migration to preserve rejector identity after reassignment.
+  - Updated reject API to persist `rejected_by_technician_id` and keep status as `REJECTED` on reject.
+  - Extended subject detail data model and mapper with `rejected_by_technician_name` and timeline actor fields.
+  - Enhanced timeline query to include `changed_by` actor profile display name.
+  - Updated service/subject detail page urgent rejection panel to display `Rejected by: <name>`.
+  - Updated Activity Timeline UI to display actor attribution (`By: <name>`).
+  - Added new API route `GET /api/team/members/[id]/performance` (super_admin-only) returning monthly and total rejections/reschedules for technician analytics.
+  - Updated technician detail page to fetch and render monthly performance table + summary cards.
+  - Updated frontend API reference documentation with new/updated routes.
+- Files changed:
+  - supabase/migrations/20260318_012_rejected_by_tracking_and_monthly_stats_support.sql
+  - web/app/api/subjects/[id]/respond/route.ts
+  - web/app/api/team/members/[id]/performance/route.ts
+  - web/repositories/subject.repository.ts
+  - web/modules/subjects/subject.types.ts
+  - web/modules/subjects/subject.service.ts
+  - web/components/subjects/ActivityTimeline.tsx
+  - web/app/dashboard/subjects/[id]/page.tsx
+  - web/app/dashboard/team/[id]/page.tsx
+  - doc/FRONTEND_DEVELOPER_REFERENCE.md
+- Verification:
+  - `npm run build` passes (Next.js production build + TypeScript checks successful).
+- Next:
+  - Apply latest migrations to target Supabase environments before production validation.
+
 ## [2026-03-17 23:20:00 +05:30] Fix: Show Rejected Status When Allocated Job Is Rejected
 
 - Summary: Updated technician reject flow so an allocated job now changes the main subject status to `REJECTED`, and this status is visible in subject list badges and filter options.

@@ -49,6 +49,8 @@ export interface SubjectDetail extends SubjectListItem {
   is_warranty_service: boolean;
   billing_status: 'not_applicable' | 'due' | 'partially_paid' | 'paid' | 'waived';
   technician_rejection_reason: string | null;
+  rejected_by_technician_id: string | null;
+  rejected_by_technician_name: string | null;
   created_by: string | null;
   assigned_by: string | null;
   timeline: SubjectTimelineItem[];
@@ -62,6 +64,8 @@ export interface SubjectTimelineItem {
   note: string | null;
   old_value: string | null;
   new_value: string | null;
+  changed_by: string | null;
+  changed_by_name: string | null;
 }
 
 export interface SubjectListFilters {

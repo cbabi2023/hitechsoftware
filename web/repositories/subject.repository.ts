@@ -228,6 +228,7 @@ export async function getSubjectById(id: string) {
       technician_allocated_notes,
       technician_acceptance_status,
       technician_rejection_reason,
+      rejected_by_technician_id,
       is_rejected_pending_reschedule,
       type_of_service,
       category_id,
@@ -251,6 +252,7 @@ export async function getSubjectById(id: string) {
       created_at,
       brands:brand_id(name),
       dealers:dealer_id(name),
+      rejected_by_profile:rejected_by_technician_id(display_name),
       service_categories:category_id(name)
       `,
     )
@@ -262,7 +264,7 @@ export async function getSubjectById(id: string) {
 export async function getSubjectTimeline(subjectId: string) {
   return supabase
     .from('subject_status_history')
-    .select('id,event_type,status,changed_at,note,old_value,new_value')
+    .select('id,event_type,status,changed_at,note,old_value,new_value,changed_by,changed_by_profile:changed_by(display_name)')
     .eq('subject_id', subjectId)
     .order('changed_at', { ascending: false });
 }

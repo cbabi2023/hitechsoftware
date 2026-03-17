@@ -241,6 +241,7 @@ export async function getSubjectDetails(id: string): Promise<ServiceResult<Subje
     technician_allocated_notes: string | null;
     technician_acceptance_status: 'pending' | 'accepted' | 'rejected';
     technician_rejection_reason: string | null;
+    rejected_by_technician_id: string | null;
     is_rejected_pending_reschedule: boolean;
     customer_phone: string | null;
     customer_name: string | null;
@@ -264,6 +265,7 @@ export async function getSubjectDetails(id: string): Promise<ServiceResult<Subje
     assigned_by: string | null;
     brands?: { name?: string | null } | null;
     dealers?: { name?: string | null } | null;
+    rejected_by_profile?: { display_name?: string | null } | null;
     service_categories?: { name?: string | null } | null;
   };
 
@@ -293,6 +295,8 @@ export async function getSubjectDetails(id: string): Promise<ServiceResult<Subje
       technician_allocated_notes: typed.technician_allocated_notes,
       technician_acceptance_status: typed.technician_acceptance_status ?? 'pending',
       technician_rejection_reason: typed.technician_rejection_reason ?? null,
+      rejected_by_technician_id: typed.rejected_by_technician_id ?? null,
+      rejected_by_technician_name: typed.rejected_by_profile?.display_name ?? null,
       is_rejected_pending_reschedule: typed.is_rejected_pending_reschedule ?? false,
       customer_phone: typed.customer_phone,
       customer_name: typed.customer_name,
@@ -315,7 +319,17 @@ export async function getSubjectDetails(id: string): Promise<ServiceResult<Subje
       created_at: typed.created_at,
       created_by: typed.created_by,
       assigned_by: typed.assigned_by,
-      timeline: ((timelineResult.data ?? []) as Array<{ id: string; event_type: string; status: string; changed_at: string; note: string | null; old_value: string | null; new_value: string | null }>).map(
+      timeline: ((timelineResult.data ?? []) as Array<{
+        id: string;
+        event_type: string;
+        status: string;
+        changed_at: string;
+        note: string | null;
+        old_value: string | null;
+        new_value: string | null;
+        changed_by: string | null;
+        changed_by_profile?: { display_name?: string | null } | null;
+      }>).map(
         (item) => ({
           id: item.id,
           event_type: item.event_type ?? 'status_change',
@@ -324,6 +338,8 @@ export async function getSubjectDetails(id: string): Promise<ServiceResult<Subje
           note: item.note,
           old_value: item.old_value,
           new_value: item.new_value,
+          changed_by: item.changed_by,
+          changed_by_name: item.changed_by_profile?.display_name ?? null,
         }),
       ),
     },
