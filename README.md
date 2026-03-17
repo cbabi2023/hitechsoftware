@@ -102,6 +102,19 @@ This document is the single source of truth for endpoint paths, request/response
 
 API documentation is mandatory maintenance. Any change to route handlers, request or response payloads, auth rules, repository-backed server behavior, or client-consumed data contracts must be reflected in `web/docs/API_DOCUMENTATION.md` before the task is considered complete.
 
+### API Documentation Compliance Gate (Mandatory)
+
+For every completed work item, one of the following must be true:
+
+- API changed:
+	- Update `web/docs/API_DOCUMENTATION.md` in the same task.
+	- Include exact endpoint/path, auth/permission changes, request/response schema changes, and error behavior changes.
+	- Add verification notes in `doc/WORK_LOG.md` that API documentation was updated.
+- API not changed:
+	- Add an explicit statement in `doc/WORK_LOG.md` that API documentation review was done and no contract change was required.
+
+No task is considered complete until this API documentation check is recorded.
+
 ---
 
 ## 5. User Roles & Permissions

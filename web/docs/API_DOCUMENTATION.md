@@ -7,6 +7,22 @@ Base API for the Service Management System consumed by:
 
 This document is mandatory project documentation. Any change to implemented route handlers, request or response schemas, authentication or authorization behavior, or other client-consumed backend contracts must update this file in the same task before the work is considered complete.
 
+## API Documentation Maintenance Workflow (Mandatory)
+
+Use this checklist for every completed task:
+
+1. Review whether backend or contract behavior changed.
+2. If changed, update this file in the same task with:
+  - Endpoint/path and method changes
+  - Request and response schema changes
+  - Auth/permission changes
+  - Error/status code behavior changes
+  - Client-impact notes (web, hitech_admin, hitech_technician)
+3. If not changed, record in `doc/WORK_LOG.md` that API docs were reviewed and no update was required.
+
+Definition of done:
+- Task is incomplete unless API documentation impact is explicitly documented in `doc/WORK_LOG.md`.
+
 ## Current Implementation Status (Source of Truth)
 
 This document previously contained a planned `/api/v1` contract. The currently implemented backend routes in this repository are under Next.js route handlers at `web/app/api/**`.

@@ -3,6 +3,26 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-17 09:22:11 +05:30] Enforce Mandatory API Documentation Compliance Workflow
+
+- Summary: Strengthened project documentation rules so API documentation impact is explicitly required and auditable for every completed task.
+- Work done:
+  - Updated root project documentation to add an explicit API Documentation Compliance Gate.
+  - Defined mandatory outcomes for both cases:
+    - API changed: update `web/docs/API_DOCUMENTATION.md` in the same task.
+    - API unchanged: explicitly record API-doc review and no-change outcome in `doc/WORK_LOG.md`.
+  - Updated API documentation file with a mandatory maintenance workflow checklist and definition of done.
+- Files changed:
+  - README.md
+  - web/docs/API_DOCUMENTATION.md
+  - doc/WORK_LOG.md
+- Verification:
+  - Documentation files reviewed for consistency with project completion rules.
+- Issues:
+  - None
+- Next:
+  - Apply this workflow to all subsequent tasks so API documentation status is always explicitly recorded.
+
 ## [2026-03-17 09:21:19 +05:30] Add Quick Technician Assignment UX on Subjects List
 
 - Summary: Implemented direct technician assignment from the subjects list with a simple row-level select + assign flow and clearer in-row state feedback.
