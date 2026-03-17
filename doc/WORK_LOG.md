@@ -3,6 +3,27 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-17 08:32:12 +05:30] Configure Query Cache Defaults for Faster Return Navigation
+
+- Summary: Updated TanStack Query global defaults so previously loaded data remains fresh for 5 minutes and cached for 10 minutes, reducing refetches when navigating back to pages.
+- Work done:
+  - Updated `web/components/providers/query-provider.tsx` QueryClient defaults.
+  - Added `staleTime: 1000 * 60 * 5` (5 minutes).
+  - Added `gcTime: 1000 * 60 * 10` (10 minutes).
+  - Confirmed `refetchOnWindowFocus: false` remains in place.
+  - Added `refetchOnReconnect: false`.
+  - Left API documentation unchanged because this task only updates frontend query cache behavior and does not affect API contracts.
+- Files changed:
+  - web/components/providers/query-provider.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - `get_errors` on `web/components/providers/query-provider.tsx` returned no errors.
+  - `npm run build` passed for the web workspace.
+- Issues:
+  - None
+- Next:
+  - Browser QA: verify list/detail pages open instantly when revisiting within the cache freshness window.
+
 ## [2026-03-17 08:31:02 +05:30] Add Animated Loading Skeleton to Subjects Table
 
 - Summary: Replaced the plain loading text state on the subjects list page with a full table skeleton so users immediately see table structure while data is fetching.
