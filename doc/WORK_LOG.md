@@ -2,6 +2,22 @@
 
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
+## [2026-03-17 23:20:00 +05:30] Fix: Show Rejected Status When Allocated Job Is Rejected
+
+- Summary: Updated technician reject flow so an allocated job now changes the main subject status to `REJECTED`, and this status is visible in subject list badges and filter options.
+- Work done:
+  - Updated reject API flow to persist `status: 'REJECTED'` during technician rejection.
+  - Added `REJECTED` to subject status options so it appears in status filters.
+  - Added UI status mapping for `REJECTED` with a red badge label in subjects list.
+- Files changed:
+  - web/app/api/subjects/[id]/respond/route.ts
+  - web/modules/subjects/subject.constants.ts
+  - web/app/dashboard/subjects/page.tsx
+- Verification:
+  - `npm run build` passes with successful compile and TypeScript checks.
+- Next:
+  - none
+
 ## [2026-03-18 15:00:00 +05:30] Feat: Technician Accept/Reject Service Assignment with Urgent Reschedule Tracking
 
 - Summary: Technicians can now accept or reject assigned service tasks. Rejected tasks show a red "Reschedule Urgently" badge visible to admins on both the list and detail pages. All events are automatically tracked in the activity timeline. Technician rejection counts are tallied on the team member profile.

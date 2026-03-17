@@ -65,6 +65,8 @@ function getStatusMeta(status: string) {
       return { label: 'Allocated', className: 'bg-blue-100 text-blue-700' };
     case 'ACCEPTED':
       return { label: 'Accepted', className: 'bg-indigo-100 text-indigo-700' };
+    case 'REJECTED':
+      return { label: 'Rejected', className: 'bg-rose-100 text-rose-700' };
     case 'IN_PROGRESS':
       return { label: 'In Progress', className: 'bg-orange-100 text-orange-700' };
     case 'COMPLETED':

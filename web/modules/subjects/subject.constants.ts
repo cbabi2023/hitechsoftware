@@ -24,7 +24,7 @@ export const SUBJECT_TYPE_OF_SERVICE_OPTIONS = [
   { label: 'Service', value: 'service' },
 ] as const;
 
-export const SUBJECT_STATUS_OPTIONS = ['PENDING', 'ALLOCATED', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED', 'INCOMPLETE'];
+export const SUBJECT_STATUS_OPTIONS = ['PENDING', 'ALLOCATED', 'ACCEPTED', 'REJECTED', 'IN_PROGRESS', 'COMPLETED', 'INCOMPLETE'];
 
 export const WARRANTY_PERIODS = [
   { label: '6 Months', value: '6_months', months: 6 },
