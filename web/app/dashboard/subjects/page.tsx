@@ -449,49 +449,39 @@ export default function SubjectsDashboardPage() {
                       className={`hover:bg-slate-50/70${needsAttentionBorder ? ' border-l-4 border-l-rose-400' : ''}`}
                     >
                       <td className="w-[220px] overflow-hidden px-4 py-3 text-sm">
-                        <Link href={ROUTES.DASHBOARD_SUBJECTS_DETAIL(subject.id)} className="group relative block hover:underline">
-                          <span className="block truncate whitespace-nowrap font-bold text-blue-600" title={subject.subject_number}>
-                            {formatSubjectPreview(subject.subject_number)}
-                          </span>
-                          <span className="pointer-events-none absolute bottom-full left-0 z-20 mb-1 hidden max-w-[260px] truncate whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[11px] font-medium text-white group-hover:block">
-                            {subject.subject_number}
-                          </span>
+                        <Link href={ROUTES.DASHBOARD_SUBJECTS_DETAIL(subject.id)} onMouseEnter={() => handlePrefetch(subject.id)} onFocus={() => handlePrefetch(subject.id)} onTouchStart={() => handlePrefetch(subject.id)} className="block">
+                          <div className="relative group">
+                            <span className="block truncate max-w-[200px] font-medium text-blue-600 cursor-pointer hover:underline">
+                              {formatSubjectPreview(subject.subject_number)}
+                            </span>
+                            <div className="absolute left-0 top-full mt-1 z-50 hidden group-hover:block bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap shadow-lg">
+                              {subject.subject_number}
+                            </div>
+                          </div>
                         </Link>
-                        <p
-                          className="max-w-[180px] truncate whitespace-nowrap text-xs text-slate-500"
-                          title={subject.category_name ?? '-'}
-                        >
+                        <p className="max-w-[180px] truncate whitespace-nowrap text-xs text-slate-500">
                           {subject.category_name ?? '-'}
                         </p>
                       </td>
                       <td className="w-[180px] overflow-hidden px-4 py-3 text-sm">
                         {subject.customer_name ? (
                           <>
-                            <p
-                              className="max-w-[210px] truncate whitespace-nowrap font-medium text-slate-900"
-                              title={subject.customer_name}
-                            >
+                            <p className="max-w-[210px] truncate whitespace-nowrap font-medium text-slate-900">
                               {truncateText(subject.customer_name, 20)}
                             </p>
-                            <p className="max-w-[210px] truncate whitespace-nowrap text-xs text-slate-500" title={subject.customer_phone ?? ''}>
+                            <p className="max-w-[210px] truncate whitespace-nowrap text-xs text-slate-500">
                               {subject.customer_phone ?? ''}
                             </p>
                           </>
                         ) : (
-                          <span className="max-w-[210px] truncate whitespace-nowrap italic text-slate-400" title="Walk-in">Walk-in</span>
+                          <span className="max-w-[210px] truncate whitespace-nowrap italic text-slate-400">Walk-in</span>
                         )}
                       </td>
                       <td className="w-[120px] overflow-hidden px-4 py-3 text-sm">
-                        <p
-                          className="max-w-[120px] truncate whitespace-nowrap font-medium text-slate-900"
-                          title={subject.source_name}
-                        >
+                        <p className="max-w-[120px] truncate whitespace-nowrap font-medium text-slate-900">
                           {truncateText(subject.source_name, 12)}
                         </p>
-                        <p
-                          className="max-w-[120px] truncate whitespace-nowrap text-xs text-slate-500"
-                          title={subject.source_type === 'brand' ? 'Brand' : 'Dealer'}
-                        >
+                        <p className="max-w-[120px] truncate whitespace-nowrap text-xs text-slate-500">
                           {subject.source_type === 'brand' ? 'Brand' : 'Dealer'}
                         </p>
                       </td>
@@ -507,7 +497,7 @@ export default function SubjectsDashboardPage() {
                       </td>
                       <td className="w-[130px] overflow-hidden px-4 py-3 text-sm">
                         {subject.assigned_technician_name ? (
-                          <p className="max-w-[110px] truncate whitespace-nowrap font-medium text-slate-900" title={subject.assigned_technician_name}>
+                          <p className="max-w-[110px] truncate whitespace-nowrap font-medium text-slate-900">
                             {subject.assigned_technician_name}
                           </p>
                         ) : (
@@ -517,15 +507,12 @@ export default function SubjectsDashboardPage() {
                         )}
                       </td>
                       <td className="w-[130px] overflow-hidden px-4 py-3">
-                        <span
-                          className={`inline-flex max-w-[120px] truncate whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${serviceTypeMeta.className}`}
-                          title={serviceTypeMeta.label}
-                        >
+                        <span className={`inline-flex max-w-[120px] truncate whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${serviceTypeMeta.className}`}>
                           {serviceTypeMeta.label}
                         </span>
                       </td>
                       <td className="w-[110px] overflow-hidden px-4 py-3 text-sm text-slate-600">
-                        <span className="max-w-[90px] truncate whitespace-nowrap" title={formatDate(subject.allocated_date)}>
+                        <span className="max-w-[90px] truncate whitespace-nowrap">
                           {formatDate(subject.allocated_date)}
                         </span>
                       </td>

@@ -3,6 +3,24 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-17 09:52:00 +05:30] Remove Native title Tooltips from Subjects Table
+
+- Summary: Replaced all browser-native `title=` attributes in the subjects list table with pure Tailwind CSS custom tooltips. Subject number now uses the `group`/`group-hover:block` pattern with a dark styled box. All other cells had their `title` props removed entirely.
+- Work done:
+  - Subject number cell: replaced old `group relative block` Link + truncate span with explicit `title` with new `relative group` wrapper div; tooltip renders as an absolute `bg-gray-900 text-white` box below the span on hover.
+  - Removed subject number Link duplication — prefetch handlers remain on the new Link wrapping the subject number div and on the View button.
+  - Removed `title` from: category name, customer name, customer phone, Walk-in span, source name, source type, assigned technician name, service type badge, allocated date span.
+  - Zero `title=` attributes remain anywhere in `subjects/page.tsx`.
+- Files changed:
+  - `web/app/dashboard/subjects/page.tsx`
+  - `doc/WORK_LOG.md`
+- Verification:
+  - No TypeScript errors.
+  - `npm run build` passed — all routes compiled successfully.
+- Issues encountered: None.
+- Next:
+  - None.
+
 ## [2026-03-17 09:45:58 +05:30] Comprehensive Activity Timeline – All Events Tracked
 
 - Summary: Extended the subject timeline from status-only tracking to a full activity audit log covering technician assignment, reassignment, unassignment, rescheduling, and priority changes — all displayed with colour-coded icons on the detail page.
