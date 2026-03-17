@@ -397,11 +397,44 @@ export default function SubjectsDashboardPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
-                <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-sm text-slate-500">
-                    Loading subjects...
-                  </td>
-                </tr>
+                Array.from({ length: 5 }).map((_, index) => (
+                  <tr key={`subject-skeleton-${index}`} className="animate-pulse">
+                    <td className="px-4 py-3">
+                      <div className="h-4 w-24 rounded bg-slate-200" />
+                      <div className="mt-2 h-3 w-16 rounded bg-slate-100" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-4 w-28 rounded bg-slate-200" />
+                      <div className="mt-2 h-3 w-20 rounded bg-slate-100" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-4 w-24 rounded bg-slate-200" />
+                      <div className="mt-2 h-3 w-14 rounded bg-slate-100" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-6 w-20 rounded-full bg-slate-200" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-6 w-24 rounded-full bg-slate-200" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-6 w-24 rounded-full bg-slate-200" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-6 w-24 rounded-full bg-slate-200" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-4 w-20 rounded bg-slate-200" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-14 rounded-md bg-slate-200" />
+                        <div className="h-8 w-14 rounded-md bg-slate-200" />
+                        <div className="h-8 w-8 rounded-md bg-slate-200" />
+                      </div>
+                    </td>
+                  </tr>
+                ))
               ) : error ? (
                 <tr>
                   <td colSpan={9} className="px-4 py-8 text-center text-sm text-rose-600">
