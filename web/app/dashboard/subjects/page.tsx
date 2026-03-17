@@ -9,6 +9,7 @@ import { useSubjects } from '@/hooks/useSubjects';
 import { useBrands } from '@/hooks/useBrands';
 import { useDealers } from '@/hooks/useDealers';
 import { useServiceCategories } from '@/hooks/useServiceCategories';
+import { useAssignableTechnicians } from '@/hooks/useSubjects';
 import { ROUTES } from '@/lib/constants/routes';
 import { SUBJECT_PRIORITY_OPTIONS, SUBJECT_QUERY_KEYS, SUBJECT_SOURCE_OPTIONS, SUBJECT_STATUS_OPTIONS } from '@/modules/subjects/subject.constants';
 import { getSubjectDetails } from '@/modules/subjects/subject.service';
@@ -84,9 +85,12 @@ export default function SubjectsDashboardPage() {
   const { can } = usePermission();
   const queryClient = useQueryClient();
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [assignmentDraftById, setAssignmentDraftById] = useState<Record<string, string>>({});
+  const [assigningSubjectId, setAssigningSubjectId] = useState<string | null>(null);
   const brands = useBrands();
   const dealers = useDealers();
   const categories = useServiceCategories();
+  const techniciansQuery = useAssignableTechnicians();
   const {
     subjects,
     pagination,
@@ -113,6 +117,7 @@ export default function SubjectsDashboardPage() {
     setToDate,
     setPage,
     setPageSize,
+    quickAssignSubjectMutation,
   } = useSubjects();
 
   const advancedFilterCount = [
@@ -141,6 +146,25 @@ export default function SubjectsDashboardPage() {
       queryFn: () => getSubjectDetails(subjectId),
       staleTime: 1000 * 60 * 5,
     });
+  }
+
+  const technicianOptions = techniciansQuery.data?.ok ? techniciansQuery.data.data : [];
+
+  async function handleQuickAssign(subjectId: string, technicianId: string) {
+    setAssigningSubjectId(subjectId);
+    try {
+      await quickAssignSubjectMutation.mutateAsync({
+        subjectId,
+        technicianId: technicianId || undefined,
+      });
+      setAssignmentDraftById((prev) => {
+        const next = { ...prev };
+        delete next[subjectId];
+        return next;
+      });
+    } finally {
+      setAssigningSubjectId(null);
+    }
   }
 
   return (
@@ -370,7 +394,7 @@ export default function SubjectsDashboardPage() {
                 <th className="w-[150px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Source</th>
                 <th className="w-[110px] px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-600">Priority</th>
                 <th className="w-[130px] px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-600">Status</th>
-                <th className="w-[150px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Assigned To</th>
+                <th className="w-[250px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Assigned To</th>
                 <th className="w-[150px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Service Type</th>
                 <th className="w-[120px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Date</th>
                 <th className="w-20 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Actions</th>
@@ -493,8 +517,39 @@ export default function SubjectsDashboardPage() {
                           {statusMeta.label}
                         </span>
                       </td>
-                      <td className="w-[150px] px-4 py-3 text-sm">
-                        {subject.assigned_technician_name ? (
+                      <td className="w-[250px] px-4 py-3 text-sm">
+                        {can('subject:update') ? (
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={assignmentDraftById[subject.id] ?? subject.assigned_technician_id ?? ''}
+                              onChange={(event) => {
+                                const selectedId = event.target.value;
+                                setAssignmentDraftById((prev) => ({ ...prev, [subject.id]: selectedId }));
+                              }}
+                              className="w-40 rounded-md border border-slate-300 px-2 py-1.5 text-xs text-slate-700 focus:border-blue-500 focus:outline-none"
+                              disabled={assigningSubjectId === subject.id || techniciansQuery.isLoading}
+                            >
+                              <option value="">Unassigned</option>
+                              {technicianOptions.map((technician) => (
+                                <option key={technician.id} value={technician.id}>
+                                  {technician.display_name} ({technician.technician_code})
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => handleQuickAssign(subject.id, assignmentDraftById[subject.id] ?? subject.assigned_technician_id ?? '')}
+                              disabled={
+                                assigningSubjectId === subject.id ||
+                                techniciansQuery.isLoading ||
+                                (assignmentDraftById[subject.id] ?? subject.assigned_technician_id ?? '') === (subject.assigned_technician_id ?? '')
+                              }
+                              className="inline-flex whitespace-nowrap rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {assigningSubjectId === subject.id ? 'Saving...' : 'Assign'}
+                            </button>
+                          </div>
+                        ) : subject.assigned_technician_name ? (
                           <>
                             <p
                               className="max-w-[120px] truncate whitespace-nowrap font-medium text-slate-900"

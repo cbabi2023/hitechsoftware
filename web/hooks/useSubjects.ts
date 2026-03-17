@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { createSubjectTicket, getSubjectDetails, getSubjects, removeSubject, updateSubjectRecord } from '@/modules/subjects/subject.service';
+import { assignSubjectToTechnician, createSubjectTicket, getSubjectDetails, getSubjects, removeSubject, updateSubjectRecord } from '@/modules/subjects/subject.service';
 import { SUBJECT_DEFAULT_PAGE_SIZE, SUBJECT_QUERY_KEYS } from '@/modules/subjects/subject.constants';
 import type { CreateSubjectInput, SubjectListFilters, UpdateSubjectInput } from '@/modules/subjects/subject.types';
 import { getAssignableTechnicians } from '@/modules/technicians/technician.service';
@@ -78,6 +78,22 @@ export function useSubjects() {
     },
   });
 
+  const quickAssignSubjectMutation = useMutation({
+    mutationFn: ({ subjectId, technicianId }: { subjectId: string; technicianId?: string }) =>
+      assignSubjectToTechnician(subjectId, technicianId),
+    onSuccess: (result) => {
+      if (result.ok) {
+        toast.success('Technician assignment updated');
+        queryClient.invalidateQueries({ queryKey: SUBJECT_QUERY_KEYS.all });
+      } else {
+        toast.error(result.error.message);
+      }
+    },
+    onError: () => {
+      toast.error('Failed to update assignment');
+    },
+  });
+
   return {
     subjects: query.data?.ok ? query.data.data.data : [],
     pagination: query.data?.ok
@@ -111,6 +127,7 @@ export function useSubjects() {
     createSubjectMutation,
     updateSubjectMutation,
     deleteSubjectMutation,
+    quickAssignSubjectMutation,
     setSearch: (value: string) => {
       setSearchInput(value);
       setPage(1);

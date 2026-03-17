@@ -3,6 +3,35 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-17 09:21:19 +05:30] Add Quick Technician Assignment UX on Subjects List
+
+- Summary: Implemented direct technician assignment from the subjects list with a simple row-level select + assign flow and clearer in-row state feedback.
+- Work done:
+  - Added dedicated repository method to update only `assigned_technician_id` for a subject.
+  - Added service function `assignSubjectToTechnician` for quick assign/unassign from list context.
+  - Added `quickAssignSubjectMutation` in `useSubjects` hook with success/error toasts and list invalidation.
+  - Updated subjects list `Assigned To` column to support inline assignment UX for users with `subject:update` permission:
+    - Technician dropdown per row.
+    - `Assign` button per row.
+    - `Saving...` row-level state while mutation runs.
+    - Button auto-disabled when selection has not changed.
+    - Supports assigning and unassigning (`Unassigned` option).
+  - Kept read-only display for users without update permission.
+- Files changed:
+  - web/repositories/subject.repository.ts
+  - web/modules/subjects/subject.service.ts
+  - web/hooks/useSubjects.ts
+  - web/app/dashboard/subjects/page.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - `get_errors` returned no issues for modified files.
+  - `npm run build` passed for the web workspace.
+- Issues:
+  - None
+- Next:
+  - Browser QA: verify assign/unassign flow for super admin and office staff.
+  - Browser QA: verify row-level state (`Saving...`, disabled assign on unchanged value) behaves as expected.
+
 ## [2026-03-17 09:18:24 +05:30] Remove Heavy Technician List Fetch from Subject Detail Load Path
 
 - Summary: Further reduced subject detail load latency by replacing full technician-list hydration with single-technician lookup and extending detail prefetch triggers beyond mouse hover.

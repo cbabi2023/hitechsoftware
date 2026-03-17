@@ -166,6 +166,18 @@ export async function updateSubject(id: string, input: UpdateSubjectInput) {
     .single<{ id: string }>();
 }
 
+export async function assignSubjectTechnician(subjectId: string, technicianId: string | null) {
+  return supabase
+    .from('subjects')
+    .update({
+      assigned_technician_id: technicianId,
+    })
+    .eq('id', subjectId)
+    .eq('is_deleted', false)
+    .select('id,assigned_technician_id')
+    .single<{ id: string; assigned_technician_id: string | null }>();
+}
+
 export async function getSubjectById(id: string) {
   return supabase
     .from('subjects')

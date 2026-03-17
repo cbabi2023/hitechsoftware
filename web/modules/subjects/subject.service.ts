@@ -1,4 +1,4 @@
-import { createSubject, deleteSubject, getSubjectById, getSubjectTimeline, listSubjects, updateSubject } from '@/repositories/subject.repository';
+import { assignSubjectTechnician, createSubject, deleteSubject, getSubjectById, getSubjectTimeline, listSubjects, updateSubject } from '@/repositories/subject.repository';
 import { getAssignableTechnicianById, getAssignableTechnicians } from '@/modules/technicians/technician.service';
 import type { ServiceResult } from '@/types/common.types';
 import type {
@@ -311,4 +311,26 @@ export async function removeSubject(id: string): Promise<ServiceResult<{ id: str
   }
 
   return { ok: true, data: result.data };
+}
+
+export async function assignSubjectToTechnician(subjectId: string, technicianId?: string): Promise<ServiceResult<{ id: string; assigned_technician_id: string | null }>> {
+  const result = await assignSubjectTechnician(subjectId, technicianId ?? null);
+
+  if (result.error || !result.data) {
+    return {
+      ok: false,
+      error: {
+        message: result.error?.message ?? 'Failed to update subject assignment',
+        code: result.error?.code,
+      },
+    };
+  }
+
+  return {
+    ok: true,
+    data: {
+      id: result.data.id,
+      assigned_technician_id: result.data.assigned_technician_id,
+    },
+  };
 }
