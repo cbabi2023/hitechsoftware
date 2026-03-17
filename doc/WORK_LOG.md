@@ -3,6 +3,31 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-17 09:05:25 +05:30] Tighten Subjects Table Column Widths and Truncation
+
+- Summary: Updated the subjects list table to enforce fixed column behavior, nowrap badge/text rendering, and tooltip-backed truncation so rows stay visually compact and predictable.
+- Work done:
+  - Added `truncateText()` helper for deterministic character-limit truncation with ellipsis.
+  - Subject column: set minimum width, forced subject number to single-line `whitespace-nowrap`, kept full code visible without truncation.
+  - Customer column: truncated customer name to 15 chars with ellipsis, kept phone below in small gray text with nowrap/truncate handling.
+  - Source column: truncated source name to 12 chars with ellipsis and kept Brand/Dealer label below as small gray text.
+  - Priority and Status columns: applied fixed widths and centered badge-only layout.
+  - Assigned To column: truncated technician name at 12 chars with ellipsis; kept Unassigned badge behavior.
+  - Service Type column: forced badge text to single line with `whitespace-nowrap`.
+  - Date column: fixed width and nowrap rendering to avoid line wrapping.
+  - Actions column: kept fixed narrow width.
+  - Added `title` tooltips on truncated values so full text is visible on hover.
+- Files changed:
+  - web/app/dashboard/subjects/page.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - `get_errors` returned no issues for `web/app/dashboard/subjects/page.tsx`.
+  - `npm run build` passed for the web workspace.
+- Issues:
+  - None
+- Next:
+  - Browser QA: verify hover tooltips on truncated values and confirm no wrapping regressions at common viewport widths.
+
 ## [2026-03-17 09:02:51 +05:30] Standardize Table Actions and Move Edit/Delete to Detail Pages
 
 - Summary: Refactored table row actions across subjects, customers, team, and master-data modules to remove row dropdowns, keep view-only table actions where requested, and shift edit/delete controls to detail pages with permission guards.

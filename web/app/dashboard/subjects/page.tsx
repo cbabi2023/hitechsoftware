@@ -22,6 +22,14 @@ function formatStatus(value: string) {
   return value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+function truncateText(value: string, limit: number) {
+  if (value.length <= limit) {
+    return value;
+  }
+
+  return `${value.slice(0, limit)}...`;
+}
+
 function getPriorityMeta(priority: SubjectListItem['priority']) {
   switch (priority) {
     case 'critical':
@@ -346,15 +354,15 @@ export default function SubjectsDashboardPage() {
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Subject</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Customer</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Source</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Priority</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Assigned To</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Service Type</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Date</th>
-                <th className="w-24 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Actions</th>
+                <th className="min-w-[150px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Subject</th>
+                <th className="w-[180px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Customer</th>
+                <th className="w-[150px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Source</th>
+                <th className="w-[110px] px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-600">Priority</th>
+                <th className="w-[130px] px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-600">Status</th>
+                <th className="w-[150px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Assigned To</th>
+                <th className="w-[150px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Service Type</th>
+                <th className="w-[120px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Date</th>
+                <th className="w-20 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -418,61 +426,101 @@ export default function SubjectsDashboardPage() {
                       key={subject.id}
                       className={`hover:bg-slate-50/70${needsAttentionBorder ? ' border-l-4 border-l-rose-400' : ''}`}
                     >
-                      <td className="px-4 py-3 text-sm">
+                      <td className="min-w-[150px] px-4 py-3 text-sm">
                         <Link
                           href={ROUTES.DASHBOARD_SUBJECTS_DETAIL(subject.id)}
-                          className="font-bold text-blue-600 hover:underline"
+                          className="block whitespace-nowrap font-bold text-blue-600 hover:underline"
+                          title={subject.subject_number}
                         >
                           {subject.subject_number}
                         </Link>
-                        <p className="mt-0.5 text-xs text-slate-500">{subject.category_name ?? '-'}</p>
+                        <p
+                          className="max-w-[130px] truncate text-xs text-slate-500"
+                          title={subject.category_name ?? '-'}
+                        >
+                          {subject.category_name ?? '-'}
+                        </p>
                       </td>
-                      <td className="px-4 py-3 text-sm">
+                      <td className="w-[180px] px-4 py-3 text-sm">
                         {subject.customer_name ? (
                           <>
-                            <p className="font-medium text-slate-900">{subject.customer_name}</p>
-                            <p className="mt-0.5 text-xs text-slate-500">{subject.customer_phone ?? ''}</p>
+                            <p
+                              className="max-w-[150px] truncate whitespace-nowrap font-medium text-slate-900"
+                              title={subject.customer_name}
+                            >
+                              {truncateText(subject.customer_name, 15)}
+                            </p>
+                            <p className="max-w-[150px] truncate whitespace-nowrap text-xs text-slate-500" title={subject.customer_phone ?? ''}>
+                              {subject.customer_phone ?? ''}
+                            </p>
                           </>
                         ) : (
-                          <span className="italic text-slate-400">Walk-in</span>
+                          <span className="max-w-[150px] truncate whitespace-nowrap italic text-slate-400" title="Walk-in">Walk-in</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm">
-                        <p className="font-medium text-slate-900">{subject.source_name}</p>
-                        <p className="mt-0.5 text-xs text-slate-500">{subject.source_type === 'brand' ? 'Brand' : 'Dealer'}</p>
+                      <td className="w-[150px] px-4 py-3 text-sm">
+                        <p
+                          className="max-w-[120px] truncate whitespace-nowrap font-medium text-slate-900"
+                          title={subject.source_name}
+                        >
+                          {truncateText(subject.source_name, 12)}
+                        </p>
+                        <p
+                          className="max-w-[120px] truncate whitespace-nowrap text-xs text-slate-500"
+                          title={subject.source_type === 'brand' ? 'Brand' : 'Dealer'}
+                        >
+                          {subject.source_type === 'brand' ? 'Brand' : 'Dealer'}
+                        </p>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${priorityMeta.className}`}>
+                      <td className="w-[110px] px-4 py-3 text-center">
+                        <span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${priorityMeta.className}`}>
                           {priorityMeta.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusMeta.className}`}>
+                      <td className="w-[130px] px-4 py-3 text-center">
+                        <span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${statusMeta.className}`}>
                           {statusMeta.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm">
+                      <td className="w-[150px] px-4 py-3 text-sm">
                         {subject.assigned_technician_name ? (
                           <>
-                            <p className="font-medium text-slate-900">{subject.assigned_technician_name}</p>
-                            <p className="mt-0.5 text-xs text-slate-500">{subject.assigned_technician_code ?? 'Assigned technician'}</p>
+                            <p
+                              className="max-w-[120px] truncate whitespace-nowrap font-medium text-slate-900"
+                              title={subject.assigned_technician_name}
+                            >
+                              {truncateText(subject.assigned_technician_name, 12)}
+                            </p>
+                            <p
+                              className="max-w-[120px] truncate whitespace-nowrap text-xs text-slate-500"
+                              title={subject.assigned_technician_code ?? 'Assigned technician'}
+                            >
+                              {subject.assigned_technician_code ?? 'Assigned technician'}
+                            </p>
                           </>
                         ) : (
-                          <span className="inline-flex rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-600">
+                          <span className="inline-flex whitespace-nowrap rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-600">
                             Unassigned
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${serviceTypeMeta.className}`}>
+                      <td className="w-[150px] px-4 py-3">
+                        <span
+                          className={`inline-flex max-w-[120px] truncate whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${serviceTypeMeta.className}`}
+                          title={serviceTypeMeta.label}
+                        >
                           {serviceTypeMeta.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-slate-600">{formatDate(subject.allocated_date)}</td>
-                      <td className="w-24 px-4 py-3">
+                      <td className="w-[120px] px-4 py-3 text-sm text-slate-600">
+                        <span className="max-w-[90px] truncate whitespace-nowrap" title={formatDate(subject.allocated_date)}>
+                          {formatDate(subject.allocated_date)}
+                        </span>
+                      </td>
+                      <td className="w-20 px-4 py-3">
                         <Link
                           href={ROUTES.DASHBOARD_SUBJECTS_DETAIL(subject.id)}
-                          className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+                          className="inline-flex items-center whitespace-nowrap rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
                         >
                           View
                         </Link>
