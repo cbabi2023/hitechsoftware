@@ -54,8 +54,62 @@ export default function SubjectDetailPage() {
 
   if (query.isLoading) {
     return (
-      <div className="p-6">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-600">Loading subject...</div>
+      <div className="space-y-4 p-6">
+        <div className="animate-pulse rounded-xl border border-slate-200 bg-white p-5">
+          <div className="h-7 w-56 rounded bg-slate-200" />
+          <div className="mt-2 h-4 w-80 rounded bg-slate-100" />
+          <div className="mt-3 flex gap-2">
+            <div className="h-6 w-28 rounded-full bg-slate-200" />
+            <div className="h-6 w-24 rounded-full bg-slate-200" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={`subject-summary-skeleton-${index}`} className="animate-pulse rounded-xl border border-slate-200 bg-white p-4">
+              <div className="h-3 w-20 rounded bg-slate-100" />
+              <div className="mt-2 h-4 w-28 rounded bg-slate-200" />
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+          <section className="animate-pulse rounded-xl border border-slate-200 bg-white p-5 xl:col-span-2">
+            <div className="mb-4 h-5 w-40 rounded bg-slate-200" />
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <div key={`service-info-skeleton-${index}`} className="h-4 rounded bg-slate-100" />
+              ))}
+            </div>
+          </section>
+
+          <section className="animate-pulse rounded-xl border border-slate-200 bg-white p-5">
+            <div className="mb-4 h-5 w-32 rounded bg-slate-200" />
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div key={`status-info-skeleton-${index}`} className="h-4 rounded bg-slate-100" />
+              ))}
+            </div>
+          </section>
+
+          <section className="animate-pulse rounded-xl border border-slate-200 bg-white p-5 xl:col-span-2">
+            <div className="mb-4 h-5 w-36 rounded bg-slate-200" />
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <div key={`product-info-skeleton-${index}`} className="h-4 rounded bg-slate-100" />
+              ))}
+            </div>
+          </section>
+
+          <section className="animate-pulse rounded-xl border border-slate-200 bg-white p-5">
+            <div className="mb-4 h-5 w-28 rounded bg-slate-200" />
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div key={`timeline-skeleton-${index}`} className="h-16 rounded-lg bg-slate-100" />
+              ))}
+            </div>
+          </section>
+        </div>
       </div>
     );
   }

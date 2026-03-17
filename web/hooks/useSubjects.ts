@@ -159,6 +159,7 @@ export function useSubjectDetail(id: string) {
   return useQuery({
     queryKey: SUBJECT_QUERY_KEYS.detail(id),
     queryFn: () => getSubjectDetails(id),
+    staleTime: 1000 * 60 * 5,
     enabled: Boolean(id),
   });
 }

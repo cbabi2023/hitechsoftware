@@ -3,6 +3,31 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-17 09:16:39 +05:30] Improve Subject Detail Load Speed with Prefetch, Parallel Fetching, and Skeletons
+
+- Summary: Reduced perceived subject detail load delay by adding list-page hover prefetch, parallelizing detail service requests, enabling detail query cache reuse, and rendering immediate skeleton placeholders.
+- Work done:
+  - Subjects list page: added TanStack Query `prefetchQuery` on View button hover (`onMouseEnter`) so detail data is requested before navigation.
+  - Detail query cache key alignment: updated subject detail query key to `['subject', id]` and reused this key for prefetch.
+  - Subject detail hook: added `staleTime` of 5 minutes so back/forth navigation reuses cached detail results.
+  - Subject detail service: replaced sequential detail fetch flow with `Promise.all` for `getSubjectById`, `getSubjectTimeline`, and assignable technicians lookup.
+  - Subject detail page UI: replaced text-only loading state with immediate `animate-pulse` skeleton layout for header/status, summary cards, service info, product info, and timeline sections.
+- Files changed:
+  - web/app/dashboard/subjects/page.tsx
+  - web/modules/subjects/subject.constants.ts
+  - web/hooks/useSubjects.ts
+  - web/modules/subjects/subject.service.ts
+  - web/app/dashboard/subjects/[id]/page.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - `get_errors` returned no issues for all modified files.
+  - `npm run build` passed for the web workspace.
+- Issues:
+  - None
+- Next:
+  - Browser QA: verify hover-prefetch behavior by hovering View, then clicking and confirming faster data paint.
+  - Browser QA: verify skeleton appears instantly on cold navigation before data resolves.
+
 ## [2026-03-17 09:05:25 +05:30] Tighten Subjects Table Column Widths and Truncation
 
 - Summary: Updated the subjects list table to enforce fixed column behavior, nowrap badge/text rendering, and tooltip-backed truncation so rows stay visually compact and predictable.

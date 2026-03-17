@@ -193,7 +193,12 @@ export async function updateSubjectRecord(id: string, input: UpdateSubjectInput)
 }
 
 export async function getSubjectDetails(id: string): Promise<ServiceResult<SubjectDetail>> {
-  const subjectResult = await getSubjectById(id);
+  const [subjectResult, timelineResult, technicianResult] = await Promise.all([
+    getSubjectById(id),
+    getSubjectTimeline(id),
+    getAssignableTechnicians(),
+  ]);
+
   if (subjectResult.error || !subjectResult.data) {
     return {
       ok: false,
@@ -201,7 +206,6 @@ export async function getSubjectDetails(id: string): Promise<ServiceResult<Subje
     };
   }
 
-  const timelineResult = await getSubjectTimeline(id);
   if (timelineResult.error) {
     return { ok: false, error: { message: timelineResult.error.message, code: timelineResult.error.code } };
   }
@@ -240,7 +244,6 @@ export async function getSubjectDetails(id: string): Promise<ServiceResult<Subje
     service_categories?: { name?: string | null } | null;
   };
 
-  const technicianResult = await getAssignableTechnicians();
   const assignedTechnician =
     technicianResult.ok && typed.assigned_technician_id
       ? technicianResult.data.find((technician) => technician.id === typed.assigned_technician_id) ?? null

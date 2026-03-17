@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Filter, Plus } from 'lucide-react';
 import { usePermission } from '@/hooks/usePermission';
@@ -9,7 +10,8 @@ import { useBrands } from '@/hooks/useBrands';
 import { useDealers } from '@/hooks/useDealers';
 import { useServiceCategories } from '@/hooks/useServiceCategories';
 import { ROUTES } from '@/lib/constants/routes';
-import { SUBJECT_PRIORITY_OPTIONS, SUBJECT_SOURCE_OPTIONS, SUBJECT_STATUS_OPTIONS } from '@/modules/subjects/subject.constants';
+import { SUBJECT_PRIORITY_OPTIONS, SUBJECT_QUERY_KEYS, SUBJECT_SOURCE_OPTIONS, SUBJECT_STATUS_OPTIONS } from '@/modules/subjects/subject.constants';
+import { getSubjectDetails } from '@/modules/subjects/subject.service';
 import type { SubjectListItem } from '@/modules/subjects/subject.types';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
@@ -80,6 +82,7 @@ function getServiceTypeMeta(subject: SubjectListItem) {
 
 export default function SubjectsDashboardPage() {
   const { can } = usePermission();
+  const queryClient = useQueryClient();
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const brands = useBrands();
   const dealers = useDealers();
@@ -130,6 +133,14 @@ export default function SubjectsDashboardPage() {
     setPriority('all');
     setFromDate('');
     setToDate('');
+  }
+
+  function handlePrefetch(subjectId: string) {
+    queryClient.prefetchQuery({
+      queryKey: SUBJECT_QUERY_KEYS.detail(subjectId),
+      queryFn: () => getSubjectDetails(subjectId),
+      staleTime: 1000 * 60 * 5,
+    });
   }
 
   return (
@@ -520,6 +531,7 @@ export default function SubjectsDashboardPage() {
                       <td className="w-20 px-4 py-3">
                         <Link
                           href={ROUTES.DASHBOARD_SUBJECTS_DETAIL(subject.id)}
+                          onMouseEnter={() => handlePrefetch(subject.id)}
                           className="inline-flex items-center whitespace-nowrap rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
                         >
                           View
