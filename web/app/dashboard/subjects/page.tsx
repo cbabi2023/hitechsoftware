@@ -532,6 +532,8 @@ export default function SubjectsDashboardPage() {
                         <Link
                           href={ROUTES.DASHBOARD_SUBJECTS_DETAIL(subject.id)}
                           onMouseEnter={() => handlePrefetch(subject.id)}
+                          onFocus={() => handlePrefetch(subject.id)}
+                          onTouchStart={() => handlePrefetch(subject.id)}
                           className="inline-flex items-center whitespace-nowrap rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
                         >
                           View

@@ -1,5 +1,5 @@
 import { createSubject, deleteSubject, getSubjectById, getSubjectTimeline, listSubjects, updateSubject } from '@/repositories/subject.repository';
-import { getAssignableTechnicians } from '@/modules/technicians/technician.service';
+import { getAssignableTechnicianById, getAssignableTechnicians } from '@/modules/technicians/technician.service';
 import type { ServiceResult } from '@/types/common.types';
 import type {
   CreateSubjectInput,
@@ -193,10 +193,9 @@ export async function updateSubjectRecord(id: string, input: UpdateSubjectInput)
 }
 
 export async function getSubjectDetails(id: string): Promise<ServiceResult<SubjectDetail>> {
-  const [subjectResult, timelineResult, technicianResult] = await Promise.all([
+  const [subjectResult, timelineResult] = await Promise.all([
     getSubjectById(id),
     getSubjectTimeline(id),
-    getAssignableTechnicians(),
   ]);
 
   if (subjectResult.error || !subjectResult.data) {
@@ -244,10 +243,11 @@ export async function getSubjectDetails(id: string): Promise<ServiceResult<Subje
     service_categories?: { name?: string | null } | null;
   };
 
-  const assignedTechnician =
-    technicianResult.ok && typed.assigned_technician_id
-      ? technicianResult.data.find((technician) => technician.id === typed.assigned_technician_id) ?? null
-      : null;
+  const assignedTechnicianResult = typed.assigned_technician_id
+    ? await getAssignableTechnicianById(typed.assigned_technician_id)
+    : { ok: true as const, data: null };
+
+  const assignedTechnician = assignedTechnicianResult.ok ? assignedTechnicianResult.data : null;
 
   return {
     ok: true,

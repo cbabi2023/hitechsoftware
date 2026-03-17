@@ -40,6 +40,28 @@ export async function listTechnicianRowsByIds(ids: string[]) {
     .in('id', ids);
 }
 
+export async function getTechnicianAssignmentById(id: string) {
+  const [profileResult, technicianResult] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id,display_name,is_active,is_deleted')
+      .eq('id', id)
+      .single<{ id: string; display_name: string; is_active: boolean; is_deleted: boolean }>(),
+    supabase
+      .from('technicians')
+      .select('id,technician_code,is_active,is_deleted')
+      .eq('id', id)
+      .single<{ id: string; technician_code: string; is_active: boolean; is_deleted: boolean }>(),
+  ]);
+
+  return {
+    profile: profileResult.data,
+    profileError: profileResult.error,
+    technician: technicianResult.data,
+    technicianError: technicianResult.error,
+  };
+}
+
 export async function updateProfile(id: string, input: UpdateTeamMemberInput) {
   const payload: Record<string, string | boolean | null | undefined> = {
     display_name: input.display_name,

@@ -3,6 +3,29 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-17 09:18:24 +05:30] Remove Heavy Technician List Fetch from Subject Detail Load Path
+
+- Summary: Further reduced subject detail load latency by replacing full technician-list hydration with single-technician lookup and extending detail prefetch triggers beyond mouse hover.
+- Work done:
+  - Added `getTechnicianAssignmentById` repository function to fetch only one profile/technician pair by id.
+  - Added `getAssignableTechnicianById` service function to validate and map that single assignment safely.
+  - Updated `getSubjectDetails` to stop loading all assignable technicians and instead fetch only assigned technician details for the current subject.
+  - Kept detail subject/timeline parallel loading and removed unnecessary heavy dependency from this path.
+  - Extended subjects-list detail prefetch trigger from hover-only to also run on focus and touch start (`onFocus`, `onTouchStart`) so fast click and mobile navigation benefit.
+- Files changed:
+  - web/repositories/technician.repository.ts
+  - web/modules/technicians/technician.service.ts
+  - web/modules/subjects/subject.service.ts
+  - web/app/dashboard/subjects/page.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - `get_errors` returned no issues for all modified files.
+  - `npm run build` passed for the web workspace.
+- Issues:
+  - None
+- Next:
+  - Browser QA: test detail open speed on mouse, keyboard, and touch interactions from the list page.
+
 ## [2026-03-17 09:16:39 +05:30] Improve Subject Detail Load Speed with Prefetch, Parallel Fetching, and Skeletons
 
 - Summary: Reduced perceived subject detail load delay by adding list-page hover prefetch, parallelizing detail service requests, enabling detail query cache reuse, and rendering immediate skeleton placeholders.

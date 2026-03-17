@@ -9,6 +9,7 @@ import type {
 import { createTeamMemberSchema, updateTeamMemberSchema } from '@/modules/technicians/technician.validation';
 import {
   deactivateTechnician,
+  getTechnicianAssignmentById,
   listTeamMembers,
   listTechnicianRowsByIds,
   updateProfile,
@@ -94,6 +95,42 @@ export async function getAssignableTechnicians(): Promise<ServiceResult<Assignab
         display_name: member.display_name,
         technician_code: member.technician?.technician_code ?? member.id,
       })),
+  };
+}
+
+export async function getAssignableTechnicianById(id: string): Promise<ServiceResult<AssignableTechnicianOption | null>> {
+  const result = await getTechnicianAssignmentById(id);
+
+  if (result.profileError || result.technicianError) {
+    return {
+      ok: false,
+      error: {
+        message: result.profileError?.message ?? result.technicianError?.message ?? 'Failed to load assigned technician',
+        code: result.profileError?.code ?? result.technicianError?.code,
+      },
+    };
+  }
+
+  if (!result.profile || !result.technician) {
+    return { ok: true, data: null };
+  }
+
+  if (
+    !result.profile.is_active ||
+    result.profile.is_deleted ||
+    !result.technician.is_active ||
+    result.technician.is_deleted
+  ) {
+    return { ok: true, data: null };
+  }
+
+  return {
+    ok: true,
+    data: {
+      id: result.profile.id,
+      display_name: result.profile.display_name,
+      technician_code: result.technician.technician_code,
+    },
   };
 }
 
