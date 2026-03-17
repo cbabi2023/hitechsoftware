@@ -3,6 +3,28 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-17 08:39:26 +05:30] Replace Subjects Action Dropdown with Inline Buttons
+
+- Summary: Removed the 3-dot dropdown from the subjects list actions column and replaced it with direct inline View, Edit, and Delete actions for better clarity and to avoid overflow clipping issues.
+- Work done:
+  - Removed dropdown-menu action logic from `web/app/dashboard/subjects/page.tsx`.
+  - Removed the hidden 3-dot action menu UI from the actions column.
+  - Added always-visible inline actions per row: View (blue), Edit (gray), Delete (red).
+  - Wrapped Delete action with `ProtectedComponent permission="subject:delete"` so only super admin users can see it.
+  - Kept the existing delete confirmation and row-level deleting state behavior.
+  - Left API documentation unchanged because this task is UI and permission-presentation only, with no API contract changes.
+- Files changed:
+  - web/app/dashboard/subjects/page.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - `get_errors` on `web/app/dashboard/subjects/page.tsx` returned no errors.
+  - `npm run build` passed for the web workspace.
+- Issues:
+  - None
+- Next:
+  - Browser QA: verify Delete button visibility only for super admin.
+  - Browser QA: verify no action clipping on narrow or scrollable table widths.
+
 ## [2026-03-17 08:32:12 +05:30] Configure Query Cache Defaults for Faster Return Navigation
 
 - Summary: Updated TanStack Query global defaults so previously loaded data remains fresh for 5 minutes and cached for 10 minutes, reducing refetches when navigating back to pages.
