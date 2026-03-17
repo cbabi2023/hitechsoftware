@@ -226,7 +226,7 @@ export async function getSubjectDetails(id: string): Promise<ServiceResult<Subje
     return { ok: false, error: { message: timelineResult.error.message, code: timelineResult.error.code } };
   }
 
-  const typed = subjectResult.data as {
+  const typed = subjectResult.data as unknown as {
     id: string;
     subject_number: string;
     source_type: 'brand' | 'dealer';
@@ -260,6 +260,18 @@ export async function getSubjectDetails(id: string): Promise<ServiceResult<Subje
     is_amc_service: boolean;
     is_warranty_service: boolean;
     billing_status: 'not_applicable' | 'due' | 'partially_paid' | 'paid' | 'waived';
+    en_route_at?: string | null;
+    arrived_at?: string | null;
+    work_started_at?: string | null;
+    completed_at?: string | null;
+    incomplete_at?: string | null;
+    incomplete_reason?: string | null;
+    incomplete_note?: string | null;
+    completion_proof_uploaded?: boolean;
+    completion_notes?: string | null;
+    rescheduled_date?: string | null;
+    spare_parts_requested?: string | null;
+    spare_parts_quantity?: number | null;
     created_at: string;
     created_by: string | null;
     assigned_by: string | null;
@@ -267,6 +279,17 @@ export async function getSubjectDetails(id: string): Promise<ServiceResult<Subje
     dealers?: { name?: string | null } | null;
     rejected_by_profile?: { display_name?: string | null } | null;
     service_categories?: { name?: string | null } | null;
+    subject_photos?: Array<{
+      id: string;
+      subject_id: string;
+      photo_type: string;
+      storage_path: string;
+      public_url: string;
+      uploaded_by: string;
+      uploaded_at: string;
+      file_size_bytes: number;
+      mime_type: string;
+    }> | null;
   };
 
   const assignedTechnicianResult = typed.assigned_technician_id
@@ -316,9 +339,32 @@ export async function getSubjectDetails(id: string): Promise<ServiceResult<Subje
       is_amc_service: typed.is_amc_service,
       is_warranty_service: typed.is_warranty_service,
       billing_status: typed.billing_status,
+      en_route_at: typed.en_route_at ?? null,
+      arrived_at: typed.arrived_at ?? null,
+      work_started_at: typed.work_started_at ?? null,
+      completed_at: typed.completed_at ?? null,
+      incomplete_at: typed.incomplete_at ?? null,
+      incomplete_reason: (typed.incomplete_reason as any) ?? null,
+      incomplete_note: typed.incomplete_note ?? null,
+      completion_proof_uploaded: typed.completion_proof_uploaded ?? false,
+      completion_notes: typed.completion_notes ?? null,
+      rescheduled_date: typed.rescheduled_date ?? null,
+      spare_parts_requested: typed.spare_parts_requested ?? null,
+      spare_parts_quantity: typed.spare_parts_quantity ?? null,
       created_at: typed.created_at,
       created_by: typed.created_by,
       assigned_by: typed.assigned_by,
+      photos: ((typed.subject_photos as any) ?? []).map((photo: any) => ({
+        id: photo.id,
+        subject_id: photo.subject_id,
+        photo_type: photo.photo_type,
+        storage_path: photo.storage_path,
+        public_url: photo.public_url,
+        uploaded_by: photo.uploaded_by,
+        uploaded_at: photo.uploaded_at,
+        file_size_bytes: photo.file_size_bytes,
+        mime_type: photo.mime_type,
+      })),
       timeline: ((timelineResult.data ?? []) as Array<{
         id: string;
         event_type: string;
