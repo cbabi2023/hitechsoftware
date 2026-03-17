@@ -3,6 +3,25 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-17 18:15:00 +05:30] Fix: Apply Job Workflow Migration to Supabase — Resolve 400 Error
+
+- Summary: Diagnosed and documented root cause of "column subjects.en_route_at does not exist" 400 error in superadmin. The `20260317_011_job_workflow.sql` migration was never applied to the live Supabase database, but `subject.repository.ts` already queries those columns. Also fixed a duplicate migration numbering conflict (both `technician_customer_visibility.sql` and `job_workflow.sql` were numbered `010`).
+- Work done:
+  - Identified root cause: migration not applied to Supabase — subjects table missing 13 new columns and `subject_photos` table does not exist
+  - Renamed `20260317_010_job_workflow.sql` → `20260317_011_job_workflow.sql` to resolve duplicate `010` file numbering
+  - Provided full SQL to apply in Supabase SQL editor immediately (no CLI required)
+  - Committed rename to git
+- Files changed:
+  - supabase/migrations/20260317_010_job_workflow.sql → supabase/migrations/20260317_011_job_workflow.sql (renamed)
+- Verification:
+  - Must run migration SQL in Supabase dashboard → SQL Editor to resolve 400 error
+  - After migration is applied, all subject list/detail queries will work with the new workflow columns
+- Issues:
+  - Duplicate migration number `010` (technician_customer_visibility + job_workflow) — resolved by renaming job_workflow to `011`
+- Next:
+  - Apply the full SQL from `20260317_011_job_workflow.sql` in Supabase SQL editor
+  - Verify subjects page loads without error after applying migration
+
 ## [2026-03-17 18:02:00 +05:30] Fix: Migrate UI Components from ShadCN to Tailwind CSS — Build Success
 
 - Summary: Resolved critical build failure by identifying missing ShadCN UI library and implementing pure Tailwind CSS replacement. Job workflow feature (created in previous session) was building but failing due to non-existent @/components/ui dependencies. Implemented modular Tailwind component library (button, dialog, form controls) following React best practices (individual TSX files per component type). Fixed type mismatches in service layer (subject_photos field casting, incomplete_reason enum), corrected auth hook import path, and added explicit TypeScript event handler types. Removed date-fms dependency with local formatDistanceToNow implementation. Project now builds successfully with zero TypeScript errors. All job workflow service/data layers verified intact and functional.
