@@ -7,7 +7,7 @@ import { useSubjectDetail } from '@/hooks/useSubjects';
 import { ROUTES } from '@/lib/constants/routes';
 
 function formatDate(value: string) {
-  return new Date(value).toLocaleString();
+  return new Date(value).toLocaleString('en-GB');
 }
 
 function formatStatus(value: string) {
@@ -19,7 +19,7 @@ function formatDateOnly(value: string | null) {
     return '-';
   }
 
-  return new Date(value).toLocaleDateString();
+  return new Date(value).toLocaleDateString('en-GB');
 }
 
 export default function SubjectDetailPage() {

@@ -58,6 +58,7 @@ export default function DashboardPage() {
       value: '-',
       icon: Package,
       href: ROUTES.DASHBOARD_INVENTORY,
+      isAvailable: false,
     },
   ];
 
@@ -71,27 +72,44 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {stats.map((item) => (
-          <Link
-            key={item.label}
-            href={item.href}
-            className="group rounded-2xl border border-ht-border bg-white p-5 shadow-sm transition hover:border-ht-border-blue hover:shadow-md"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-medium text-ht-text-500">{item.label}</p>
-                <p className="mt-2 text-3xl font-bold text-ht-text-900">{item.value}</p>
+        {stats.map((item) =>
+          item.isAvailable === false ? (
+            <div key={item.label} className="rounded-2xl border border-ht-border bg-white p-5 shadow-sm opacity-75">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-ht-text-500">{item.label}</p>
+                  <p className="mt-2 text-3xl font-bold text-ht-text-900">{item.value}</p>
+                </div>
+                <div className="rounded-lg bg-slate-100 p-2 text-slate-500">
+                  <item.icon size={18} />
+                </div>
               </div>
-              <div className="rounded-lg bg-ht-blue-50 p-2 text-ht-blue-600">
-                <item.icon size={18} />
+              <div className="mt-4 inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Coming soon
               </div>
             </div>
-            <div className="mt-4 flex items-center text-sm font-medium text-ht-blue-600 group-hover:text-ht-navy-800">
-              Open module
-              <ArrowRight size={16} className="ml-2" />
-            </div>
-          </Link>
-        ))}
+          ) : (
+            <Link
+              key={item.label}
+              href={item.href}
+              className="group rounded-2xl border border-ht-border bg-white p-5 shadow-sm transition hover:border-ht-border-blue hover:shadow-md"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-ht-text-500">{item.label}</p>
+                  <p className="mt-2 text-3xl font-bold text-ht-text-900">{item.value}</p>
+                </div>
+                <div className="rounded-lg bg-ht-blue-50 p-2 text-ht-blue-600">
+                  <item.icon size={18} />
+                </div>
+              </div>
+              <div className="mt-4 flex items-center text-sm font-medium text-ht-blue-600 group-hover:text-ht-navy-800">
+                Open module
+                <ArrowRight size={16} className="ml-2" />
+              </div>
+            </Link>
+          ),
+        )}
       </div>
 
       {customerCountQuery.isError ? (

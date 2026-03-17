@@ -32,14 +32,14 @@ interface DashboardLayoutProps {
 }
 
 const NAV_ITEMS = [
-  { icon: Home, label: 'Dashboard', href: ROUTES.DASHBOARD },
-  { icon: ClipboardList, label: 'Service Module', href: ROUTES.DASHBOARD_SUBJECTS },
-  { icon: Users, label: 'Customers', href: ROUTES.DASHBOARD_CUSTOMERS },
-  { icon: UserCog, label: 'Team', href: ROUTES.DASHBOARD_TEAM },
-  { icon: Package, label: 'Inventory', href: ROUTES.DASHBOARD_INVENTORY },
-  { icon: DollarSign, label: 'Billing', href: '#' },
-  { icon: BarChart3, label: 'Reports', href: '#' },
-  { icon: Settings, label: 'Settings', href: '#' },
+  { icon: Home, label: 'Dashboard', href: ROUTES.DASHBOARD, isAvailable: true },
+  { icon: ClipboardList, label: 'Service Module', href: ROUTES.DASHBOARD_SUBJECTS, isAvailable: true },
+  { icon: Users, label: 'Customers', href: ROUTES.DASHBOARD_CUSTOMERS, isAvailable: true },
+  { icon: UserCog, label: 'Team', href: ROUTES.DASHBOARD_TEAM, isAvailable: true },
+  { icon: Package, label: 'Inventory', href: ROUTES.DASHBOARD_INVENTORY, isAvailable: false },
+  { icon: DollarSign, label: 'Billing', href: '#', isAvailable: false },
+  { icon: BarChart3, label: 'Reports', href: '#', isAvailable: false },
+  { icon: Settings, label: 'Settings', href: '#', isAvailable: false },
 ];
 
 const SERVICE_MODULE_ITEMS = [
@@ -102,7 +102,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   <Building2 size={16} />
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate text-[13px] font-semibold tracking-[0.12em] text-ht-text-900 uppercase">Hitech ERP Suite</p>
+                  <p className="truncate text-sm font-semibold text-ht-text-900">Hi Tech Software</p>
                   <p className="truncate text-[10px] font-medium tracking-[0.2em] text-ht-text-500 uppercase">Operations Console</p>
                 </div>
               </div>
@@ -187,7 +187,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         {serviceMenuExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                       </button>
                     </div>
-                  ) : (
+                  ) : item.isAvailable ? (
                     <Link
                       href={item.href}
                       title={!sidebarExpanded ? item.label : undefined}
@@ -204,6 +204,25 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       <item.icon size={18} />
                       {sidebarExpanded ? <span>{item.label}</span> : <span className="sr-only">{item.label}</span>}
                     </Link>
+                  ) : (
+                    <div
+                      title={!sidebarExpanded ? `${item.label} (Coming soon)` : undefined}
+                      className={`relative flex rounded-xl border border-transparent text-sm ${
+                        sidebarExpanded ? 'items-center gap-3 px-3 py-2.5' : 'justify-center px-0 py-3'
+                      } text-blue-200/45`}
+                    >
+                      <item.icon size={18} />
+                      {sidebarExpanded ? (
+                        <>
+                          <span>{item.label}</span>
+                          <span className="ml-auto rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-100/70">
+                            Coming soon
+                          </span>
+                        </>
+                      ) : (
+                        <span className="sr-only">{item.label} coming soon</span>
+                      )}
+                    </div>
                   )}
 
                   {item.href === ROUTES.DASHBOARD_SUBJECTS && sidebarExpanded && isSuperAdmin && serviceMenuExpanded ? (

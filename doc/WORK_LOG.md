@@ -3,6 +3,39 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-17 08:25:55 +05:30] Refine Service List UX and Hide Unfinished Demo Modules
+
+- Summary: Cleaned up the service subjects list for office staff by reducing default filter noise, restoring stronger visual hierarchy and urgency cues, correcting branding, and preventing unfinished modules from appearing as ready during demos.
+- Work done:
+  - Updated the service subjects toolbar so only Search, Status, Filters, and a stronger `+ Create Subject` action are visible by default.
+  - Added an expandable advanced filters panel for Source, Brand, Dealer, Category, Priority, From, and To.
+  - Added an explicit Dealer filter alongside Brand in advanced filters and wired them to the existing subject filtering state.
+  - Changed the service type badge copy from `Warranty` to `Under Warranty`.
+  - Improved Assigned To rendering to keep the technician visible with a stronger name line and a secondary technician code line, while preserving the red `Unassigned` badge when nobody is assigned.
+  - Added a subtle red left border to rows that need attention, including critical-priority services and unassigned services.
+  - Made the View and Edit actions visually consistent.
+  - Standardized subject detail date rendering to `en-GB` so the service list and subject detail page both use a consistent DD/MM/YYYY-style presentation.
+  - Replaced the incorrect header brand text `Hitech ERP Suite` with `Hi Tech Software`.
+  - Marked unfinished top-level modules in the sidebar as `Coming soon` instead of making them appear fully available.
+  - Updated the dashboard inventory card and inventory page to present a `Coming soon` state instead of an unfinished placeholder experience.
+  - Left API documentation unchanged because this task did not modify routes, request or response payloads, auth behavior, or client-facing backend contracts.
+- Files changed:
+  - web/app/dashboard/subjects/page.tsx
+  - web/app/dashboard/subjects/[id]/page.tsx
+  - web/app/dashboard/layout.tsx
+  - web/app/dashboard/page.tsx
+  - web/app/dashboard/inventory/page.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - `get_errors` returned no errors for all modified dashboard and subject files.
+  - `npm run build` passed for the web workspace with all routes compiling successfully.
+- Issues:
+  - Assigned technician display still depends on the stored profile `display_name`; if some technician records only contain first names in data, those records should be corrected in the team data itself.
+- Next:
+  - Browser QA: verify the compact filter bar is easier to scan on desktop and laptop widths.
+  - Browser QA: confirm advanced Brand and Dealer filters behave correctly when toggling Source.
+  - Browser QA: confirm `Coming soon` sidebar items are non-navigable in the client demo flow.
+
 ## [2026-03-17 08:14:31 +05:30] Restore Super Admin Service Delete Action via 3-Dot Menu
 
 - Summary: Added the service deletion action back to the service subjects list as a 3-dot row menu, visible only to super admins, with a confirmation step before deletion.

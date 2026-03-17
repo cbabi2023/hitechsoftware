@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { MoreHorizontal, Trash2 } from 'lucide-react';
+import { Filter, MoreHorizontal, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePermission } from '@/hooks/usePermission';
 import { useSubjects } from '@/hooks/useSubjects';
@@ -64,7 +64,7 @@ function getServiceTypeMeta(subject: SubjectListItem) {
     return { label: 'AMC Free', className: 'bg-emerald-100 text-emerald-700' };
   }
   if (subject.is_warranty_service) {
-    return { label: 'Warranty', className: 'bg-blue-100 text-blue-700' };
+    return { label: 'Under Warranty', className: 'bg-blue-100 text-blue-700' };
   }
   return { label: 'Chargeable', className: 'bg-slate-100 text-slate-600' };
 }
@@ -73,6 +73,7 @@ export default function SubjectsDashboardPage() {
   const { can } = usePermission();
   const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
   const [deletingSubjectId, setDeletingSubjectId] = useState<string | null>(null);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const brands = useBrands();
   const dealers = useDealers();
   const categories = useServiceCategories();
@@ -136,6 +137,26 @@ export default function SubjectsDashboardPage() {
     }
   }
 
+  const advancedFilterCount = [
+    sourceType !== 'all',
+    Boolean(categoryId),
+    Boolean(brandId),
+    Boolean(dealerId),
+    priority !== 'all',
+    Boolean(fromDate),
+    Boolean(toDate),
+  ].filter(Boolean).length;
+
+  function clearAdvancedFilters() {
+    setSourceType('all');
+    setCategoryId('');
+    setBrandId('');
+    setDealerId('');
+    setPriority('all');
+    setFromDate('');
+    setToDate('');
+  }
+
   return (
     <div
       className="p-6"
@@ -143,22 +164,14 @@ export default function SubjectsDashboardPage() {
         setOpenActionMenuId(null);
       }}
     >
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Service Subjects</h1>
-          <p className="mt-1 text-sm text-slate-600">Filter, track, and audit all service subjects.</p>
-        </div>
-
-        {can('subject:create') ? (
-          <Link href={ROUTES.DASHBOARD_SUBJECTS_NEW} className="ht-btn ht-btn-primary">
-            Create subject
-          </Link>
-        ) : null}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900">Service Subjects</h1>
+        <p className="mt-1 text-sm text-slate-600">Filter, track, and audit all service subjects.</p>
       </div>
 
       <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-6">
-          <div className="md:col-span-2">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+          <div className="flex-1">
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Search</label>
             <input
               value={searchInput}
@@ -168,92 +181,7 @@ export default function SubjectsDashboardPage() {
             />
           </div>
 
-          <div>
-            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Source</label>
-            <select
-              value={sourceType}
-              onChange={(event) => {
-                setSourceType(event.target.value as 'all' | 'brand' | 'dealer');
-                setBrandId('');
-                setDealerId('');
-              }}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            >
-              <option value="all">All</option>
-              {SUBJECT_SOURCE_OPTIONS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
-              {sourceType === 'dealer' ? 'Dealer' : 'Brand'}
-            </label>
-            {sourceType === 'dealer' ? (
-              <select
-                value={dealerId}
-                onChange={(event) => setDealerId(event.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-              >
-                <option value="">All Dealers</option>
-                {dealers.data.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <select
-                value={brandId}
-                onChange={(event) => setBrandId(event.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-              >
-                <option value="">All Brands</option>
-                {brands.data.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Category</label>
-            <select
-              value={categoryId}
-              onChange={(event) => setCategoryId(event.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            >
-              <option value="">All Categories</option>
-              {categories.data.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Priority</label>
-            <select
-              value={priority}
-              onChange={(event) => setPriority(event.target.value as 'all' | 'critical' | 'high' | 'medium' | 'low')}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            >
-              <option value="all">All</option>
-              {SUBJECT_PRIORITY_OPTIONS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
+          <div className="w-full lg:w-56">
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Status</label>
             <select
               value={status}
@@ -269,26 +197,186 @@ export default function SubjectsDashboardPage() {
             </select>
           </div>
 
-          <div>
-            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">From</label>
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(event) => setFromDate(event.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            />
-          </div>
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <button
+              type="button"
+              onClick={() => setShowAdvancedFilters((current) => !current)}
+              className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                showAdvancedFilters || advancedFilterCount > 0
+                  ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                  : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <Filter size={16} />
+              Filters
+              {advancedFilterCount > 0 ? (
+                <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-blue-600 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+                  {advancedFilterCount}
+                </span>
+              ) : null}
+            </button>
 
-          <div>
-            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">To</label>
-            <input
-              type="date"
-              value={toDate}
-              onChange={(event) => setToDate(event.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            />
+            {can('subject:create') ? (
+              <Link
+                href={ROUTES.DASHBOARD_SUBJECTS_NEW}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+              >
+                <Plus size={16} />
+                Create Subject
+              </Link>
+            ) : null}
           </div>
         </div>
+
+        {showAdvancedFilters ? (
+          <div className="mt-4 border-t border-slate-200 pt-4">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-medium text-slate-700">Advanced filters</p>
+              <button
+                type="button"
+                onClick={clearAdvancedFilters}
+                className="text-xs font-medium text-slate-500 hover:text-slate-700"
+              >
+                Clear advanced filters
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+              <div>
+                <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Source</label>
+                <select
+                  value={sourceType}
+                  onChange={(event) => {
+                    const nextSource = event.target.value as 'all' | 'brand' | 'dealer';
+                    setSourceType(nextSource);
+                    if (nextSource === 'brand') {
+                      setDealerId('');
+                    }
+                    if (nextSource === 'dealer') {
+                      setBrandId('');
+                    }
+                    if (nextSource === 'all') {
+                      setBrandId('');
+                      setDealerId('');
+                    }
+                  }}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="all">All</option>
+                  {SUBJECT_SOURCE_OPTIONS.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Brand</label>
+                <select
+                  value={brandId}
+                  onChange={(event) => {
+                    const nextBrandId = event.target.value;
+                    setBrandId(nextBrandId);
+                    if (nextBrandId) {
+                      setSourceType('brand');
+                      setDealerId('');
+                    } else if (!dealerId) {
+                      setSourceType('all');
+                    }
+                  }}
+                  disabled={sourceType === 'dealer'}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  <option value="">All Brands</option>
+                  {brands.data.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Dealer</label>
+                <select
+                  value={dealerId}
+                  onChange={(event) => {
+                    const nextDealerId = event.target.value;
+                    setDealerId(nextDealerId);
+                    if (nextDealerId) {
+                      setSourceType('dealer');
+                      setBrandId('');
+                    } else if (!brandId) {
+                      setSourceType('all');
+                    }
+                  }}
+                  disabled={sourceType === 'brand'}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  <option value="">All Dealers</option>
+                  {dealers.data.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Category</label>
+                <select
+                  value={categoryId}
+                  onChange={(event) => setCategoryId(event.target.value)}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="">All Categories</option>
+                  {categories.data.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Priority</label>
+                <select
+                  value={priority}
+                  onChange={(event) => setPriority(event.target.value as 'all' | 'critical' | 'high' | 'medium' | 'low')}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="all">All</option>
+                  {SUBJECT_PRIORITY_OPTIONS.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">From</label>
+                <input
+                  type="date"
+                  value={fromDate}
+                  onChange={(event) => setFromDate(event.target.value)}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">To</label>
+                <input
+                  type="date"
+                  value={toDate}
+                  onChange={(event) => setToDate(event.target.value)}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -328,15 +416,16 @@ export default function SubjectsDashboardPage() {
                 </tr>
               ) : (
                 subjects.map((subject) => {
-                  const isUnassignedPending = !subject.assigned_technician_id && subject.status === 'PENDING';
+                  const isUnassigned = !subject.assigned_technician_id;
                   const priorityMeta = getPriorityMeta(subject.priority);
                   const statusMeta = getStatusMeta(subject.status);
                   const serviceTypeMeta = getServiceTypeMeta(subject);
+                  const needsAttentionBorder = isUnassigned || subject.priority === 'critical';
 
                   return (
                     <tr
                       key={subject.id}
-                      className={`hover:bg-slate-50/70${isUnassignedPending ? ' border-l-4 border-l-rose-400' : ''}`}
+                      className={`hover:bg-slate-50/70${needsAttentionBorder ? ' border-l-4 border-l-rose-400' : ''}`}
                     >
                       <td className="px-4 py-3 text-sm">
                         <Link
@@ -373,7 +462,10 @@ export default function SubjectsDashboardPage() {
                       </td>
                       <td className="px-4 py-3 text-sm">
                         {subject.assigned_technician_name ? (
-                          <span className="text-slate-900">{subject.assigned_technician_name}</span>
+                          <>
+                            <p className="font-medium text-slate-900">{subject.assigned_technician_name}</p>
+                            <p className="mt-0.5 text-xs text-slate-500">{subject.assigned_technician_code ?? 'Assigned technician'}</p>
+                          </>
                         ) : (
                           <span className="inline-flex rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-600">
                             Unassigned
@@ -390,14 +482,14 @@ export default function SubjectsDashboardPage() {
                         <div className="flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
                           <Link
                             href={ROUTES.DASHBOARD_SUBJECTS_DETAIL(subject.id)}
-                            className="inline-flex items-center rounded-md bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                            className="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
                           >
                             View
                           </Link>
                           {can('subject:edit') ? (
                             <Link
                               href={ROUTES.DASHBOARD_SUBJECTS_EDIT(subject.id)}
-                              className="inline-flex items-center rounded-md bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-200"
+                              className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
                             >
                               Edit
                             </Link>
