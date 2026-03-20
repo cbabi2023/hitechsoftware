@@ -4,6 +4,18 @@ import { createAdminClient } from '@/lib/supabase/admin';
 
 const supabase = createClient();
 
+const ACTIVE_PENDING_STATUSES = [
+  'PENDING',
+  'ALLOCATED',
+  'ACCEPTED',
+  'ARRIVED',
+  'IN_PROGRESS',
+  'INCOMPLETE',
+  'AWAITING_PARTS',
+  'RESCHEDULED',
+  'REJECTED',
+] as const;
+
 export async function listSubjects(filters: SubjectListFilters) {
   const page = filters.page && filters.page > 0 ? filters.page : 1;
   const pageSize = filters.page_size && filters.page_size > 0 ? filters.page_size : 10;
@@ -71,7 +83,7 @@ export async function listSubjects(filters: SubjectListFilters) {
 
   if (filters.technician_pending_only) {
     // Active work queue for technicians: keep unfinished tasks visible across days.
-    query = query.not('status', 'in', '(COMPLETED,CANCELLED)');
+    query = query.in('status', [...ACTIVE_PENDING_STATUSES]);
   }
 
   if (filters.category_id) {

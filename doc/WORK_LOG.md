@@ -3,6 +3,23 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 15:33:59 +05:30] Fix: Pending Works Not Visible on Dashboard
+- Summary: Fixed dashboard pending visibility by replacing ambiguous status exclusion filtering with explicit active pending status inclusion for technician queue and admin pending count aggregation.
+- Work done:
+  - Updated subject repository pending queue filter to use explicit `IN` on active statuses (`PENDING`, `ALLOCATED`, `ACCEPTED`, `ARRIVED`, `IN_PROGRESS`, `INCOMPLETE`, `AWAITING_PARTS`, `RESCHEDULED`, `REJECTED`) instead of `NOT IN` expression.
+  - Updated dashboard pending count logic to use the same active-status set for consistent technician/admin pending visibility.
+  - Verified this addresses missing pending works visibility in dashboard cards/queries.
+  - API documentation review completed: no API contract/path/auth/payload change in this fix, so no update needed in `web/docs/API_DOCUMENTATION.md`.
+- Files changed:
+  - web/repositories/subject.repository.ts
+  - web/app/dashboard/page.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - `npm run build --workspace=web` passed successfully (compile + TypeScript + route generation).
+  - No diagnostics in modified files via error checks.
+- Next:
+  - Optional: show separate dashboard counters for "Overdue Pending" vs "Today Pending" for faster operational triage.
+
 ## [2026-03-20 15:28:27 +05:30] Feat: Carry-Forward Pending Tasks for Technicians + Pending Visibility on Dashboard
 - Summary: Updated technician and admin dashboard behavior so unfinished assigned tasks remain visible as pending across days until completed/closed, including carry-forward visibility for overdue work.
 - Work done:
