@@ -18,6 +18,10 @@ function toNumber(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function getTodayIsoDate() {
+  return new Date().toISOString().split('T')[0];
+}
+
 async function authenticateBillingRequest(subjectId: string) {
   const supabase = await createServerClient();
   const authState = await supabase.auth.getUser();
@@ -196,7 +200,7 @@ export async function POST(
   const subjectResult = await admin
     .from('subjects')
     .select(
-      'id,source_type,assigned_technician_id,status,brand_id,dealer_id,is_warranty_service,is_amc_service,customer_name,service_charge_type,brands:brand_id(name),dealers:dealer_id(name)',
+      'id,source_type,assigned_technician_id,status,brand_id,dealer_id,is_warranty_service,is_amc_service,warranty_end_date,customer_name,service_charge_type,brands:brand_id(name),dealers:dealer_id(name)',
     )
     .eq('id', subjectId)
     .eq('is_deleted', false)
@@ -209,6 +213,7 @@ export async function POST(
       dealer_id: string | null;
       is_warranty_service: boolean;
       is_amc_service: boolean;
+      warranty_end_date: string | null;
       customer_name: string | null;
       service_charge_type: string;
       brands?: { name?: string | null } | null;
@@ -406,7 +411,25 @@ export async function POST(
     const gstAmount = applyGst ? subtotal * 0.18 : 0;
     const grand_total = subtotal + gstAmount;
 
-    const isBrandDealerBill = subject.is_warranty_service || subject.is_amc_service;
+    const todayIso = getTodayIsoDate();
+    const warrantyNotNoted = !subject.is_amc_service && !subject.warranty_end_date;
+
+    if (warrantyNotNoted) {
+      const error: ErrorResponse = {
+        step: '6. Validate Warranty State',
+        code: 'WARRANTY_DATE_NOT_NOTED',
+        message: `warranty_end_date is missing for subject ${subjectId}`,
+        userMessage: 'Warranty date is not noted. Please update warranty end date before generating bill.',
+      };
+      console.log(`[${timestamp}] ✗ Failed:`, error.code);
+      return NextResponse.json({ ok: false, error }, { status: 400 });
+    }
+
+    const isWarrantyActive = Boolean(subject.warranty_end_date && subject.warranty_end_date >= todayIso);
+    const warrantyState = subject.is_amc_service
+      ? 'amc'
+      : (isWarrantyActive ? 'in_warranty' : 'warranty_out');
+    const isBrandDealerBill = warrantyState === 'amc' || warrantyState === 'in_warranty';
 
     const hasPaymentMode = Boolean(billInput.payment_mode);
     const customerPaymentStatus = hasPaymentMode ? 'paid' : 'due';
@@ -471,6 +494,8 @@ export async function POST(
         service_charge,
         accessories_total,
         grand_total,
+        is_warranty_service: warrantyState === 'in_warranty',
+        service_charge_type: isBrandDealerBill ? 'brand_dealer' : 'customer',
         payment_mode: isBrandDealerBill ? null : (billInput.payment_mode ?? null),
         payment_collected: isBrandDealerBill ? false : hasPaymentMode,
         payment_collected_at: isBrandDealerBill
@@ -491,7 +516,7 @@ export async function POST(
       .single();
 
     if (subjectUpdateResult.error) {
-      await admin.from('subject_bills').update({ is_deleted: true }).eq('id', billResult.data.id);
+      await admin.from('subject_bills').delete().eq('id', billResult.data.id);
 
       const error: ErrorResponse = {
         step: '6. Complete Subject',

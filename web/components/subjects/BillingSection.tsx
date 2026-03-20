@@ -152,7 +152,24 @@ export function BillingSection({ subject, userRole, userId }: Props) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [imagePreviewErrors, setImagePreviewErrors] = useState<Record<string, string>>({});
 
-  const isOutOfWarranty = !subject.is_warranty_service && !subject.is_amc_service;
+  const todayIso = new Date().toISOString().split('T')[0];
+  const isWarrantyDateNotNoted = !subject.is_amc_service && !subject.warranty_end_date;
+  const isUnderWarranty = Boolean(subject.warranty_end_date && subject.warranty_end_date >= todayIso);
+  const isOutOfWarranty = !subject.is_amc_service && !isWarrantyDateNotNoted && !isUnderWarranty;
+  const warrantyStateLabel = subject.is_amc_service
+    ? 'AMC Service'
+    : isWarrantyDateNotNoted
+      ? 'Warranty Date Not Noted'
+      : isUnderWarranty
+        ? 'Under Warranty'
+        : 'Warranty Out';
+  const warrantyStateClassName = subject.is_amc_service
+    ? 'border-blue-200 bg-blue-50 text-blue-800'
+    : isWarrantyDateNotNoted
+      ? 'border-amber-200 bg-amber-50 text-amber-800'
+      : isUnderWarranty
+        ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+        : 'border-slate-200 bg-slate-50 text-slate-700';
   const isCustomerChargeable = subject.service_charge_type === 'customer';
   const isAssignedTechnician = userRole === 'technician' && userId === subject.assigned_technician_id;
   const canGenerate = isAssignedTechnician && subject.status === 'IN_PROGRESS' && !subject.bill_generated;
@@ -253,6 +270,12 @@ export function BillingSection({ subject, userRole, userId }: Props) {
       <div className="mb-4">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Billing</h3>
         <p className="mt-1 text-xs text-slate-500">Generate exactly one bill after job completion evidence is ready.</p>
+        <div className={`mt-2 rounded-lg border px-3 py-2 ${warrantyStateClassName}`}>
+          <p className="text-xs font-semibold uppercase tracking-wide">Warranty Status: {warrantyStateLabel}</p>
+          {isWarrantyDateNotNoted ? (
+            <p className="mt-0.5 text-xs">Warranty date is missing. Set warranty end date first to allow bill generation.</p>
+          ) : null}
+        </div>
         {isCustomerChargeable && (
           <div className="mt-2 rounded-lg border border-amber-200 bg-amber-100 px-3 py-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">Customer Chargeable</p>
@@ -484,8 +507,13 @@ export function BillingSection({ subject, userRole, userId }: Props) {
 
           <button
             type="button"
-            disabled={generateMutation.isPending || uploadMediaMutation.isPending || uploadedMedia.length === 0}
+            disabled={generateMutation.isPending || uploadMediaMutation.isPending || uploadedMedia.length === 0 || isWarrantyDateNotNoted}
             onClick={() => {
+              if (isWarrantyDateNotNoted) {
+                setUploadError('Warranty date is not noted. Update warranty end date before generating bill.');
+                return;
+              }
+
               if (!canGenerateAndComplete) {
                 setUploadError('Upload at least one photo or video before generating bill.');
                 return;

@@ -3,6 +3,40 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 22:01:10 +05:30] Billing rule fix: enforce warranty state (in-warranty / warranty-out / warranty-date-not-noted)
+
+- Summary: Added strict warranty-state checks before bill generation and made warranty status explicit in billing UI so jobs can only be billed after warranty condition is properly determined.
+- Work done:
+  - Updated billing API generate flow to derive warranty state from current subject data:
+    - `amc`
+    - `in_warranty` (warranty_end_date >= today)
+    - `warranty_out` (warranty_end_date < today)
+    - blocked state: `warranty_date_not_noted` (missing warranty date for non-AMC)
+  - Added hard validation in API:
+    - If non-AMC and warranty end date is missing, bill generation is rejected with `WARRANTY_DATE_NOT_NOTED`.
+  - Bill type selection now uses derived warranty state (not stale flags):
+    - in warranty / AMC -> brand/dealer invoice
+    - warranty out -> customer receipt
+  - Subject update now persists derived warranty/billing alignment at completion:
+    - `is_warranty_service`
+    - `service_charge_type`
+  - Billing UI now shows visible warranty status badge:
+    - AMC Service
+    - Under Warranty
+    - Warranty Out
+    - Warranty Date Not Noted (with action hint)
+  - Generate button is disabled for `Warranty Date Not Noted`, with explicit error message.
+  - Corrected rollback path to remove created bill row on completion failure using delete (schema-safe).
+- Files changed:
+  - web/app/api/subjects/[id]/billing/route.ts
+  - web/components/subjects/BillingSection.tsx
+- Verification:
+  - VS Code diagnostics: no TypeScript/compile errors in edited files.
+- Issues:
+  - Root issue: billing path previously relied on stored boolean flags and allowed generation without ensuring warranty date was recorded for non-AMC cases.
+- Next:
+  - Verify one subject for each path (AMC, in warranty, warranty out, missing warranty date) through full bill-generate flow.
+
 ## [2026-03-20 21:52:18 +05:30] Fix: auto-create missing storage bucket for subject uploads
 
 - Summary: Resolved upload failure `STORAGE_UPLOAD_FAILED (Reason: Bucket not found)` by adding automatic bucket readiness check and creation in photo upload API.
