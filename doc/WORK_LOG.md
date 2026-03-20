@@ -3,6 +3,25 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 21:10:56 +05:30] Follow-up fix: resolve accessory remove 404 in billing API
+
+- Summary: Fixed persistent 404 on accessory removal by aligning billing API queries with actual `subject_accessories` / `subject_bills` schema.
+- Work done:
+  - Removed invalid `is_deleted` filters from `subject_accessories` and `subject_bills` queries in billing API route.
+  - Changed accessory removal from soft-delete update to hard delete for `subject_accessories` rows.
+  - Improved error handling split for accessory lookup:
+    - DB/query failure -> `ACCESSORY_QUERY_FAILED` (400)
+    - missing row -> `ACCESSORY_NOT_FOUND` (404)
+  - Kept authorization and assignment checks unchanged.
+- Files changed:
+  - web/app/api/subjects/[id]/billing/route.ts
+- Verification:
+  - VS Code diagnostics: no TypeScript/compile errors in edited file.
+- Issues:
+  - Root issue: route used non-existent `is_deleted` column conditions for billing tables created without soft-delete fields.
+- Next:
+  - Re-test accessory removal from UI and confirm 200 success with immediate list refresh.
+
 ## [2026-03-20 21:03:40 +05:30] Fix: enable accessory removal from billing API (resolve 405) and add PATCH support
 
 - Summary: Fixed billing accessory removal failing with `405 Method Not Allowed` by implementing `DELETE /api/subjects/[id]/billing` and aligned API methods with the `useBilling` hook.

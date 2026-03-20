@@ -346,7 +346,6 @@ export async function POST(
       .from('subject_bills')
       .select('id')
       .eq('subject_id', subjectId)
-      .eq('is_deleted', false)
       .maybeSingle();
 
     if (existingBill.data) {
@@ -393,8 +392,7 @@ export async function POST(
     const accessoriesResult = await admin
       .from('subject_accessories')
       .select('total_price')
-      .eq('subject_id', subjectId)
-      .eq('is_deleted', false);
+      .eq('subject_id', subjectId);
 
     const accessories_total = (accessoriesResult.data ?? []).reduce(
       (sum, row) => sum + toNumber((row as { total_price: number }).total_price),
@@ -615,23 +613,32 @@ export async function DELETE(
     .select('id')
     .eq('id', body.accessoryId)
     .eq('subject_id', subjectId)
-    .eq('is_deleted', false)
     .maybeSingle<{ id: string }>();
 
-  if (existingAccessory.error || !existingAccessory.data) {
+  if (existingAccessory.error) {
+    const error: ErrorResponse = {
+      step: '6. Load Accessory',
+      code: 'ACCESSORY_QUERY_FAILED',
+      message: existingAccessory.error.message,
+      userMessage: 'Failed to load accessory item. Please try again.',
+      details: isDev ? { dbError: existingAccessory.error.message } : undefined,
+    };
+    return NextResponse.json({ ok: false, error }, { status: 400 });
+  }
+
+  if (!existingAccessory.data) {
     const error: ErrorResponse = {
       step: '6. Load Accessory',
       code: 'ACCESSORY_NOT_FOUND',
       message: `Accessory ${body.accessoryId} not found for subject ${subjectId}`,
       userMessage: 'Accessory item was not found',
-      details: isDev && existingAccessory.error ? { dbError: existingAccessory.error.message } : undefined,
     };
     return NextResponse.json({ ok: false, error }, { status: 404 });
   }
 
   const removeResult = await auth.admin
     .from('subject_accessories')
-    .update({ is_deleted: true })
+    .delete()
     .eq('id', body.accessoryId)
     .eq('subject_id', subjectId);
 
@@ -725,7 +732,6 @@ export async function PATCH(
     })
     .eq('id', body.billId)
     .eq('subject_id', subjectId)
-    .eq('is_deleted', false)
     .select('id,payment_status')
     .single();
 
