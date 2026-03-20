@@ -152,11 +152,17 @@ export default function SubjectDetailPage() {
     const todayDate = new Date().toISOString().split('T')[0];
     const effectiveServiceDate = subject.technician_allocated_date ?? subject.allocated_date;
     const isOverdue = effectiveServiceDate < todayDate;
+    const canContinueWorkflow = (
+      (subject.status === 'ALLOCATED' && subject.technician_acceptance_status === 'pending')
+      || subject.status === 'ACCEPTED'
+      || subject.status === 'ARRIVED'
+      || subject.status === 'IN_PROGRESS'
+    );
     const isCarryForwardVisible = isOverdue
       && isTechnicianCarryForwardPending(subject.status)
       && !subject.rescheduled_date;
 
-    if (effectiveServiceDate !== todayDate && !isCarryForwardVisible) {
+    if (effectiveServiceDate !== todayDate && !isCarryForwardVisible && !canContinueWorkflow) {
       return (
         <div className="p-6">
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800">

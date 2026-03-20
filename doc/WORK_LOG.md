@@ -3,6 +3,28 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 23:28:14 +05:30] Technician workflow fix: allow accept-arrived-start after reassignment
+
+- Summary: Fixed technician subject-detail access gating that could block reassigned/rescheduled jobs from progressing through accept -> arrived -> start work.
+- Work done:
+  - Investigated subject detail flow and identified a date-based technician guard condition that could hide workflow actions after reassignment/reschedule.
+  - Updated technician guard logic to allow access when workflow continuation is valid:
+    - allocated with pending acceptance,
+    - accepted,
+    - arrived,
+    - in progress.
+  - Preserved the existing carry-forward visibility behavior for other non-active cases.
+- Files changed:
+  - web/app/dashboard/subjects/[id]/page.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - Code review validation completed for the gating path and status conditions.
+  - Manual runtime verification pending in UI for reassigned + rescheduled subject scenarios.
+- Issues:
+  - Root issue was overly strict date gating for technicians, which ignored valid in-flight workflow states after reassignment.
+- Next:
+  - Validate end-to-end in UI with this exact sequence: incomplete -> reassign/reschedule -> accept -> arrived -> start work.
+
 ## [2026-03-20 23:25:06 +05:30] Web app stabilization: resolved blocking lint/build errors and validated release readiness
 
 - Summary: Cleared all lint/build blocking errors causing unstable release quality and verified production build success before push.
