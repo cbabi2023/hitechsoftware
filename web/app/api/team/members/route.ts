@@ -40,8 +40,12 @@ export async function POST(request: Request) {
 
   const parsed = createTeamMemberSchema.safeParse(body);
   if (!parsed.success) {
+    const errorMessages = parsed.error.issues.map((issue) => {
+      const path = issue.path.length > 0 ? ` (${issue.path.join('.')})` : '';
+      return `${issue.message}${path}`;
+    });
     return NextResponse.json(
-      { ok: false, error: { message: parsed.error.issues[0]?.message ?? 'Invalid payload' } },
+      { ok: false, error: { message: errorMessages.join('; ') } },
       { status: 400 },
     );
   }

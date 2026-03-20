@@ -3,7 +3,15 @@ import { z } from 'zod';
 const phoneSchema = z
   .string()
   .trim()
-  .regex(/^(?:\+91|91)?[6-9]\d{9}$/, 'Enter a valid Indian phone number');
+  .refine(
+    (val) => {
+      if (!val || val.length === 0) return true; // Allow empty/undefined
+      return /^(?:\+91|91)?[6-9]\d{9}$/.test(val);
+    },
+    'Enter a valid Indian phone number (10 digits, starting with 6-9)',
+  )
+  .optional()
+  .transform((val) => (val?.length === 0 ? undefined : val));
 
 const technicianCreateSchema = z.object({
   technician_code: z.string().trim().min(2, 'Technician code is required').max(50),
@@ -18,7 +26,7 @@ export const createTeamMemberSchema = z
     email: z.string().trim().email('Enter a valid email'),
     password: z.string().min(8, 'Password must be at least 8 characters'),
     display_name: z.string().trim().min(2, 'Display name is required'),
-    phone_number: phoneSchema.optional().or(z.literal('')),
+    phone_number: phoneSchema,
     role: z.enum(['super_admin', 'office_staff', 'stock_manager', 'technician']),
     is_active: z.boolean().optional(),
     technician: technicianCreateSchema.optional(),

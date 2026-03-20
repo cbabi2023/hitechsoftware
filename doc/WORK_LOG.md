@@ -3,6 +3,28 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 17:00:06 +05:30] Fix: Team member creation failing with 400 Bad Request
+
+- Summary: Creating a new team member (technician, office staff, stock manager) via `/dashboard/team` was returning "Failed to load resource: 400 Bad Request". Root cause: overly strict phone number validation (Indian regex) + schema didn't handle empty phone gracefully + API only returned first error, making debugging hard.
+- Root causes identified:
+  1. Phone number schema used `.regex()` with strict Indian format validation; didn't allow empty/optional properly
+  2. Form allows leaving phone blank, but validation rejected it
+  3. API only returned the first error, hiding whether it was phone, email, password, or other fields
+- Work done:
+  - Refactored `phoneSchema` in `technician.validation.ts` to use `.refine()` instead of `.regex()` to allow empty strings gracefully
+  - Added `.optional().transform()` pipeline to convert empty strings to `undefined`
+  - Updated `POST /api/team/members` error response to return ALL validation errors (not just first), with field paths for clarity
+  - This shows users exactly which fields failed validation
+- Files changed:
+  - web/modules/technicians/technician.validation.ts
+  - web/app/api/team/members/route.ts
+- Verification:
+  - `npm run build --workspace=web` compiled successfully (✓)
+- Issues encountered: None
+- Next:
+  - Test creating team members with various phone formats (empty, Indian format, non-Indian)
+  - All team member creation flows should now work; migration trigger still pending deployment
+
 ## [2026-03-20 16:34:56 +05:30] Fix: Technician "Mark as Arrived" failing with Missing Supabase admin env error
 
 - Summary: Workflow status mutations (markArrived, markInProgress, markIncomplete, markComplete) were called directly from the client-side hook `use-job-workflow.ts`, which internally called `createAdminClient()`. The `SUPABASE_SERVICE_ROLE_KEY` env var is not available in the browser (only server-side), causing "Missing Supabase admin environment variables" for any technician trying to update job status.
