@@ -445,22 +445,30 @@ export async function deleteSubject(id: string) {
 // Job workflow — status-change helpers (admin client bypasses technician RLS)
 // ---------------------------------------------------------------------------
 
-export async function markArrived(subjectId: string) {
+export async function markArrived(subjectId: string, technicianId?: string) {
   const admin = createAdminClient();
   return admin
     .from('subjects')
-    .update({ status: 'ARRIVED', arrived_at: new Date().toISOString() })
+    .update({
+      status: 'ARRIVED',
+      arrived_at: new Date().toISOString(),
+      status_changed_by_id: technicianId || null,
+    })
     .eq('id', subjectId)
     .eq('is_deleted', false)
     .select('id,status,arrived_at')
     .single<{ id: string; status: string; arrived_at: string }>();
 }
 
-export async function markInProgress(subjectId: string) {
+export async function markInProgress(subjectId: string, technicianId?: string) {
   const admin = createAdminClient();
   return admin
     .from('subjects')
-    .update({ status: 'IN_PROGRESS', work_started_at: new Date().toISOString() })
+    .update({
+      status: 'IN_PROGRESS',
+      work_started_at: new Date().toISOString(),
+      status_changed_by_id: technicianId || null,
+    })
     .eq('id', subjectId)
     .eq('is_deleted', false)
     .select('id,status,work_started_at')
@@ -476,6 +484,7 @@ export async function markIncomplete(
     spare_parts_quantity: number | null;
     rescheduled_date: string | null;
   },
+  technicianId?: string,
 ) {
   const admin = createAdminClient();
   return admin
@@ -488,6 +497,7 @@ export async function markIncomplete(
       spare_parts_requested: data.spare_parts_requested,
       spare_parts_quantity: data.spare_parts_quantity,
       rescheduled_date: data.rescheduled_date,
+      status_changed_by_id: technicianId || null,
     })
     .eq('id', subjectId)
     .eq('is_deleted', false)
@@ -501,6 +511,7 @@ export async function markComplete(
     completion_notes: string | null;
     billing_status: 'not_applicable' | 'due' | 'partially_paid' | 'paid' | 'waived';
   },
+  technicianId?: string,
 ) {
   const admin = createAdminClient();
   return admin
@@ -511,6 +522,7 @@ export async function markComplete(
       completion_proof_uploaded: true,
       completion_notes: data.completion_notes,
       billing_status: data.billing_status,
+      status_changed_by_id: technicianId || null,
     })
     .eq('id', subjectId)
     .eq('is_deleted', false)

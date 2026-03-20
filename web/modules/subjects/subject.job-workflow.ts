@@ -69,18 +69,19 @@ export async function updateJobStatus(
 
   // Determine timestamp column to set
   // Delegate to specialised repository function (sets the correct timestamp)
+  // Pass technicianId so the trigger can record the correct user in audit history
   let repoResult: { data: { id: string; status: string } | null; error: { message: string } | null };
 
   if (newStatus === 'ARRIVED') {
-    repoResult = await repoMarkArrived(subjectId);
+    repoResult = await repoMarkArrived(subjectId, technicianId);
   } else if (newStatus === 'IN_PROGRESS') {
-    repoResult = await repoMarkInProgress(subjectId);
+    repoResult = await repoMarkInProgress(subjectId, technicianId);
   } else {
     // Fallback for other allowed transitions (e.g. AWAITING_PARTS)
     const admin = createAdminClient();
     repoResult = await admin
       .from('subjects')
-      .update({ status: newStatus })
+      .update({ status: newStatus, status_changed_by_id: technicianId })
       .eq('id', subjectId)
       .select('id,status')
       .single<{ id: string; status: string }>();
@@ -274,6 +275,7 @@ export async function markJobIncomplete(
     incomplete_at: new Date().toISOString(),
     incomplete_reason: input.reason,
     incomplete_note: input.note,
+    status_changed_by_id: technicianId,
   };
 
   if (input.reason === 'spare_parts_not_available') {
@@ -350,6 +352,7 @@ export async function markJobComplete(
     completed_at: new Date().toISOString(),
     completion_proof_uploaded: true,
     completion_notes: notes ?? null,
+    status_changed_by_id: technicianId,
   };
 
   // Auto-update billing status based on service type

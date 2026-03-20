@@ -3,6 +3,54 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 18:27:58 +05:30] Fix: Status change history showing wrong technician (admin name instead of actual technician)
+
+- Summary: Status change history was showing "Joby Sir" (super admin) as the user making all status changes instead of the actual technician. Root cause was the database trigger using `auth.uid()` which returns the admin/service role when admin client makes updates.
+- Root cause: In trigger function `log_subject_status_change()` at `supabase/migrations/20260317_009_fix_subject_history_rls.sql`:
+  - Used `COALESCE(auth.uid(), NEW.assigned_by, NEW.created_by)` for `changed_by` field
+  - When admin client updates subject (via service functions), `auth.uid()` returns admin/service role ID
+  - Trigger never falls back to other fields because `auth.uid()` is never NULL
+  - Result: History records admin as the changer instead of actual technician
+- Work done:
+  1. **Created new database column** `status_changed_by_id` in `20260320_015_track_status_changer.sql`:
+     - Added column to subjects table to store who actually made the status change
+     - Application sets this before updating status
+     - Trigger reads from this column instead of `auth.uid()`
+  2. **Updated trigger function** in `20260320_015_track_status_changer.sql`:
+     - Changed trigger to use: `COALESCE(NEW.status_changed_by_id, auth.uid(), NEW.assigned_by, NEW.created_by)`
+     - Now `status_changed_by_id` takes priority over `auth.uid()`
+  3. **Updated repository functions** in `web/repositories/subject.repository.ts`:
+     - `markArrived()` — Added optional `technicianId` parameter, includes in update as `status_changed_by_id`
+     - `markInProgress()` — Added optional `technicianId` parameter
+     - `markIncomplete()` — Added optional `technicianId` parameter
+     - `markComplete()` — Added optional `technicianId` parameter
+  4. **Updated service layer** in `web/modules/subjects/subject.job-workflow.ts`:
+     - `updateJobStatus()` — Passes `technicianId` to all repository functions
+     - `markJobIncomplete()` — Includes `status_changed_by_id: technicianId` in update
+     - `markJobComplete()` — Includes `status_changed_by_id: technicianId` in update
+     - Fallback status updates — Also include `status_changed_by_id`
+- Files changed:
+  - supabase/migrations/20260320_015_track_status_changer.sql — New migration with trigger update
+  - web/repositories/subject.repository.ts — Updated mark* functions with technicianId parameter
+  - web/modules/subjects/subject.job-workflow.ts — Updated service functions to pass technicianId
+  - doc/WORK_LOG.md — This entry
+- Verification:
+  - `npm run build --workspace=web` ✓ Compiled successfully in 12.8s
+  - All API routes present
+  - No TypeScript errors
+- How it works:
+  1. Technician marks job as "Arrived"
+  2. API calls `updateJobStatus(subjectId, technicianId, 'ARRIVED')`
+  3. Service function calls `markArrived(subjectId, technicianId)`
+  4. Repository does: `UPDATE subjects SET status='ARRIVED', status_changed_by_id='{technicianId}' WHERE id='{subjectId}'`
+  5. Trigger fires and reads `NEW.status_changed_by_id = '{technicianId}'`
+  6. Trigger inserts: `INSERT INTO subject_status_history(changed_by) VALUES ('{technicianId}')`
+  7. Status history now shows technician's name, not admin's name
+- Next:
+  - Apply migration `20260320_015_track_status_changer.sql` in Supabase SQL editor
+  - Test: Technician marks job as arrived
+  - Verify status history shows technician's name, not admin name
+
 ## [2026-03-20 18:07:15 +05:30] CRITICAL FIX: Workflow API 400 "Subject not found" root cause analysis and resolution
 
 - Summary: Technician marking job as "arrived" was receiving 400 Bad Request with "Subject not found" error. Root cause was identified in the service layer using browser client instead of admin client, causing RLS policies to block subject queries. Fixed by adding admin-client versions of repository functions and updating service layer.
