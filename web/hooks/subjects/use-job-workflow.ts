@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { SUBJECT_QUERY_KEYS } from '@/modules/subjects/subject.constants';
 import {
-  uploadJobPhoto,
   getRequiredPhotos,
   checkCompletionRequirements,
 } from '@/modules/subjects/subject.job-workflow';

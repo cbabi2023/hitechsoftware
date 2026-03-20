@@ -3,6 +3,24 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 19:17:44 +05:30] Fix: Show required upload items inside billing flow
+
+- Summary: Added the missing required-photo upload options directly inside the billing panel so technicians can upload the exact items blocking Generate Bill & Complete Job instead of only seeing the validation error.
+- Work done:
+  - Added required upload progress, missing-item messaging, and upload rows inside the billing section when a technician is in `IN_PROGRESS`.
+  - Reused the existing workflow upload API so uploaded items immediately satisfy the bill-generation requirements.
+  - Disabled the Generate Bill & Complete Job button until all required items are uploaded.
+  - Cleaned an unused import from the workflow hook found during validation.
+- Files changed:
+  - web/components/subjects/BillingSection.tsx
+  - web/hooks/subjects/use-job-workflow.ts
+- Verification:
+  - VS Code diagnostics: no errors in edited files.
+  - Targeted ESLint: `npx eslint components/subjects/BillingSection.tsx hooks/subjects/use-job-workflow.ts components/subjects/photo-upload-row.tsx` -> `LINT_OK`.
+  - Remaining warning is pre-existing/non-blocking: `photo-upload-row.tsx` uses `<img>`.
+- Next:
+  - Verify with a technician account that each required item can be uploaded from the billing panel and that the button enables after completion.
+
 ## [2026-03-20 19:09:12 +05:30] Fix: Generate Bill & Complete Job flow
 
 - Summary: Fixed the technician billing completion path so the Generate Bill & Complete Job action now uses a valid subject query, checks uploaded photos on the server with the admin client, creates the bill, and completes the subject in the same request.
