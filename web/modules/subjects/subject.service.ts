@@ -442,15 +442,7 @@ export async function assignTechnicianWithDate(input: AssignTechnicianInput): Pr
     }
   }
 
-  // Validate date is not in the past when a date is provided
-  if (technician_allocated_date) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const visitDate = new Date(technician_allocated_date);
-    if (visitDate < today) {
-      return { ok: false, error: { message: 'Technician visit date cannot be in the past.' } };
-    }
-  }
+  // Backdated assignments are allowed for operational correction and overdue tracking.
 
   // When assigning a technician, status moves to ALLOCATED; unassigning reverts to PENDING
   const newStatus = technician_id ? 'ALLOCATED' : 'PENDING';

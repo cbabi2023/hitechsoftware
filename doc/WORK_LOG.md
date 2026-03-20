@@ -3,6 +3,23 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 15:48:36 +05:30] Feat: Allow Backdated Technician Assignment Dates
+- Summary: Enabled assigning technician visit dates in previous days for operational correction and overdue queue handling.
+- Work done:
+  - Removed service-layer validation that blocked past `technician_allocated_date` values during assignment.
+  - Removed UI date input minimum constraint that prevented selecting earlier dates.
+  - Added helper text in assignment form clarifying that past dates are allowed.
+  - API documentation review completed: no backend route contract change (internal service validation/UI behavior only), so no update required in `web/docs/API_DOCUMENTATION.md`.
+- Files changed:
+  - web/modules/subjects/subject.service.ts
+  - web/components/assignment/AssignTechnicianForm.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - `npm run build --workspace=web` passed successfully.
+  - No diagnostics in modified files via error checks.
+- Next:
+  - Optional: add an assignment timeline note indicating when a backdated date is set and by whom.
+
 ## [2026-03-20 15:44:35 +05:30] Fix: Subject List Runtime Error — invalid input value for enum subject_status: "ARRIVED"
 - Summary: Resolved subject list/dashboard failures caused by enum-literal filters referencing `ARRIVED` in environments where enum migration is not yet applied.
 - Work done:

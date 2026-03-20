@@ -68,11 +68,11 @@ export function AssignTechnicianForm({ subject }: AssignTechnicianFormProps) {
             <input
               type="date"
               value={techAllocatedDate}
-              min={new Date().toISOString().split('T')[0]}
               onChange={(e) => setTechAllocatedDate(e.target.value)}
               disabled={assignMutation.isPending}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
             />
+            <p className="mt-1 text-[11px] text-slate-500">Past dates are allowed for backdated assignment updates.</p>
           </div>
 
           <div>
