@@ -6,9 +6,9 @@ import { useJobWorkflow } from '@/hooks/subjects/use-job-workflow';
 import { CannotCompleteModal } from '@/components/subjects/cannot-complete-modal';
 import { CompleteJobPanel } from '@/components/subjects/complete-job-panel';
 import { PhotoGallery } from '@/components/subjects/photo-gallery';
-import { PhotoUploadRow } from '@/components/subjects/photo-upload-row';
+import { PhotoUploadGrid } from '@/components/subjects/photo-upload-grid';
 import { INCOMPLETE_REASONS } from '@/modules/subjects/subject.constants';
-import type { SubjectDetail, PhotoType } from '@/modules/subjects/subject.types';
+import type { SubjectDetail } from '@/modules/subjects/subject.types';
 
 interface Props {
   subject: SubjectDetail;
@@ -26,18 +26,6 @@ const TIMELINE_STEPS = [
 ] as const;
 
 const STATUS_ORDER = ['PENDING', 'ALLOCATED', 'ACCEPTED', 'ARRIVED', 'IN_PROGRESS', 'COMPLETED', 'INCOMPLETE', 'AWAITING_PARTS', 'RESCHEDULED', 'CANCELLED'];
-
-const PHOTO_LABELS: Record<PhotoType, string> = {
-  serial_number: 'Serial Number Label',
-  machine: 'Machine / Equipment',
-  bill: 'Invoice / Bill',
-  job_sheet: 'Job Sheet',
-  defective_part: 'Defective Part',
-  site_photo_1: 'Site Photo 1',
-  site_photo_2: 'Site Photo 2',
-  site_photo_3: 'Site Photo 3',
-  service_video: 'Service Video',
-};
 
 function getStepState(stepStatus: string, currentStatus: string): 'done' | 'active' | 'future' {
   const stepIdx = STATUS_ORDER.indexOf(stepStatus);
@@ -72,8 +60,8 @@ export function JobWorkflowSection({ subject, userRole, userId }: Props) {
     isLoadingRequirements,
     updateStatus,
     isUpdatingStatus,
-    uploadPhoto,
-    isUploadingPhoto,
+    uploadPhotoAsync,
+    removePhotoAsync,
     markIncomplete,
     isMarkingIncomplete,
     markComplete,
@@ -223,31 +211,14 @@ export function JobWorkflowSection({ subject, userRole, userId }: Props) {
             </div>
           </div>
 
-          {/* Photo upload rows */}
-          <div className="space-y-2">
-            {completionRequirements.required.map((photoType) => {
-              const uploadedPhoto = subject.photos.find((p) => p.photo_type === photoType);
-              return (
-                <PhotoUploadRow
-                  key={photoType}
-                  photoType={photoType}
-                  label={PHOTO_LABELS[photoType]}
-                  isRequired
-                  isUploaded={completionRequirements.uploaded.includes(photoType)}
-                  uploadedUrl={uploadedPhoto?.public_url}
-                  subjectId={subject.id}
-                  onUploadSuccess={(file) => uploadPhoto({ file, photoType })}
-                  isUploading={isUploadingPhoto}
-                />
-              );
-            })}
-          </div>
-
-          {completionRequirements.canComplete && (
-            <div className="mt-4 p-3 bg-emerald-100 border border-emerald-300 rounded-lg">
-              <p className="text-sm font-medium text-emerald-800">✓ All required photos uploaded. You can now complete this job.</p>
-            </div>
-          )}
+          <PhotoUploadGrid
+            requiredTypes={completionRequirements.required}
+            uploadedTypes={completionRequirements.uploaded}
+            photos={subject.photos}
+            canEdit
+            onUpload={uploadPhotoAsync}
+            onRemove={removePhotoAsync}
+          />
         </div>
       )}
 
@@ -402,8 +373,8 @@ export function JobWorkflowSection({ subject, userRole, userId }: Props) {
           isLoadingRequirements={isLoadingRequirements}
           isConfirming={isMarkingComplete}
           confirmError={markCompleteError}
-          onUploadPhoto={uploadPhoto}
-          isUploadingPhoto={isUploadingPhoto}
+          onUploadPhoto={uploadPhotoAsync}
+          onRemovePhoto={removePhotoAsync}
           onConfirmComplete={(notes) => {
             markComplete(notes, {
               onSuccess: () => setShowCompletePanel(false),

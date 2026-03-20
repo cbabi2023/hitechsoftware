@@ -3,24 +3,12 @@
 import React, { useState } from 'react';
 import { CheckCircle2, AlertCircle, X } from 'lucide-react';
 import { JobCompletionPanel } from '@/components/subjects/job-completion-panel';
-import { PhotoUploadRow } from '@/components/subjects/photo-upload-row';
+import { PhotoUploadGrid } from '@/components/subjects/photo-upload-grid';
 import type {
   SubjectDetail,
   JobCompletionRequirements,
   PhotoType,
 } from '@/modules/subjects/subject.types';
-
-const PHOTO_LABELS: Record<string, string> = {
-  serial_number: 'Serial Number Label',
-  machine: 'Machine / Equipment',
-  bill: 'Invoice / Bill',
-  job_sheet: 'Job Sheet',
-  defective_part: 'Defective Part',
-  site_photo_1: 'Site Photo 1',
-  site_photo_2: 'Site Photo 2',
-  site_photo_3: 'Site Photo 3',
-  service_video: 'Service Video',
-};
 
 interface CompleteJobPanelProps {
   subject: SubjectDetail;
@@ -28,8 +16,8 @@ interface CompleteJobPanelProps {
   isLoadingRequirements: boolean;
   isConfirming: boolean;
   confirmError: Error | null | undefined;
-  onUploadPhoto: (args: { file: File; photoType: PhotoType }) => void;
-  isUploadingPhoto: boolean;
+  onUploadPhoto: (args: { file: File; photoType: PhotoType }) => Promise<unknown>;
+  onRemovePhoto?: (args: { photoId: string; storagePath: string; photoType: PhotoType }) => Promise<unknown>;
   onConfirmComplete: (notes?: string) => void;
   onClose: () => void;
 }
@@ -41,11 +29,12 @@ export function CompleteJobPanel({
   isConfirming,
   confirmError,
   onUploadPhoto,
-  isUploadingPhoto,
+  onRemovePhoto,
   onConfirmComplete,
   onClose,
 }: CompleteJobPanelProps) {
   const [notes, setNotes] = useState('');
+  const [uploadAttempted, setUploadAttempted] = useState(false);
 
   const canComplete = requirements?.canComplete ?? false;
 
@@ -71,26 +60,19 @@ export function CompleteJobPanel({
             canComplete={canComplete}
           />
 
-          {/* Upload rows for each required photo */}
+          {/* Upload card grid */}
           {requirements && requirements.required.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <h3 className="text-sm font-semibold text-slate-700">Upload Required Proof</h3>
-              {requirements.required.map((photoType) => {
-                const uploadedPhoto = subject.photos.find((p) => p.photo_type === photoType);
-                return (
-                  <PhotoUploadRow
-                    key={photoType}
-                    photoType={photoType}
-                    label={PHOTO_LABELS[photoType] ?? photoType}
-                    isRequired
-                    isUploaded={requirements.uploaded.includes(photoType)}
-                    uploadedUrl={uploadedPhoto?.public_url}
-                    subjectId={subject.id}
-                    onUploadSuccess={(file) => onUploadPhoto({ file, photoType })}
-                    isUploading={isUploadingPhoto}
-                  />
-                );
-              })}
+              <PhotoUploadGrid
+                requiredTypes={requirements.required}
+                uploadedTypes={requirements.uploaded}
+                photos={subject.photos}
+                canEdit={subject.status !== 'COMPLETED'}
+                uploadAttempted={uploadAttempted}
+                onUpload={onUploadPhoto}
+                onRemove={onRemovePhoto}
+              />
             </div>
           )}
 
@@ -123,8 +105,14 @@ export function CompleteJobPanel({
             </button>
             <button
               type="button"
-              onClick={() => onConfirmComplete(notes.trim() || undefined)}
-              disabled={!canComplete || isConfirming}
+              onClick={() => {
+                if (!canComplete) {
+                  setUploadAttempted(true);
+                  return;
+                }
+                onConfirmComplete(notes.trim() || undefined);
+              }}
+              disabled={isConfirming}
               className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
             >
               <CheckCircle2 className="h-4 w-4" />

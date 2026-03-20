@@ -3,6 +3,44 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 19:56:40 +05:30] Redesign: Mobile-first photo upload card grid across workflow and billing
+
+- Summary: Replaced the old per-item upload button list with a full card-grid uploader optimized for technicians (tap-card upload, thumbnail states, progress, retry/remove, and submit-attempt highlighting).
+- Work done:
+  - Added new reusable `PhotoUploadGrid` component:
+    - 2-column card grid on mobile and desktop.
+    - Entire card is clickable to open camera/file picker.
+    - Camera/video icons for empty states.
+    - Required badge on each card.
+    - Local preview thumbnail shown immediately before upload completes.
+    - Spinner overlay during upload.
+    - Green check overlay after upload success.
+    - Red X overlay + inline retry for upload failures.
+    - Uploaded-card click opens full-size preview dialog.
+    - Hover/long-press remove button for re-upload (blocked for completed jobs).
+    - Progress bar with red/yellow/green fill by completion ratio.
+    - Missing cards pulse red when user attempts submit before required uploads are complete.
+  - Added new API endpoint `DELETE /api/subjects/[id]/photos` for removing uploaded photos (with auth/role/assignment checks and completed-job guard).
+  - Extended `useJobWorkflow` with async upload/remove mutations (`uploadPhotoAsync`, `removePhotoAsync`) for grid card interactions.
+  - Applied redesign in all required places:
+    - In-progress workflow upload section.
+    - Billing section upload requirements area.
+    - Complete Job modal panel.
+  - Removed dependence on per-card Upload buttons in these flows.
+- Files changed:
+  - web/components/subjects/photo-upload-grid.tsx
+  - web/components/subjects/job-workflow-section.tsx
+  - web/components/subjects/BillingSection.tsx
+  - web/components/subjects/complete-job-panel.tsx
+  - web/hooks/subjects/use-job-workflow.ts
+  - web/app/api/subjects/[id]/photos/route.ts
+- Verification:
+  - VS Code diagnostics: no compile/type errors in all edited files.
+  - Targeted ESLint: no errors (non-blocking `<img>` performance warnings only in new grid component).
+  - Full production build: `npm run build` completed successfully.
+- Next:
+  - Optionally migrate preview images to `next/image` if you want to remove `no-img-element` warnings.
+
 ## [2026-03-20 19:41:10 +05:30] Change: Keep completion gated by photos, make billing fields optional
 
 - Summary: Updated Generate Bill & Complete flow so the button is enabled based on required photo uploads, while visit charge, service charge, and payment mode remain optional.

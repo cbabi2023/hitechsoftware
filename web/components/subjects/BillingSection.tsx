@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
-import type { PaymentMode, PhotoType, SubjectDetail } from '@/modules/subjects/subject.types';
+import type { PaymentMode, SubjectDetail } from '@/modules/subjects/subject.types';
 import { PAYMENT_MODES } from '@/modules/subjects/subject.constants';
 import {
   useDownloadBill,
@@ -13,25 +13,13 @@ import {
 } from '@/hooks/subjects/useBilling';
 import { useJobWorkflow } from '@/hooks/subjects/use-job-workflow';
 import { BillCard } from '@/components/subjects/BillCard';
-import { PhotoUploadRow } from '@/components/subjects/photo-upload-row';
+import { PhotoUploadGrid } from '@/components/subjects/photo-upload-grid';
 
 interface Props {
   subject: SubjectDetail;
   userRole: string | null;
   userId: string | null;
 }
-
-const PHOTO_LABELS: Record<PhotoType, string> = {
-  serial_number: 'Serial Number Label',
-  machine: 'Machine / Equipment',
-  bill: 'Invoice / Bill',
-  job_sheet: 'Job Sheet',
-  defective_part: 'Defective Part',
-  site_photo_1: 'Site Photo 1',
-  site_photo_2: 'Site Photo 2',
-  site_photo_3: 'Site Photo 3',
-  service_video: 'Service Video',
-};
 
 function formatMoney(value: number) {
   return value.toLocaleString('en-IN', {
@@ -49,8 +37,8 @@ export function BillingSection({ subject, userRole, userId }: Props) {
   const {
     completionRequirements,
     isLoadingRequirements,
-    uploadPhoto,
-    isUploadingPhoto,
+    uploadPhotoAsync,
+    removePhotoAsync,
   } = useJobWorkflow(subject.id);
 
   const [visitCharge, setVisitCharge] = useState(subject.visit_charge ?? 0);
@@ -65,6 +53,7 @@ export function BillingSection({ subject, userRole, userId }: Props) {
   const accessories = accessoriesQuery.data?.items ?? [];
   const accessoriesTotal = accessoriesQuery.data?.total ?? 0;
   const canGenerateAndComplete = canGenerate && (completionRequirements?.canComplete ?? false);
+  const [uploadAttempted, setUploadAttempted] = useState(false);
 
   const grandTotal = useMemo(() => {
     return Number(visitCharge || 0) + Number(serviceCharge || 0) + Number(accessoriesTotal || 0);
@@ -131,34 +120,20 @@ export function BillingSection({ subject, userRole, userId }: Props) {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  {completionRequirements.required.map((photoType) => {
-                    const uploadedPhoto = subject.photos.find((photo) => photo.photo_type === photoType);
+                <PhotoUploadGrid
+                  requiredTypes={completionRequirements.required}
+                  uploadedTypes={completionRequirements.uploaded}
+                  photos={subject.photos}
+                  canEdit={subject.status !== 'COMPLETED'}
+                  uploadAttempted={uploadAttempted}
+                  onUpload={uploadPhotoAsync}
+                  onRemove={removePhotoAsync}
+                />
 
-                    return (
-                      <PhotoUploadRow
-                        key={photoType}
-                        photoType={photoType}
-                        label={PHOTO_LABELS[photoType]}
-                        isRequired
-                        isUploaded={completionRequirements.uploaded.includes(photoType)}
-                        uploadedUrl={uploadedPhoto?.public_url}
-                        subjectId={subject.id}
-                        onUploadSuccess={(file) => uploadPhoto({ file, photoType })}
-                        isUploading={isUploadingPhoto}
-                      />
-                    );
-                  })}
-                </div>
-
-                {completionRequirements.canComplete ? (
+                {completionRequirements.canComplete && (
                   <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
                     <CheckCircle2 className="h-4 w-4" />
                     <span>All required photos uploaded. You can now generate the bill and complete the job.</span>
-                  </div>
-                ) : (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                    Missing required items: {completionRequirements.missing.map((photoType) => PHOTO_LABELS[photoType]).join(', ')}
                   </div>
                 )}
               </div>
@@ -226,17 +201,24 @@ export function BillingSection({ subject, userRole, userId }: Props) {
 
           <button
             type="button"
-            disabled={generateMutation.isPending || !canGenerateAndComplete || isLoadingRequirements}
-            onClick={() => generateMutation.mutate({
-              visit_charge: visitCharge,
-              service_charge: serviceCharge,
-              payment_mode: isOutOfWarranty && paymentMode ? paymentMode : undefined,
-              accessories: accessories.map((item) => ({
-                item_name: item.item_name,
-                quantity: item.quantity,
-                unit_price: item.unit_price,
-              })),
-            })}
+            disabled={generateMutation.isPending || isLoadingRequirements}
+            onClick={() => {
+              if (!canGenerateAndComplete) {
+                setUploadAttempted(true);
+                return;
+              }
+
+              generateMutation.mutate({
+                visit_charge: visitCharge,
+                service_charge: serviceCharge,
+                payment_mode: isOutOfWarranty && paymentMode ? paymentMode : undefined,
+                accessories: accessories.map((item) => ({
+                  item_name: item.item_name,
+                  quantity: item.quantity,
+                  unit_price: item.unit_price,
+                })),
+              });
+            }}
             className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {generateMutation.isPending ? 'Generating Bill & Completing Job...' : 'Generate Bill & Complete Job'}

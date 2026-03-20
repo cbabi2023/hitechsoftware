@@ -96,6 +96,41 @@ export function useJobWorkflow(subjectId: string) {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const removePhotoMutation = useMutation({
+    mutationFn: async ({
+      photoId,
+      storagePath,
+      photoType,
+    }: {
+      photoId: string;
+      storagePath: string;
+      photoType: PhotoType;
+    }) => {
+      const res = await fetch(`/api/subjects/${subjectId}/photos`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photoId, storagePath }),
+      });
+
+      const json = await res.json() as {
+        ok: boolean;
+        error?: { userMessage?: string; message?: string };
+      };
+
+      if (!json.ok) {
+        throw new Error(json.error?.userMessage ?? json.error?.message ?? 'Failed to remove upload');
+      }
+
+      return { photoType };
+    },
+    onSuccess: (_, { photoType }) => {
+      queryClient.invalidateQueries({ queryKey: SUBJECT_QUERY_KEYS.detail(subjectId) });
+      workflowRequirementsQuery.refetch();
+      toast.success(`${photoType.replace(/_/g, ' ')} removed`);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   // Mutation: mark job incomplete (runs via API route)
   const markIncompleteMutation = useMutation({
     mutationFn: async (input: IncompleteJobInput) => {
@@ -146,8 +181,14 @@ export function useJobWorkflow(subjectId: string) {
     updateStatusError: updateStatusMutation.error,
 
     uploadPhoto: uploadPhotoMutation.mutate,
+    uploadPhotoAsync: uploadPhotoMutation.mutateAsync,
     isUploadingPhoto: uploadPhotoMutation.isPending,
     uploadPhotoError: uploadPhotoMutation.error,
+
+    removePhoto: removePhotoMutation.mutate,
+    removePhotoAsync: removePhotoMutation.mutateAsync,
+    isRemovingPhoto: removePhotoMutation.isPending,
+    removePhotoError: removePhotoMutation.error,
 
     markIncomplete: markIncompleteMutation.mutate,
     isMarkingIncomplete: markIncompleteMutation.isPending,
