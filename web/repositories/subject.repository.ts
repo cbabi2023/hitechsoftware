@@ -4,18 +4,6 @@ import { createAdminClient } from '@/lib/supabase/admin';
 
 const supabase = createClient();
 
-const ACTIVE_PENDING_STATUSES = [
-  'PENDING',
-  'ALLOCATED',
-  'ACCEPTED',
-  'ARRIVED',
-  'IN_PROGRESS',
-  'INCOMPLETE',
-  'AWAITING_PARTS',
-  'RESCHEDULED',
-  'REJECTED',
-] as const;
-
 export async function listSubjects(filters: SubjectListFilters) {
   const page = filters.page && filters.page > 0 ? filters.page : 1;
   const pageSize = filters.page_size && filters.page_size > 0 ? filters.page_size : 10;
@@ -81,16 +69,17 @@ export async function listSubjects(filters: SubjectListFilters) {
     query = query.eq('status', filters.status.trim().toUpperCase());
   }
 
-  if (filters.technician_pending_only) {
-    // Active work queue for technicians: keep unfinished tasks visible across days.
-    query = query.in('status', [...ACTIVE_PENDING_STATUSES]);
+  if (filters.pending_only || filters.technician_pending_only) {
+    // Schema-safe pending filter: unfinished work has no completion timestamp.
+    query = query.is('completed_at', null);
   }
 
   if (filters.overdue_only) {
     const today = new Date().toISOString().split('T')[0];
     query = query
-      .in('status', [...ACTIVE_PENDING_STATUSES])
+      .is('completed_at', null)
       .not('assigned_technician_id', 'is', null)
+      .is('rescheduled_date', null)
       .lt('technician_allocated_date', today)
       .order('technician_allocated_date', { ascending: true });
   }

@@ -3,6 +3,28 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 15:44:35 +05:30] Fix: Subject List Runtime Error — invalid input value for enum subject_status: "ARRIVED"
+- Summary: Resolved subject list/dashboard failures caused by enum-literal filters referencing `ARRIVED` in environments where enum migration is not yet applied.
+- Work done:
+  - Replaced enum-dependent pending queue filtering with schema-safe pending criteria (`completed_at IS NULL`) in subject repository.
+  - Added reusable `pending_only` filter and wired it through subject filter types and hook state.
+  - Updated admin pending dashboard count to query using `pending_only` instead of per-status enum comparisons.
+  - Updated subjects queue-chip mode logic to toggle `pending_only` for `pending` and `overdue` modes.
+  - Kept overdue queue behavior using date/assignment criteria while avoiding fragile enum comparison paths.
+  - API documentation review completed: no API contract/path/auth/request-response change in this fix, so no update required in `web/docs/API_DOCUMENTATION.md`.
+- Files changed:
+  - web/modules/subjects/subject.types.ts
+  - web/hooks/subjects/useSubjects.ts
+  - web/repositories/subject.repository.ts
+  - web/app/dashboard/page.tsx
+  - web/app/dashboard/subjects/page.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - `npm run build --workspace=web` passed successfully (compile + TypeScript + route generation).
+  - No diagnostics in modified files via error checks.
+- Next:
+  - Optional: deploy/verify `ARRIVED` enum migration in all environments to keep data model and UI workflow fully aligned.
+
 ## [2026-03-20 15:41:59 +05:30] Feat: Admin Queue Chips in Service List (All / Pending / Overdue)
 - Summary: Added visible filter chips directly in subject/service list so admin can switch queue mode without URL editing.
 - Work done:

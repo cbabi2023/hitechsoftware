@@ -14,8 +14,6 @@ import { useAuth } from '@/hooks/auth/useAuth';
 import { getSubjects } from '@/modules/subjects/subject.service';
 import { SUBJECT_QUERY_KEYS } from '@/modules/subjects/subject.constants';
 
-const ACTIVE_PENDING_STATUSES = ['PENDING', 'ALLOCATED', 'ACCEPTED', 'ARRIVED', 'IN_PROGRESS', 'INCOMPLETE', 'AWAITING_PARTS', 'RESCHEDULED', 'REJECTED'];
-
 function formatTime(value: string | null) {
   if (!value) {
     return '-';
@@ -54,17 +52,11 @@ export default function DashboardPage() {
   const adminPendingSubjectsCountQuery = useQuery({
     queryKey: [...SUBJECT_QUERY_KEYS.list, 'admin-dashboard-pending-count'],
     queryFn: async () => {
-      const counts = await Promise.all(
-        ACTIVE_PENDING_STATUSES.map(async (status) => {
-          const result = await getSubjects({ status, page: 1, page_size: 1 });
-          if (!result.ok) {
-            throw new Error(result.error.message);
-          }
-          return result.data.total;
-        }),
-      );
-
-      return counts.reduce((sum, value) => sum + value, 0);
+      const result = await getSubjects({ pending_only: true, page: 1, page_size: 1 });
+      if (!result.ok) {
+        throw new Error(result.error.message);
+      }
+      return result.data.total;
     },
     enabled: userRole !== 'technician',
     staleTime: 30 * 1000,

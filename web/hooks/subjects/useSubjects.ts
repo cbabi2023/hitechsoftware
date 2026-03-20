@@ -22,6 +22,7 @@ export function useSubjects() {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [technicianDate, setTechnicianDate] = useState('');
+  const [pendingOnly, setPendingOnly] = useState(false);
   const [overdueOnly, setOverdueOnly] = useState(false);
 
   const filters: SubjectListFilters = useMemo(() => {
@@ -37,11 +38,12 @@ export function useSubjects() {
       to_date: toDate || undefined,
       technician_date: technicianDate || undefined,
       technician_pending_only: role === 'technician' ? true : undefined,
+      pending_only: pendingOnly || undefined,
       overdue_only: overdueOnly || undefined,
       page,
       page_size: pageSize,
     };
-  }, [searchInput, sourceType, priority, status, categoryId, brandId, dealerId, fromDate, toDate, technicianDate, overdueOnly, role, page, pageSize]);
+  }, [searchInput, sourceType, priority, status, categoryId, brandId, dealerId, fromDate, toDate, technicianDate, pendingOnly, overdueOnly, role, page, pageSize]);
 
   const query = useQuery({
     queryKey: [...SUBJECT_QUERY_KEYS.list, filters],
@@ -127,6 +129,7 @@ export function useSubjects() {
     fromDate,
     toDate,
     technicianDate,
+    pendingOnly,
     overdueOnly,
     isLoading: query.isLoading,
     isCreating: createSubjectMutation.isPending,
@@ -175,6 +178,10 @@ export function useSubjects() {
     },
     setTechnicianDate: (value: string) => {
       setTechnicianDate(value);
+      setPage(1);
+    },
+    setPendingOnly: (value: boolean) => {
+      setPendingOnly(value);
       setPage(1);
     },
     setOverdueOnly: (value: boolean) => {

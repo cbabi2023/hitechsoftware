@@ -127,6 +127,7 @@ export default function SubjectsDashboardPage() {
     fromDate,
     toDate,
     technicianDate,
+    pendingOnly,
     overdueOnly,
     isLoading,
     error,
@@ -140,6 +141,7 @@ export default function SubjectsDashboardPage() {
     setFromDate,
     setToDate,
     setTechnicianDate,
+    setPendingOnly,
     setOverdueOnly,
     setPage,
     setPageSize,
@@ -174,6 +176,9 @@ export default function SubjectsDashboardPage() {
       if (!overdueOnly) {
         setOverdueOnly(true);
       }
+      if (!pendingOnly) {
+        setPendingOnly(true);
+      }
       if (status !== '') {
         setStatus('');
       }
@@ -184,16 +189,23 @@ export default function SubjectsDashboardPage() {
       if (overdueOnly) {
         setOverdueOnly(false);
       }
+      if (!pendingOnly) {
+        setPendingOnly(true);
+      }
       if (status !== '') {
         setStatus('');
       }
       return;
     }
 
+    if (pendingOnly) {
+      setPendingOnly(false);
+    }
+
     if (overdueOnly) {
       setOverdueOnly(false);
     }
-  }, [queueParam, role, overdueOnly, setOverdueOnly, status, setStatus]);
+  }, [queueParam, role, pendingOnly, overdueOnly, setPendingOnly, setOverdueOnly, status, setStatus]);
 
   const today = new Date().toISOString().split('T')[0];
 
