@@ -70,6 +70,19 @@ export default function DashboardPage() {
     staleTime: 30 * 1000,
   });
 
+  const adminOverduePendingCountQuery = useQuery({
+    queryKey: [...SUBJECT_QUERY_KEYS.list, 'admin-dashboard-overdue-pending-count'],
+    queryFn: async () => {
+      const result = await getSubjects({ overdue_only: true, page: 1, page_size: 1 });
+      if (!result.ok) {
+        throw new Error(result.error.message);
+      }
+      return result.data.total;
+    },
+    enabled: userRole !== 'technician',
+    staleTime: 30 * 1000,
+  });
+
   if (userRole === 'technician') {
     const todayAttendance = todayAttendanceQuery.data?.ok ? todayAttendanceQuery.data.data : null;
     const isOnline = Boolean(todayAttendance?.toggled_on_at) && !todayAttendance?.toggled_off_at;
@@ -189,10 +202,10 @@ export default function DashboardPage() {
       href: ROUTES.DASHBOARD_TEAM,
     },
     {
-      label: 'Subjects',
+      label: 'Pending Subjects',
       value: adminPendingSubjectsCountQuery.isLoading ? '...' : adminPendingSubjectsCountQuery.data ?? 0,
       icon: ClipboardList,
-      href: ROUTES.DASHBOARD_SUBJECTS,
+      href: `${ROUTES.DASHBOARD_SUBJECTS}?queue=pending`,
     },
     {
       label: 'Inventory Items',
@@ -307,6 +320,38 @@ export default function DashboardPage() {
       {liveTechnicianStatusQuery.isError ? (
         <p className="mt-2 text-sm text-rose-600">Could not load live technician status right now.</p>
       ) : null}
+
+      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Link
+          href={`${ROUTES.DASHBOARD_SUBJECTS}?queue=overdue`}
+          className="group rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm transition hover:border-rose-300 hover:shadow-md"
+        >
+          <p className="text-sm font-medium text-rose-700">Overdue Pending (Technician Assigned)</p>
+          <p className="mt-2 text-3xl font-bold text-rose-800">
+            {adminOverduePendingCountQuery.isLoading ? '...' : adminOverduePendingCountQuery.data ?? 0}
+          </p>
+          <p className="mt-1 text-xs text-rose-600">Allocated date is older than today and still not closed.</p>
+          <div className="mt-3 flex items-center text-sm font-medium text-rose-700 group-hover:text-rose-900">
+            Open overdue queue
+            <ArrowRight size={16} className="ml-2" />
+          </div>
+        </Link>
+
+        <Link
+          href={`${ROUTES.DASHBOARD_SUBJECTS}?queue=pending`}
+          className="group rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm transition hover:border-amber-300 hover:shadow-md"
+        >
+          <p className="text-sm font-medium text-amber-700">All Pending Queue</p>
+          <p className="mt-2 text-3xl font-bold text-amber-800">
+            {adminPendingSubjectsCountQuery.isLoading ? '...' : adminPendingSubjectsCountQuery.data ?? 0}
+          </p>
+          <p className="mt-1 text-xs text-amber-600">All active pending statuses, sorted to prioritize overdue items.</p>
+          <div className="mt-3 flex items-center text-sm font-medium text-amber-700 group-hover:text-amber-900">
+            Open pending queue
+            <ArrowRight size={16} className="ml-2" />
+          </div>
+        </Link>
+      </div>
     </div>
   );
 }

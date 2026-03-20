@@ -86,6 +86,15 @@ export async function listSubjects(filters: SubjectListFilters) {
     query = query.in('status', [...ACTIVE_PENDING_STATUSES]);
   }
 
+  if (filters.overdue_only) {
+    const today = new Date().toISOString().split('T')[0];
+    query = query
+      .in('status', [...ACTIVE_PENDING_STATUSES])
+      .not('assigned_technician_id', 'is', null)
+      .lt('technician_allocated_date', today)
+      .order('technician_allocated_date', { ascending: true });
+  }
+
   if (filters.category_id) {
     query = query.eq('category_id', filters.category_id);
   }

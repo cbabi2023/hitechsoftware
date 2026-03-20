@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Filter, Plus } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import { usePermission } from '@/hooks/auth/usePermission';
 import { useSubjects } from '@/hooks/subjects/useSubjects';
 import { useBrands } from '@/hooks/brands/useBrands';
@@ -96,7 +97,14 @@ function getServiceTypeMeta(subject: SubjectListItem) {
   return { label: 'Chargeable', className: 'bg-slate-100 text-slate-600' };
 }
 
+const ACTIVE_PENDING_STATUSES = ['PENDING', 'ALLOCATED', 'ACCEPTED', 'ARRIVED', 'IN_PROGRESS', 'INCOMPLETE', 'AWAITING_PARTS', 'RESCHEDULED', 'REJECTED'];
+
+function isPendingStatus(status: string) {
+  return ACTIVE_PENDING_STATUSES.includes(status);
+}
+
 export default function SubjectsDashboardPage() {
+  const searchParams = useSearchParams();
   const { can, role } = usePermission();
   const queryClient = useQueryClient();
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -117,6 +125,7 @@ export default function SubjectsDashboardPage() {
     fromDate,
     toDate,
     technicianDate,
+    overdueOnly,
     isLoading,
     error,
     setSearch,
@@ -129,9 +138,61 @@ export default function SubjectsDashboardPage() {
     setFromDate,
     setToDate,
     setTechnicianDate,
+    setOverdueOnly,
     setPage,
     setPageSize,
   } = useSubjects();
+
+  const queueParam = searchParams.get('queue');
+
+  useEffect(() => {
+    if (role === 'technician') {
+      return;
+    }
+
+    if (queueParam === 'overdue') {
+      if (!overdueOnly) {
+        setOverdueOnly(true);
+      }
+      if (status !== '') {
+        setStatus('');
+      }
+      return;
+    }
+
+    if (queueParam === 'pending') {
+      if (overdueOnly) {
+        setOverdueOnly(false);
+      }
+      if (status !== '') {
+        setStatus('');
+      }
+      return;
+    }
+
+    if (overdueOnly) {
+      setOverdueOnly(false);
+    }
+  }, [queueParam, role, overdueOnly, setOverdueOnly, status, setStatus]);
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const sortedSubjects = [...subjects].sort((a, b) => {
+    const aDate = a.technician_allocated_date ?? a.allocated_date;
+    const bDate = b.technician_allocated_date ?? b.allocated_date;
+    const aOverdue = isPendingStatus(a.status) && Boolean(a.technician_allocated_date) && aDate < today;
+    const bOverdue = isPendingStatus(b.status) && Boolean(b.technician_allocated_date) && bDate < today;
+
+    if (aOverdue !== bOverdue) {
+      return aOverdue ? -1 : 1;
+    }
+
+    if (isPendingStatus(a.status) && isPendingStatus(b.status) && aDate !== bDate) {
+      return aDate < bDate ? -1 : 1;
+    }
+
+    return b.created_at.localeCompare(a.created_at);
+  });
 
   const advancedFilterCount = [
     sourceType !== 'all',
@@ -169,9 +230,19 @@ export default function SubjectsDashboardPage() {
         <p className="mt-1 text-sm text-slate-600">
           {role === 'technician'
             ? 'Showing your pending assigned services, including carry-forward unfinished tasks.'
-            : 'Filter, track, and audit all service subjects.'}
+            : queueParam === 'overdue'
+              ? 'Showing overdue pending works (allocated date older than today) for fast admin follow-up.'
+              : queueParam === 'pending'
+                ? 'Showing full pending queue, sorted with overdue items first.'
+                : 'Filter, track, and audit all service subjects.'}
         </p>
       </div>
+
+      {role !== 'technician' && queueParam === 'overdue' ? (
+        <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+          Overdue queue active: technician assigned date is less than today and task is still pending.
+        </div>
+      ) : null}
 
       <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
@@ -450,12 +521,16 @@ export default function SubjectsDashboardPage() {
                   </td>
                 </tr>
               ) : (
-                subjects.map((subject) => {
+                sortedSubjects.map((subject) => {
                   const isUnassigned = !subject.assigned_technician_id;
                   const priorityMeta = getPriorityMeta(subject.priority);
                   const statusMeta = getStatusMeta(subject.status);
                   const serviceTypeMeta = getServiceTypeMeta(subject);
                   const needsAttentionBorder = isUnassigned || subject.priority === 'critical';
+                  const effectiveDate = subject.technician_allocated_date ?? subject.allocated_date;
+                  const isOverduePending = isPendingStatus(subject.status)
+                    && Boolean(subject.technician_allocated_date)
+                    && effectiveDate < today;
 
                   return (
                     <tr
@@ -476,6 +551,11 @@ export default function SubjectsDashboardPage() {
                         {subject.is_rejected_pending_reschedule && (
                           <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-700">
                             ⚠ Reschedule Urgently
+                          </span>
+                        )}
+                        {isOverduePending && (
+                          <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                            Overdue Pending
                           </span>
                         )}
                         <p className="max-w-[180px] truncate whitespace-nowrap text-xs text-slate-500">

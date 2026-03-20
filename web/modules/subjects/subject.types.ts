@@ -97,6 +97,8 @@ export interface SubjectListFilters {
   technician_date?: string;
   /** Restrict technician views to active work queue (non-terminal statuses). */
   technician_pending_only?: boolean;
+  /** Show only overdue pending technician-assigned subjects. */
+  overdue_only?: boolean;
   page?: number;
   page_size?: number;
 }

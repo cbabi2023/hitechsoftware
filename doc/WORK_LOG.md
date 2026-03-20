@@ -3,6 +3,31 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 15:38:06 +05:30] Feat: Admin Overdue Pending Queue + Click-through Navigation + Pending Sorting
+- Summary: Added an explicit overdue-pending queue for admin dashboard based on technician-assigned date older than current date, with direct navigation to service list and overdue-first pending sorting.
+- Work done:
+  - Added `overdue_only` subject filter capability in types, hook state, and repository query layer.
+  - Implemented overdue filter condition in repository: active pending statuses + technician assigned + `technician_allocated_date < today`.
+  - Added dashboard cards for:
+    - Overdue Pending (clicks to service list with `?queue=overdue`)
+    - All Pending Queue (clicks to service list with `?queue=pending`)
+  - Updated subjects list page to read queue mode from URL params and auto-apply queue behavior.
+  - Added overdue-first sorting for pending work rows and visual `Overdue Pending` badge in list rows.
+  - Updated page description text to reflect queue mode (`overdue` / `pending`).
+  - API documentation review completed: no API route/path/auth/request-response change in this feature, so no update needed in `web/docs/API_DOCUMENTATION.md`.
+- Files changed:
+  - web/modules/subjects/subject.types.ts
+  - web/hooks/subjects/useSubjects.ts
+  - web/repositories/subject.repository.ts
+  - web/app/dashboard/page.tsx
+  - web/app/dashboard/subjects/page.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - `npm run build --workspace=web` passed successfully (compile + TypeScript + route generation).
+  - No diagnostics in modified files via error checks.
+- Next:
+  - Optional: add dedicated filter chips in UI (Overdue / Pending / All) instead of URL query-driven mode for faster manual switching.
+
 ## [2026-03-20 15:33:59 +05:30] Fix: Pending Works Not Visible on Dashboard
 - Summary: Fixed dashboard pending visibility by replacing ambiguous status exclusion filtering with explicit active pending status inclusion for technician queue and admin pending count aggregation.
 - Work done:
