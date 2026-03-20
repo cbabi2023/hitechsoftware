@@ -3,12 +3,9 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { SUBJECT_QUERY_KEYS } from '@/modules/subjects/subject.constants';
 import {
-  updateJobStatus,
-  markJobIncomplete,
   uploadJobPhoto,
   getRequiredPhotos,
   checkCompletionRequirements,
-  markJobComplete,
 } from '@/modules/subjects/subject.job-workflow';
 import type {
   JobCompletionRequirements,
@@ -44,13 +41,17 @@ export function useJobWorkflow(subjectId: string) {
     refetchInterval: 5000, // Poll every 5 seconds for real-time requirements
   });
 
-  // Mutation: update job status
+  // Mutation: update job status (runs via API route — admin client is server-side only)
   const updateStatusMutation = useMutation({
     mutationFn: async (newStatus: string) => {
-      if (!technicianId) throw new Error('Not authenticated');
-      const result = await updateJobStatus(subjectId, technicianId, newStatus);
-      if (!result.ok) throw new Error(result.error.message);
-      return result.data;
+      const res = await fetch(`/api/subjects/${subjectId}/workflow`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update_status', status: newStatus }),
+      });
+      const json = await res.json() as { ok: boolean; data?: { id: string; status: string }; error?: { message: string } };
+      if (!json.ok) throw new Error(json.error?.message ?? 'Failed to update status');
+      return json.data!;
     },
     onSuccess: (_, newStatus) => {
       queryClient.invalidateQueries({ queryKey: SUBJECT_QUERY_KEYS.detail(subjectId) });
@@ -83,13 +84,17 @@ export function useJobWorkflow(subjectId: string) {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  // Mutation: mark job incomplete
+  // Mutation: mark job incomplete (runs via API route)
   const markIncompleteMutation = useMutation({
     mutationFn: async (input: IncompleteJobInput) => {
-      if (!technicianId) throw new Error('Not authenticated');
-      const result = await markJobIncomplete(subjectId, technicianId, input);
-      if (!result.ok) throw new Error(result.error.message);
-      return result.data;
+      const res = await fetch(`/api/subjects/${subjectId}/workflow`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'mark_incomplete', ...input }),
+      });
+      const json = await res.json() as { ok: boolean; data?: { id: string; status: string }; error?: { message: string } };
+      if (!json.ok) throw new Error(json.error?.message ?? 'Failed to mark incomplete');
+      return json.data!;
     },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: SUBJECT_QUERY_KEYS.detail(subjectId) });
@@ -99,13 +104,17 @@ export function useJobWorkflow(subjectId: string) {
       onError: (err: Error) => toast.error(err.message),
   });
 
-  // Mutation: mark job complete
+  // Mutation: mark job complete (runs via API route)
   const markCompleteMutation = useMutation({
     mutationFn: async (notes?: string) => {
-      if (!technicianId) throw new Error('Not authenticated');
-      const result = await markJobComplete(subjectId, technicianId, notes);
-      if (!result.ok) throw new Error(result.error.message);
-      return result.data;
+      const res = await fetch(`/api/subjects/${subjectId}/workflow`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'mark_complete', notes }),
+      });
+      const json = await res.json() as { ok: boolean; data?: { id: string; status: string }; error?: { message: string } };
+      if (!json.ok) throw new Error(json.error?.message ?? 'Failed to mark complete');
+      return json.data!;
     },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: SUBJECT_QUERY_KEYS.detail(subjectId) });

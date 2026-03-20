@@ -3,6 +3,24 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 16:34:56 +05:30] Fix: Technician "Mark as Arrived" failing with Missing Supabase admin env error
+
+- Summary: Workflow status mutations (markArrived, markInProgress, markIncomplete, markComplete) were called directly from the client-side hook `use-job-workflow.ts`, which internally called `createAdminClient()`. The `SUPABASE_SERVICE_ROLE_KEY` env var is not available in the browser (only server-side), causing "Missing Supabase admin environment variables" for any technician trying to update job status.
+- Root cause: `subject.job-workflow.ts` service functions (all of which call `createAdminClient`) were imported and executed in browser context via the React Query hook.
+- Work done:
+  - Created server-side API route `POST /api/subjects/[id]/workflow` that authenticates the technician via `createServerClient`, then delegates to the existing service functions (`updateJobStatus`, `markJobIncomplete`, `markJobComplete`) which can safely call `createAdminClient` server-side.
+  - Updated `use-job-workflow.ts` hook: replaced direct service function calls in `updateStatusMutation`, `markIncompleteMutation`, `markCompleteMutation` with `fetch()` calls to the new API route.
+  - Removed unused imports of `updateJobStatus`, `markJobIncomplete`, `markJobComplete` from the hook (kept `uploadJobPhoto`, `getRequiredPhotos`, `checkCompletionRequirements` which use only browser client and are fine client-side).
+- Files changed:
+  - web/app/api/subjects/[id]/workflow/route.ts (new)
+  - web/hooks/subjects/use-job-workflow.ts
+- Verification:
+  - `npm run build --workspace=web` compiled successfully (✓)
+- Issues encountered:
+  - All workflow mutations (not just markArrived) had the same root cause and were fixed together.
+- Next:
+  - None
+
 ## [2026-03-20 16:23:54 +05:30] Feat: Complete Billing Completion System (API, UI, Brand/Dealer Due Profiles)
 - Summary: Implemented end-to-end billing completion flow with accessory capture, bill generation/download, payment status updates, and brand/dealer due visibility pages.
 - Work done:
