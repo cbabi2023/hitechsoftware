@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Trash2, Calendar } from 'lucide-react';
+import { Trash2, Calendar, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/dialog';
 import type { SubjectPhoto } from '@/modules/subjects/subject.types';
@@ -48,6 +48,7 @@ export function PhotoGallery({
 }: PhotoGalleryProps) {
   const [selectedPhoto, setSelectedPhoto] = useState<SubjectPhoto | null>(null);
   const [photoToDelete, setPhotoToDelete] = useState<SubjectPhoto | null>(null);
+  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
 
   if (!photos || photos.length === 0) {
     return (
@@ -58,16 +59,80 @@ export function PhotoGallery({
   }
 
   const isVideo = (photo: SubjectPhoto) => photo.mime_type?.startsWith('video/');
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  const sanitizeFileName = (value: string) => {
+    return value.replace(/[^a-zA-Z0-9._-]/g, '_');
+  };
+
+  const guessExtension = (photo: SubjectPhoto) => {
+    if (photo.mime_type?.startsWith('video/')) {
+      return 'mp4';
+    }
+    if (photo.mime_type?.includes('png')) {
+      return 'png';
+    }
+    if (photo.mime_type?.includes('webp')) {
+      return 'webp';
+    }
+    return 'jpg';
+  };
+
+  const makeDownloadName = (photo: SubjectPhoto) => {
+    const label = PHOTO_LABELS[photo.photo_type] || photo.photo_type;
+    const safeLabel = sanitizeFileName(label.toLowerCase().replaceAll(' ', '-'));
+    return `${safeLabel}-${photo.id}.${guessExtension(photo)}`;
+  };
+
+  const triggerDownload = async (photo: SubjectPhoto) => {
+    try {
+      const response = await fetch(photo.public_url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file (${response.status})`);
+      }
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = makeDownloadName(photo);
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      // Fallback keeps access to full-resolution public file if blob download fails.
+      window.open(photo.public_url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const downloadAll = async () => {
+    setIsDownloadingAll(true);
+    try {
+      for (const photo of photos) {
+        // Small delay to avoid browser popup/download throttling when opening multiple files.
+        // eslint-disable-next-line no-await-in-loop
+        await triggerDownload(photo);
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((resolve) => setTimeout(resolve, 180));
+      }
+    } finally {
+      setIsDownloadingAll(false);
+    }
   };
 
   return (
     <>
+      <div className="mb-3 flex items-center justify-end">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => void downloadAll()}
+          disabled={isDownloadingAll || photos.length === 0}
+          className="inline-flex items-center gap-1"
+        >
+          <Download className="h-4 w-4" />
+          {isDownloadingAll ? 'Downloading...' : 'Download All'}
+        </Button>
+      </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
         {photos.map((photo) => (
           <div key={photo.id} className="relative group">
@@ -94,7 +159,7 @@ export function PhotoGallery({
               )}
             </div>
 
-            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all rounded-lg flex items-center justify-center">
+            <div className="absolute inset-0 rounded-lg bg-black/0 transition-colors group-hover:bg-black/20 flex items-center justify-center gap-2">
               <Button
                 size="sm"
                 variant="secondary"
@@ -102,6 +167,16 @@ export function PhotoGallery({
                 className="opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 View
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => void triggerDownload(photo)}
+                className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Download
               </Button>
             </div>
 
@@ -168,6 +243,19 @@ export function PhotoGallery({
                     <span>Size: {(selectedPhoto.file_size_bytes / 1024).toFixed(2)} KB</span>
                   )}
                 </div>
+
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void triggerDownload(selectedPhoto)}
+                  className="inline-flex items-center gap-1"
+                >
+                  <Download className="h-4 w-4" />
+                  Download Full File
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>

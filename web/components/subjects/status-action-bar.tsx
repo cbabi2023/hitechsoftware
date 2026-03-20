@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea
 import { AlertCircle, CheckCircle2, MapPin, Wrench } from 'lucide-react';
 import type { IncompleteJobInput } from '@/modules/subjects/subject.types';
 
+type IncompleteReason = IncompleteJobInput['reason'];
+
 interface StatusActionBarProps {
   currentStatus: string;
   isAssignedTechnician: boolean;
@@ -41,6 +43,10 @@ const INCOMPLETE_REASONS = [
   { value: 'site_not_ready', label: 'Site Not Ready' },
   { value: 'other', label: 'Other' },
 ];
+
+function isIncompleteReason(value: string): value is IncompleteReason {
+  return INCOMPLETE_REASONS.some((item) => item.value === value);
+}
 
 export function StatusActionBar({
   currentStatus,
@@ -101,8 +107,12 @@ export function StatusActionBar({
       }
     }
 
+    if (!isIncompleteReason(incompleteReason)) {
+      return;
+    }
+
     onMarkIncomplete({
-      reason: incompleteReason as any,
+      reason: incompleteReason,
       note: incompleteNote,
       sparePartsRequested: sparePartsName || undefined,
       sparePartsQuantity: sparePartsName ? sparePartsQty : undefined,
@@ -233,9 +243,7 @@ export function StatusActionBar({
               </div>
             )}
 
-            {(['customer_cannot_afford', 'power_issue', 'door_locked', 'site_not_ready'] as const).includes(
-              incompleteReason as any,
-            ) && (
+            {['customer_cannot_afford', 'power_issue', 'door_locked', 'site_not_ready'].includes(incompleteReason) && (
               <div>
                 <Label>Additional Notes (optional)</Label>
                 <Textarea

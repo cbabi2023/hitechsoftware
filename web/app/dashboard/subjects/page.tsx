@@ -129,6 +129,7 @@ export default function SubjectsDashboardPage() {
     technicianDate,
     pendingOnly,
     overdueOnly,
+    dueOnly,
     isLoading,
     error,
     setSearch,
@@ -143,18 +144,21 @@ export default function SubjectsDashboardPage() {
     setTechnicianDate,
     setPendingOnly,
     setOverdueOnly,
+    setDueOnly,
     setPage,
     setPageSize,
   } = useSubjects();
 
   const queueParam = searchParams.get('queue');
-  const queueMode: 'all' | 'pending' | 'overdue' = queueParam === 'overdue'
+  const queueMode: 'all' | 'pending' | 'overdue' | 'due' = queueParam === 'overdue'
     ? 'overdue'
     : queueParam === 'pending'
       ? 'pending'
+      : queueParam === 'due'
+        ? 'due'
       : 'all';
 
-  function setQueueMode(mode: 'all' | 'pending' | 'overdue') {
+  function setQueueMode(mode: 'all' | 'pending' | 'overdue' | 'due') {
     const params = new URLSearchParams(searchParams.toString());
 
     if (mode === 'all') {
@@ -173,6 +177,9 @@ export default function SubjectsDashboardPage() {
     }
 
     if (queueParam === 'overdue') {
+      if (dueOnly) {
+        setDueOnly(false);
+      }
       if (!overdueOnly) {
         setOverdueOnly(true);
       }
@@ -186,6 +193,9 @@ export default function SubjectsDashboardPage() {
     }
 
     if (queueParam === 'pending') {
+      if (dueOnly) {
+        setDueOnly(false);
+      }
       if (overdueOnly) {
         setOverdueOnly(false);
       }
@@ -198,6 +208,22 @@ export default function SubjectsDashboardPage() {
       return;
     }
 
+    if (queueParam === 'due') {
+      if (pendingOnly) {
+        setPendingOnly(false);
+      }
+      if (overdueOnly) {
+        setOverdueOnly(false);
+      }
+      if (status !== '') {
+        setStatus('');
+      }
+      if (!dueOnly) {
+        setDueOnly(true);
+      }
+      return;
+    }
+
     if (pendingOnly) {
       setPendingOnly(false);
     }
@@ -205,7 +231,11 @@ export default function SubjectsDashboardPage() {
     if (overdueOnly) {
       setOverdueOnly(false);
     }
-  }, [queueParam, role, pendingOnly, overdueOnly, setPendingOnly, setOverdueOnly, status, setStatus]);
+
+    if (dueOnly) {
+      setDueOnly(false);
+    }
+  }, [queueParam, role, pendingOnly, overdueOnly, dueOnly, setPendingOnly, setOverdueOnly, setDueOnly, status, setStatus]);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -264,6 +294,8 @@ export default function SubjectsDashboardPage() {
             ? 'Showing your pending assigned services, including carry-forward unfinished tasks.'
             : queueParam === 'overdue'
               ? 'Showing overdue pending works (allocated date older than today) for fast admin follow-up.'
+              : queueParam === 'due'
+                ? 'Showing customer-chargeable completed jobs pending payment collection.'
               : queueParam === 'pending'
                 ? 'Showing full pending queue, sorted with overdue items first.'
                 : 'Filter, track, and audit all service subjects.'}
@@ -304,6 +336,17 @@ export default function SubjectsDashboardPage() {
             }`}
           >
             Overdue
+          </button>
+          <button
+            type="button"
+            onClick={() => setQueueMode('due')}
+            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+              queueMode === 'due'
+                ? 'border-emerald-700 bg-emerald-700 text-white'
+                : 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+            }`}
+          >
+            Due Payments
           </button>
         </div>
       ) : null}

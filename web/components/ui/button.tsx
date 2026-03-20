@@ -1,5 +1,10 @@
 import React from 'react';
 
+type ButtonProps = {
+  variant?: 'primary' | 'outline' | 'destructive' | 'secondary';
+  size?: 'sm' | 'md' | 'lg';
+} & React.ButtonHTMLAttributes<HTMLButtonElement>;
+
 export function Button({
   children,
   onClick,
@@ -9,16 +14,7 @@ export function Button({
   className = '',
   type = 'button',
   ...props
-}: {
-  children: React.ReactNode;
-  onClick?: () => void;
-  disabled?: boolean;
-  variant?: 'primary' | 'outline' | 'destructive' | 'secondary';
-  size?: 'sm' | 'md' | 'lg';
-  className?: string;
-  type?: 'button' | 'submit' | 'reset';
-  [key: string]: any;
-}) {
+}: ButtonProps) {
   const sizeClasses = {
     sm: 'px-2 py-1 text-xs',
     md: 'px-4 py-2 text-sm',

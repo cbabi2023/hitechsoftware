@@ -2,7 +2,6 @@
 
 import React, { useState, useCallback } from 'react';
 import { Upload, AlertCircle, Check } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Progress, Alert, AlertDescription } from '@/components/ui/form';
 import type { PhotoType } from '@/modules/subjects/subject.types';
 
@@ -96,7 +95,7 @@ export function PhotoUpload({
 
       onUpload(file, photoType);
     },
-    [photoType, onUpload],
+    [photoType, onUpload, validateFile],
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

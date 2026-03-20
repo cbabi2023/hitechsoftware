@@ -28,6 +28,7 @@ export const subjectFormSchema = z
     product_description: z.string().trim().max(2000).optional().or(z.literal('')),
     purchase_date: z.string().optional().or(z.literal('')),
     warranty_end_date: z.string().optional().or(z.literal('')),
+    amc_start_date: z.string().optional().or(z.literal('')),
     amc_end_date: z.string().optional().or(z.literal('')),
   })
   .superRefine((value, ctx) => {
@@ -55,11 +56,19 @@ export const subjectFormSchema = z
       });
     }
 
-    if (value.purchase_date && value.amc_end_date && value.amc_end_date < value.purchase_date) {
+    if (value.amc_end_date && !value.amc_start_date) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['amc_start_date'],
+        message: 'AMC purchase/start date is required when AMC end date is set.',
+      });
+    }
+
+    if (value.amc_start_date && value.amc_end_date && value.amc_end_date < value.amc_start_date) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['amc_end_date'],
-        message: 'AMC end date cannot be before purchase date.',
+        message: 'AMC end date cannot be before AMC start date.',
       });
     }
   });

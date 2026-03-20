@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ProtectedComponent } from '@/components/ui/ProtectedComponent';
 import { useAssignTechnician, useAssignableTechnicians } from '@/hooks/subjects/useSubjects';
 import { useAuth } from '@/hooks/auth/useAuth';
@@ -13,6 +13,7 @@ interface AssignTechnicianFormProps {
 
 export function AssignTechnicianForm({ subject }: AssignTechnicianFormProps) {
   const { user } = useAuth();
+  const isCompleted = subject.status === 'COMPLETED';
   const [selectedTechnicianId, setSelectedTechnicianId] = useState(subject.assigned_technician_id ?? '');
   const [techAllocatedDate, setTechAllocatedDate] = useState(subject.technician_allocated_date ?? '');
   const [techAllocatedNotes, setTechAllocatedNotes] = useState(subject.technician_allocated_notes ?? '');
@@ -20,17 +21,16 @@ export function AssignTechnicianForm({ subject }: AssignTechnicianFormProps) {
   const techniciansQuery = useAssignableTechnicians();
   const assignMutation = useAssignTechnician(subject.id);
 
-  useEffect(() => {
-    setSelectedTechnicianId(subject.assigned_technician_id ?? '');
-    setTechAllocatedDate(subject.technician_allocated_date ?? '');
-    setTechAllocatedNotes(subject.technician_allocated_notes ?? '');
-  }, [subject.assigned_technician_id, subject.technician_allocated_date, subject.technician_allocated_notes]);
-
   return (
-    <section className="mb-4 rounded-xl border border-slate-200 bg-white p-5">
+    <section key={`${subject.id}-${subject.assigned_technician_id ?? ''}-${subject.technician_allocated_date ?? ''}-${subject.technician_allocated_notes ?? ''}`} className="mb-4 rounded-xl border border-slate-200 bg-white p-5">
       <h2 className="mb-1 text-base font-semibold text-slate-900">
-        {subject.assigned_technician_id ? 'Reassign Technician' : 'Assign Technician'}
+        {isCompleted ? 'Assignment Locked' : (subject.assigned_technician_id ? 'Reassign Technician' : 'Assign Technician')}
       </h2>
+      {isCompleted ? (
+        <p className="mb-3 text-sm text-slate-500">
+          This subject is completed. Reassignment is disabled.
+        </p>
+      ) : null}
       <ProtectedComponent
         permission="subject:update"
         fallback={
@@ -49,7 +49,7 @@ export function AssignTechnicianForm({ subject }: AssignTechnicianFormProps) {
             <select
               value={selectedTechnicianId}
               onChange={(e) => setSelectedTechnicianId(e.target.value)}
-              disabled={assignMutation.isPending || techniciansQuery.isLoading}
+              disabled={isCompleted || assignMutation.isPending || techniciansQuery.isLoading}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
             >
               <option value="">- Unassign -</option>
@@ -69,7 +69,7 @@ export function AssignTechnicianForm({ subject }: AssignTechnicianFormProps) {
               type="date"
               value={techAllocatedDate}
               onChange={(e) => setTechAllocatedDate(e.target.value)}
-              disabled={assignMutation.isPending}
+              disabled={isCompleted || assignMutation.isPending}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
             />
             <p className="mt-1 text-[11px] text-slate-500">Past dates are allowed for backdated assignment updates.</p>
@@ -84,7 +84,7 @@ export function AssignTechnicianForm({ subject }: AssignTechnicianFormProps) {
               value={techAllocatedNotes}
               onChange={(e) => setTechAllocatedNotes(e.target.value)}
               placeholder="Notes for the technician"
-              disabled={assignMutation.isPending}
+              disabled={isCompleted || assignMutation.isPending}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 placeholder:text-slate-300 focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
             />
           </div>
@@ -93,7 +93,7 @@ export function AssignTechnicianForm({ subject }: AssignTechnicianFormProps) {
         <div className="mt-4 flex items-center gap-3">
           <button
             type="button"
-            disabled={assignMutation.isPending || (!!selectedTechnicianId && !techAllocatedDate)}
+            disabled={isCompleted || assignMutation.isPending || (!!selectedTechnicianId && !techAllocatedDate)}
             onClick={() => {
               assignMutation.mutate({
                 subject_id: subject.id,

@@ -10,6 +10,8 @@ import type {
   SubjectListFilters,
   UpdateSubjectInput,
   AssignTechnicianInput,
+  IncompleteReason,
+  PhotoType,
   WarrantyPeriod,
 } from '@/modules/subjects/subject.types';
 import { createSubjectSchema, updateSubjectSchema } from '@/modules/subjects/subject.validation';
@@ -35,6 +37,27 @@ function monthsForWarrantyPeriod(period: WarrantyPeriod): number | null {
   return periodOption?.months ?? null;
 }
 
+function isIncompleteReason(value: string | null | undefined): value is IncompleteReason {
+  return value === 'customer_cannot_afford'
+    || value === 'power_issue'
+    || value === 'door_locked'
+    || value === 'spare_parts_not_available'
+    || value === 'site_not_ready'
+    || value === 'other';
+}
+
+function isPhotoType(value: string): value is PhotoType {
+  return value === 'serial_number'
+    || value === 'machine'
+    || value === 'bill'
+    || value === 'job_sheet'
+    || value === 'defective_part'
+    || value === 'site_photo_1'
+    || value === 'site_photo_2'
+    || value === 'site_photo_3'
+    || value === 'service_video';
+}
+
 function normalizeSubjectPayload(input: SubjectFormValues) {
   return {
     subject_number: normalizeSubjectNumber(input.subject_number),
@@ -55,6 +78,7 @@ function normalizeSubjectPayload(input: SubjectFormValues) {
     product_description: normalizeOptional(input.product_description),
     purchase_date: normalizeOptional(input.purchase_date),
     warranty_end_date: normalizeOptional(input.warranty_end_date),
+    amc_start_date: normalizeOptional(input.amc_start_date),
     amc_end_date: normalizeOptional(input.amc_end_date),
   };
 }
@@ -255,6 +279,7 @@ export async function getSubjectDetails(id: string): Promise<ServiceResult<Subje
     warranty_period_months: number | null;
     warranty_end_date: string | null;
     warranty_status: 'active' | 'expired' | null;
+    amc_start_date: string | null;
     amc_end_date: string | null;
     service_charge_type: 'customer' | 'brand_dealer';
     is_amc_service: boolean;
@@ -344,6 +369,7 @@ export async function getSubjectDetails(id: string): Promise<ServiceResult<Subje
       warranty_period_months: typed.warranty_period_months,
       warranty_end_date: typed.warranty_end_date,
       warranty_status: typed.warranty_status,
+      amc_start_date: typed.amc_start_date,
       amc_end_date: typed.amc_end_date,
       service_charge_type: typed.service_charge_type,
       is_amc_service: typed.is_amc_service,
@@ -364,7 +390,7 @@ export async function getSubjectDetails(id: string): Promise<ServiceResult<Subje
       work_started_at: typed.work_started_at ?? null,
       completed_at: typed.completed_at ?? null,
       incomplete_at: typed.incomplete_at ?? null,
-      incomplete_reason: (typed.incomplete_reason as any) ?? null,
+      incomplete_reason: isIncompleteReason(typed.incomplete_reason) ? typed.incomplete_reason : null,
       incomplete_note: typed.incomplete_note ?? null,
       completion_proof_uploaded: typed.completion_proof_uploaded ?? false,
       completion_notes: typed.completion_notes ?? null,
@@ -374,10 +400,20 @@ export async function getSubjectDetails(id: string): Promise<ServiceResult<Subje
       created_at: typed.created_at,
       created_by: typed.created_by,
       assigned_by: typed.assigned_by,
-      photos: ((typed.subject_photos as any) ?? []).map((photo: any) => ({
+      photos: ((typed.subject_photos ?? []) as Array<{
+        id: string;
+        subject_id: string;
+        photo_type: string;
+        storage_path: string;
+        public_url: string;
+        uploaded_by: string;
+        uploaded_at: string;
+        file_size_bytes: number;
+        mime_type: string;
+      }>).filter((photo) => isPhotoType(photo.photo_type)).map((photo) => ({
         id: photo.id,
         subject_id: photo.subject_id,
-        photo_type: photo.photo_type,
+        photo_type: photo.photo_type as PhotoType,
         storage_path: photo.storage_path,
         public_url: photo.public_url,
         uploaded_by: photo.uploaded_by,
@@ -453,6 +489,25 @@ export async function assignSubjectToTechnician(subjectId: string, technicianId?
 
 export async function assignTechnicianWithDate(input: AssignTechnicianInput): Promise<ServiceResult<{ id: string }>> {
   const { subject_id, technician_id, technician_allocated_date, technician_allocated_notes, assigned_by } = input;
+
+  const subjectStateResult = await getSubjectById(subject_id);
+  if (subjectStateResult.error || !subjectStateResult.data) {
+    return {
+      ok: false,
+      error: {
+        message: subjectStateResult.error?.message ?? 'Subject not found',
+        code: subjectStateResult.error?.code,
+      },
+    };
+  }
+
+  const subjectState = subjectStateResult.data as { status?: string };
+  if (subjectState.status === 'COMPLETED') {
+    return {
+      ok: false,
+      error: { message: 'Completed subjects cannot be reassigned.' },
+    };
+  }
 
   // Validate technician exists and is active when assigning
   if (technician_id) {

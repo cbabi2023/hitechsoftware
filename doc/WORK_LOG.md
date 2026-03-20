@@ -3,6 +3,363 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 23:25:06 +05:30] Web app stabilization: resolved blocking lint/build errors and validated release readiness
+
+- Summary: Cleared all lint/build blocking errors causing unstable release quality and verified production build success before push.
+- Work done:
+  - Fixed explicit typing issues in API/service/UI modules by removing disallowed `any` usage and adding strict guards.
+  - Fixed React hooks violations:
+    - resolved conditional hook ordering in dashboard page,
+    - removed setState-in-effect blocking patterns in assignment/team/bill card flows.
+  - Fixed auth/login and form typing regressions discovered during strict build checks.
+  - Re-ran lint and build until zero blocking errors remained.
+- Files changed:
+  - web/app/api/team/members/route.ts
+  - web/app/dashboard/attendance/page.tsx
+  - web/app/dashboard/page.tsx
+  - web/app/dashboard/team/[id]/page.tsx
+  - web/components/assignment/AssignTechnicianForm.tsx
+  - web/components/providers/AuthProvider.tsx
+  - web/components/subjects/BillCard.tsx
+  - web/components/subjects/photo-upload.tsx
+  - web/components/subjects/photo-upload-fixed.tsx
+  - web/components/subjects/status-action-bar.tsx
+  - web/components/subjects/status-action-bar-new.tsx
+  - web/components/ui/button.tsx
+  - web/components/ui/form.tsx
+  - web/hooks/auth/useAuth.ts
+  - web/lib/pdf/BillPDF.tsx
+  - web/modules/subjects/subject.service.ts
+  - web/app/login/page.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - Lint: `npm run lint` completed with warnings only and zero errors.
+  - Build: `npm run build` passed successfully in `web`.
+- Issues:
+  - Remaining non-blocking warnings exist (mostly `next/image`, hook exhaustive-deps, and unused-vars warnings) and do not fail lint/build.
+- Next:
+  - Optionally run a warning cleanup pass to reach fully warning-free lint output.
+
+## [2026-03-20 23:14:47 +05:30] Login stability fix: remove multi-refresh requirement before dashboard loads
+
+- Summary: Fixed intermittent post-login redirect/hydration race that caused users to refresh multiple times before dashboard became accessible.
+- Work done:
+  - Hardened auth hook state handling to prevent stale pre-login auth query data from overwriting fresh sign-in state.
+  - Added auth query cancellation/invalidation during sign-in and synchronized auth cache updates.
+  - Marked auth store as hydrated immediately on successful sign-in/sign-out to avoid indefinite loading gates.
+  - Expanded auth provider event handling to include signed-in/session events for consistent store synchronization.
+  - Simplified login submit redirect behavior to avoid premature push and rely on stable authenticated state transition.
+  - Preserved middleware `next` redirect support on login page with safe path validation.
+- Files changed:
+  - web/hooks/auth/useAuth.ts
+  - web/components/providers/AuthProvider.tsx
+  - web/app/login/page.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - Production build: `npm run build` passed successfully in `web`.
+  - Login page prerender check passed after removing `useSearchParams` dependency.
+- Issues:
+  - Root issue was auth state race between in-flight unauthenticated query response and immediate post-login navigation/hydration.
+- Next:
+  - Validate in browser with repeated fresh logins (normal, slow network, and private-window flows) to confirm zero manual refresh requirement.
+
+## [2026-03-20 23:08:08 +05:30] Subject/service module full-flow reference documentation
+
+- Summary: Added a dedicated module reference covering complete service/subject flow, role behavior, transition rules, function map, critical scenarios, and test checklist.
+- Work done:
+  - Created a standalone documentation file for subject/service module implementation and operations.
+  - Documented end-to-end user flows (create, assignment, in-progress, completion, incomplete/reschedule).
+  - Added workflow transition matrix and service-layer function map.
+  - Added critical scenario matrix (happy path, validation, permission, workflow, consistency checks).
+  - Added A-to-Z critical test plan section separating implemented tests from next required test blocks.
+- Files changed:
+  - web/docs/SUBJECT_SERVICE_MODULE_REFERENCE.md
+  - doc/WORK_LOG.md
+- Verification:
+  - Documentation review completed for structure and consistency with current module behavior.
+  - Existing verification from current cycle remains green: `npm run test:run` and `npm run build` passed in `web`.
+- Issues:
+  - none
+- Next:
+  - Implement the remaining service/workflow/billing unit tests listed in the new critical test plan section.
+
+## [2026-03-20 23:06:53 +05:30] Subject validation tests: fix valid payload UUID fixtures and re-verify
+
+- Summary: Resolved the failing critical validation test by correcting invalid UUID fixture values and re-ran quality checks.
+- Work done:
+  - Investigated the failing test `accepts a valid service subject payload` in the subject validation suite.
+  - Confirmed Zod UUID format rejection was caused by invalid UUID variant values in test fixtures.
+  - Updated `brand_id`, `category_id`, and `created_by` in the test payload to valid UUID values.
+  - Removed temporary debug throw used during failure diagnosis.
+  - Re-ran test suite and production build for regression safety.
+- Files changed:
+  - web/modules/subjects/subject.validation.test.ts
+  - doc/WORK_LOG.md
+- Verification:
+  - Test run: `npm run test:run` passed in `web` (6/6 tests passed).
+  - Production build: `npm run build` passed in `web`.
+- Issues:
+  - Root cause was test fixture data using UUIDs that do not satisfy strict RFC variant/version checks.
+- Next:
+  - Continue expanding A-to-Z critical scenario coverage for subject/service module APIs and workflow transitions.
+
+## [2026-03-21 00:01:34 +05:30] Technician dashboard enhancement: products sold and parts sold by period
+
+- Summary: Extended technician dashboard insights to show how much product and parts the technician sold for today, this week, this month, and this year.
+- Work done:
+  - Extended existing technician summary API response:
+    - `GET /api/dashboard/technician/completed-summary`
+    - Added `sales` section with per-period metrics:
+      - `products_sold`
+      - `parts_sold_qty`
+      - `parts_sold_amount`
+  - Computation logic implemented from existing records:
+    - Completed jobs per period from `subjects.completed_at`
+    - Products sold from `subject_bills` (`customer_receipt`)
+    - Parts sold qty/amount from `subject_accessories`
+  - Updated technician dashboard UI:
+    - Added `Products & Parts Sold` table with rows for Today/This Week/This Month/This Year.
+  - Updated API documentation to include new `sales` response structure.
+- Files changed:
+  - web/app/api/dashboard/technician/completed-summary/route.ts
+  - web/app/dashboard/page.tsx
+  - web/docs/API_DOCUMENTATION.md
+  - doc/WORK_LOG.md
+- Verification:
+  - Production build: `npm run build` passed successfully in `web`.
+  - No TypeScript diagnostics errors in changed files.
+- Issues:
+  - none
+- Next:
+  - Optionally surface `parts_sold_amount` in dashboard UI if you want monetary tracking visible in the same table.
+
+## [2026-03-20 23:58:38 +05:30] Technician dashboard: completed work counters (today/week/month/year)
+
+- Summary: Added period-wise completed work metrics to technician dashboard so each technician can instantly see completed jobs for today, this week, this month, and this year.
+- Work done:
+  - Added new API route for technician self-summary:
+    - `GET /api/dashboard/technician/completed-summary`
+    - Auth restricted to `technician` role.
+    - Computes counts from `subjects.completed_at` for:
+      - today
+      - week (Monday start)
+      - month
+      - year
+  - Updated technician dashboard UI:
+    - Added `Completed Work Summary` card block with 4 counters.
+    - Added loading state and error message fallback.
+  - Updated API documentation with endpoint details and response schema.
+- Files changed:
+  - web/app/api/dashboard/technician/completed-summary/route.ts
+  - web/app/dashboard/page.tsx
+  - web/docs/API_DOCUMENTATION.md
+  - doc/WORK_LOG.md
+- Verification:
+  - Production build: `npm run build` passed successfully in `web`.
+  - Route appears in build output: `/api/dashboard/technician/completed-summary`.
+- Issues:
+  - none
+- Next:
+  - Optionally add previous-week and previous-month comparative delta badges for technician motivation insights.
+
+## [2026-03-20 23:52:19 +05:30] Hotfix: technician workflow "Subject not found or inaccessible" after new subject creation
+
+- Summary: Fixed technician status update failure (Arrived/In Progress path) caused by schema mismatch when `amc_start_date` column was not yet present in DB.
+- Work done:
+  - Root cause identified:
+    - Workflow status service uses `getSubjectByIdAdmin`.
+    - Subject detail select was updated to include `amc_start_date`.
+    - In environments where migration was pending, query errored with missing column and surfaced as `Subject <id> not found or inaccessible`.
+  - Implemented compatibility fallback in repository:
+    - Added primary subject-detail select including `amc_start_date`.
+    - Added legacy fallback select (without `amc_start_date`) when DB reports missing column.
+    - Fallback injects `amc_start_date: null` into returned data for type safety and app continuity.
+  - Applied fallback for both:
+    - `getSubjectById`
+    - `getSubjectByIdAdmin`
+  - API documentation review:
+    - No Next.js route contract change in this hotfix; `web/docs/API_DOCUMENTATION.md` update not required.
+- Files changed:
+  - web/repositories/subject.repository.ts
+  - doc/WORK_LOG.md
+- Verification:
+  - VS Code diagnostics: resolved TypeScript cast warnings after fallback merge.
+  - Production build: `npm run build` passed successfully in `web`.
+- Issues:
+  - Root issue: application code deployed ahead of DB migration (`amc_start_date`) in one environment.
+- Next:
+  - Apply `supabase/migrations/20260320_010_subject_amc_start_date.sql` in target environment to remove fallback dependency.
+
+## [2026-03-20 23:49:46 +05:30] Subject form enhancement: separate AMC purchase/start date capture
+
+- Summary: Added a dedicated AMC purchase/start date on subject create/edit so AMC can begin later than product purchase/warranty timeline.
+- Work done:
+  - Extended subject data model with `amc_start_date` across types and form values.
+  - Updated subject create/edit form:
+    - Added `AMC Purchase / Start Date` input in Coverage Dates.
+    - AMC period auto-calculation now uses AMC start date (not product purchase date).
+    - AMC end-date reverse period inference now uses AMC start date.
+  - Added validation rules:
+    - AMC start date is required when AMC end date is set.
+    - AMC end date cannot be before AMC start date.
+  - Updated persistence pipeline:
+    - Web repository create/update now sends and stores `amc_start_date`.
+    - Subject detail selectors now fetch `amc_start_date`.
+    - Subject detail mapping now exposes `amc_start_date` to UI.
+  - Added DB migration:
+    - Added `subjects.amc_start_date` column.
+    - Updated `create_subject_with_customer` function signature/body to accept and persist `p_amc_start_date`.
+  - API documentation review:
+    - No Next.js route handler contract changed in this task; `web/docs/API_DOCUMENTATION.md` update not required.
+- Files changed:
+  - web/modules/subjects/subject.types.ts
+  - web/modules/subjects/subject.validation.ts
+  - web/components/subjects/SubjectForm.tsx
+  - web/app/dashboard/subjects/new/page.tsx
+  - web/app/dashboard/subjects/[id]/edit/page.tsx
+  - web/modules/subjects/subject.service.ts
+  - web/repositories/subject.repository.ts
+  - supabase/migrations/20260320_010_subject_amc_start_date.sql
+  - doc/WORK_LOG.md
+- Verification:
+  - VS Code diagnostics: no TypeScript errors in modified files.
+  - Production build: `npm run build` passed successfully in `web`.
+- Issues:
+  - none
+- Next:
+  - Run Supabase migration in target environments before using AMC start date in production forms.
+
+## [2026-03-20 23:36:18 +05:30] Post-service media maintenance: allow upload/remove after completion
+
+- Summary: Enabled editing of service media after completion so authorized users can upload new photos/videos and remove existing ones from the same service detail section.
+- Work done:
+  - Updated billing media section UI:
+    - Added post-completion media maintenance mode in Billing section (`Post-Service Media Maintenance`).
+    - Upload control is now available for authorized users after service completion.
+    - Remove control is now available for authorized users after completion.
+    - Billing generation controls remain hidden in completed maintenance mode.
+  - Updated media upload API auth behavior:
+    - `POST /api/subjects/{id}/photos/upload` now allows `office_staff` and `super_admin` in addition to assigned technician.
+  - Updated media delete API behavior:
+    - `DELETE /api/subjects/{id}/photos` no longer blocks removal when subject is completed.
+  - Updated API documentation for media upload/remove auth and post-completion behavior.
+- Files changed:
+  - web/components/subjects/BillingSection.tsx
+  - web/app/api/subjects/[id]/photos/upload/route.ts
+  - web/app/api/subjects/[id]/photos/route.ts
+  - web/docs/API_DOCUMENTATION.md
+  - doc/WORK_LOG.md
+- Verification:
+  - VS Code diagnostics: no TypeScript errors in modified files.
+  - Production build: `npm run build` passed successfully in `web`.
+- Issues:
+  - none
+- Next:
+  - Optionally add an audit timeline event for media add/remove after completion.
+
+## [2026-03-20 23:33:24 +05:30] Fix media visibility on service details gallery cards
+
+- Summary: Fixed uploaded photo visibility issue where gallery cards appeared too dark, making images hard to view without opening preview.
+- Work done:
+  - Updated gallery overlay styling to keep media clear by default and apply only a light darkening on hover.
+  - Replaced legacy opacity utility combination with explicit color-alpha classes to avoid unintended permanent dark overlay rendering.
+  - API documentation review:
+    - No API route/contract change in this task; `web/docs/API_DOCUMENTATION.md` update not required.
+- Files changed:
+  - web/components/subjects/photo-gallery.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - VS Code diagnostics: no TypeScript errors in edited file.
+  - Production build: `npm run build` passed successfully in `web`.
+- Issues:
+  - Root issue was UI overlay styling making thumbnails appear dark at rest state.
+- Next:
+  - none
+
+## [2026-03-20 23:06:20 +05:30] Service details media downloads: per file and download all
+
+- Summary: Added download actions on completed-job media gallery so office/backend users can download full uploaded files individually or in bulk from the service details page.
+- Work done:
+  - Updated completed-job `PhotoGallery` to include:
+    - `Download All` button above gallery.
+    - Per-media `Download` button on hover for each item.
+    - `Download Full File` button inside preview dialog.
+  - Implemented robust client download flow:
+    - Primary path uses `fetch` + Blob + object URL + anchor download for full file saving.
+    - Fallback opens file URL in new tab if blob download fails.
+  - Added generated filename logic based on media label and id with extension inferred from MIME type.
+  - API documentation review:
+    - No API route/contract change in this task; `web/docs/API_DOCUMENTATION.md` update not required.
+- Files changed:
+  - web/components/subjects/photo-gallery.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - Production build: `npm run build` passed successfully in `web`.
+  - TypeScript compile issue encountered once (button handler signature) and fixed in same task.
+- Issues:
+  - Initial type mismatch on `Button` click handler was resolved by aligning with the component's `() => void` signature.
+- Next:
+  - Optionally add zip export endpoint for one-click bulk download when photo counts are high.
+
+## [2026-03-20 22:59:40 +05:30] Lock technician reassignment for completed subjects
+
+- Summary: Disabled assigning/reassigning technician once a subject is completed so completed jobs cannot be moved to another technician.
+- Work done:
+  - Updated assignment form UI to lock controls when subject status is `COMPLETED`.
+  - Replaced heading with `Assignment Locked` and added helper text indicating reassignment is disabled for completed subjects.
+  - Added service-level guard in assignment flow to reject reassignment attempts when subject status is `COMPLETED`.
+  - API documentation review:
+    - No API route/contract change in this task; `web/docs/API_DOCUMENTATION.md` update not required.
+- Files changed:
+  - web/components/assignment/AssignTechnicianForm.tsx
+  - web/modules/subjects/subject.service.ts
+  - doc/WORK_LOG.md
+- Verification:
+  - VS Code diagnostics: no TypeScript errors in edited files.
+  - Production build: `npm run build` passed successfully in `web`.
+- Issues:
+  - none
+- Next:
+  - none
+
+## [2026-03-20 22:58:10 +05:30] Due payment tracking and collection flow hardening
+
+- Summary: Added a dedicated due-payments queue in the subjects dashboard and strengthened due collection updates by requiring payment mode when marking customer bills as paid.
+- Work done:
+  - Added queue support for due collection in subject listing:
+    - New `queue=due` mode in subjects dashboard.
+    - New `Due Payments` queue chip for office flow.
+    - Queue applies a strict due filter: completed, bill generated, customer-chargeable, billing status due.
+  - Extended subject list filter model and hook state:
+    - Added `due_only` filter support in subject filters and query pipeline.
+  - Improved bill card collection UX:
+    - Added payment mode selector (cash/upi/card/cheque) for collection.
+    - Changed action to `Collect and Mark Paid` with selected mode.
+    - Added due-aging hint (`Due pending for X days`) for unpaid customer receipts.
+    - Displayed collected timestamp and mode after collection.
+  - Enforced backend contract for proper due collection:
+    - `PATCH /api/subjects/{id}/billing` now requires `paymentMode` when `paymentStatus=paid`.
+    - Payment mode is now synchronized to both `subject_bills` and `subjects` on status updates.
+  - API documentation updated to include implemented subject billing routes and the new payment mode requirement for paid status updates.
+- Files changed:
+  - web/app/dashboard/subjects/page.tsx
+  - web/hooks/subjects/useSubjects.ts
+  - web/repositories/subject.repository.ts
+  - web/components/subjects/BillingSection.tsx
+  - web/components/subjects/BillCard.tsx
+  - web/hooks/subjects/useBilling.ts
+  - web/app/api/subjects/[id]/billing/route.ts
+  - web/modules/subjects/subject.types.ts
+  - web/docs/API_DOCUMENTATION.md
+  - doc/WORK_LOG.md
+- Verification:
+  - Production build: `npm run build` passed successfully in `web`.
+  - VS Code diagnostics: no TypeScript errors in modified files.
+- Issues:
+  - none
+- Next:
+  - Optionally add a dashboard KPI tile for total due amount and age buckets (0-7, 8-30, 30+ days) for collection prioritization.
+
 ## [2026-03-20 22:27:20 +05:30] Warranty/AMC UX enhancement: period presets, auto date calculation, custom date inference, and remaining days
 
 - Summary: Added two-way warranty and AMC date logic so users can choose period presets or custom end dates, with automatic calculation and remaining-days visibility.

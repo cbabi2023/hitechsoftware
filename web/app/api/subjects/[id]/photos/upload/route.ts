@@ -94,7 +94,7 @@ export async function POST(
   console.log(`[${timestamp}] ✓ Step 2 passed: User ${userId} authenticated`);
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Step 3: Verify technician role
+  // Step 3: Verify role
   // ──────────────────────────────────────────────────────────────────────────
   const profileResult = await supabase
     .from('profiles')
@@ -104,7 +104,7 @@ export async function POST(
 
   if (profileResult.error || !profileResult.data) {
     const error: ErrorResponse = {
-      step: '3. Load Technician Profile',
+      step: '3. Load Profile',
       code: 'PROFILE_NOT_FOUND',
       message: 'User profile missing',
       userMessage: 'Your profile could not be found. Please log out and log back in.',
@@ -113,18 +113,22 @@ export async function POST(
     return NextResponse.json({ ok: false, error }, { status: 400 });
   }
 
-  if (profileResult.data.role !== 'technician') {
+  const role = profileResult.data.role;
+  const isPrivileged = role === 'super_admin' || role === 'office_staff';
+  const isTechnician = role === 'technician';
+
+  if (!isTechnician && !isPrivileged) {
     const error: ErrorResponse = {
-      step: '3. Verify Technician Role',
+      step: '3. Verify Role',
       code: 'INVALID_ROLE',
-      message: `User role is '${profileResult.data.role}', expected 'technician'`,
-      userMessage: 'Only technicians can upload photos',
+      message: `User role is '${role}', expected technician/office_staff/super_admin`,
+      userMessage: 'You are not allowed to upload media for service subjects',
     };
     console.log(`[${timestamp}] ✗ Step 3 failed:`, error.code);
     return NextResponse.json({ ok: false, error }, { status: 403 });
   }
 
-  console.log(`[${timestamp}] ✓ Step 3 passed: User is technician`);
+  console.log(`[${timestamp}] ✓ Step 3 passed: Role ${role} allowed`);
 
   // ──────────────────────────────────────────────────────────────────────────
   // Step 4: Parse FormData and get file + photoType
@@ -194,7 +198,7 @@ export async function POST(
 
   const subject = subjectCheckResult.data;
 
-  if (subject.assigned_technician_id !== userId) {
+  if (!isPrivileged && subject.assigned_technician_id !== userId) {
     const error: ErrorResponse = {
       step: '5. Verify Assignment',
       code: 'NOT_ASSIGNED_TO_SUBJECT',

@@ -36,6 +36,15 @@ export default function AttendancePage() {
   const todayAttendanceQuery = useTodayAttendance(user?.id ?? '');
   const summaryQuery = useAttendanceSummary(user?.id ?? '', currentMonth, currentYear);
 
+  const summary = summaryQuery.data?.ok ? summaryQuery.data.data : null;
+  const selectedDay = useMemo(() => {
+    if (!summary || !selectedDate) {
+      return null;
+    }
+
+    return summary.days.find((day) => day.date === selectedDate) ?? null;
+  }, [selectedDate, summary]);
+
   if (userRole !== 'technician') {
     return (
       <div className="p-6">
@@ -51,16 +60,7 @@ export default function AttendancePage() {
   }
 
   const todayAttendance = todayAttendanceQuery.data?.ok ? todayAttendanceQuery.data.data : null;
-  const summary = summaryQuery.data?.ok ? summaryQuery.data.data : null;
   const isOnline = Boolean(todayAttendance?.toggled_on_at) && !todayAttendance?.toggled_off_at;
-
-  const selectedDay = useMemo(() => {
-    if (!summary || !selectedDate) {
-      return null;
-    }
-
-    return summary.days.find((day) => day.date === selectedDate) ?? null;
-  }, [selectedDate, summary]);
 
   const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1).getDay();
   const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
@@ -96,7 +96,7 @@ export default function AttendancePage() {
       </section>
 
       <section className="rounded-xl border border-slate-200 bg-white p-5">
-        <h2 className="text-base font-semibold text-slate-900">Today's Service Summary</h2>
+        <h2 className="text-base font-semibold text-slate-900">Today&apos;s Service Summary</h2>
         <p className="mt-2 text-sm text-slate-700">
           Assigned subjects today:{' '}
           <span className="font-semibold text-slate-900">

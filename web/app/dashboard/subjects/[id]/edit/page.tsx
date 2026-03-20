@@ -26,6 +26,7 @@ function buildInitialValues(subject: {
   product_description: string | null;
   purchase_date: string | null;
   warranty_end_date: string | null;
+  amc_start_date: string | null;
   amc_end_date: string | null;
 }): SubjectFormValues {
   return {
@@ -47,6 +48,7 @@ function buildInitialValues(subject: {
     product_description: subject.product_description ?? undefined,
     purchase_date: subject.purchase_date ?? undefined,
     warranty_end_date: subject.warranty_end_date ?? undefined,
+    amc_start_date: subject.amc_start_date ?? undefined,
     amc_end_date: subject.amc_end_date ?? undefined,
   };
 }

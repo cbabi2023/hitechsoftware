@@ -14,10 +14,20 @@ export default function LoginPage() {
   const router = useRouter();
   const { signIn, user, isLoading, error } = useAuth();
 
+  function resolveRedirectPath() {
+    if (typeof window === 'undefined') {
+      return '/dashboard';
+    }
+
+    const nextRoute = new URLSearchParams(window.location.search).get('next');
+    return nextRoute && nextRoute.startsWith('/') ? nextRoute : '/dashboard';
+  }
+
   // Redirect if already logged in
   useEffect(() => {
     if (user && !isLoading) {
-      router.push('/dashboard');
+      router.replace(resolveRedirectPath());
+      router.refresh();
     }
   }, [user, isLoading, router]);
 
@@ -25,15 +35,11 @@ export default function LoginPage() {
     e.preventDefault();
 
     try {
-      const result = await signIn({
+      await signIn({
         email,
         password,
         userAgent: navigator.userAgent,
       });
-      
-      if (result.ok) {
-        router.push(result.data.redirectTo ?? '/dashboard');
-      }
     } catch (err) {
       console.error(err);
     }

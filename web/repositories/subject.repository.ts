@@ -84,6 +84,15 @@ export async function listSubjects(filters: SubjectListFilters) {
       .order('technician_allocated_date', { ascending: true });
   }
 
+  if (filters.due_only) {
+    query = query
+      .eq('bill_generated', true)
+      .eq('service_charge_type', 'customer')
+      .eq('billing_status', 'due')
+      .eq('status', 'COMPLETED')
+      .order('completed_at', { ascending: true });
+  }
+
   if (filters.category_id) {
     query = query.eq('category_id', filters.category_id);
   }
@@ -138,6 +147,7 @@ export async function createSubject(input: CreateSubjectInput) {
     p_product_description: input.product_description ?? null,
     p_purchase_date: input.purchase_date ?? null,
     p_warranty_end_date: input.warranty_end_date ?? null,
+    p_amc_start_date: input.amc_start_date ?? null,
     p_amc_end_date: input.amc_end_date ?? null,
     p_created_by: input.created_by,
   });
@@ -189,6 +199,7 @@ export async function updateSubject(id: string, input: UpdateSubjectInput) {
       product_description: input.product_description ?? null,
       purchase_date: input.purchase_date ?? null,
       warranty_end_date: input.warranty_end_date ?? null,
+      amc_start_date: input.amc_start_date ?? null,
       amc_end_date: input.amc_end_date ?? null,
     })
     .eq('id', id)
@@ -236,11 +247,7 @@ export async function assignTechnicianFull(
     .single<{ id: string; assigned_technician_id: string | null; technician_allocated_date: string | null; technician_allocated_notes: string | null; status: string }>();
 }
 
-export async function getSubjectById(id: string) {
-  return supabase
-    .from('subjects')
-    .select(
-      `
+const SUBJECT_DETAIL_SELECT = `
       id,
       subject_number,
       source_type,
@@ -281,6 +288,7 @@ export async function getSubjectById(id: string) {
       warranty_period_months,
       warranty_end_date,
       warranty_status,
+      amc_start_date,
       amc_end_date,
       service_charge_type,
       is_amc_service,
@@ -304,11 +312,44 @@ export async function getSubjectById(id: string) {
       rejected_by_profile:rejected_by_technician_id(display_name),
       service_categories:category_id(name),
       subject_photos(id,photo_type,storage_path,public_url,uploaded_by,uploaded_at,file_size_bytes,mime_type)
-      `,
-    )
+      `;
+
+const SUBJECT_DETAIL_SELECT_LEGACY = SUBJECT_DETAIL_SELECT.replace('      amc_start_date,\n', '');
+
+function isMissingAmcStartDateColumn(errorMessage?: string) {
+  return Boolean(errorMessage && /amc_start_date.*does not exist|column .*amc_start_date/i.test(errorMessage));
+}
+
+export async function getSubjectById(id: string) {
+  const primary = await supabase
+    .from('subjects')
+    .select(SUBJECT_DETAIL_SELECT)
     .eq('id', id)
     .eq('is_deleted', false)
     .single();
+
+  if (!primary.error || !isMissingAmcStartDateColumn(primary.error.message)) {
+    return primary;
+  }
+
+  const fallback = await supabase
+    .from('subjects')
+    .select(SUBJECT_DETAIL_SELECT_LEGACY)
+    .eq('id', id)
+    .eq('is_deleted', false)
+    .single();
+
+  if (!fallback.error && fallback.data) {
+    return {
+      ...fallback,
+      data: {
+        ...(fallback.data as unknown as Record<string, unknown>),
+        amc_start_date: null,
+      },
+    };
+  }
+
+  return fallback;
 }
 
 /**
@@ -317,78 +358,35 @@ export async function getSubjectById(id: string) {
  */
 export async function getSubjectByIdAdmin(id: string) {
   const admin = createAdminClient();
-  return admin
+  const primary = await admin
     .from('subjects')
-    .select(
-      `
-      id,
-      subject_number,
-      source_type,
-      brand_id,
-      dealer_id,
-      assigned_technician_id,
-      priority,
-      priority_reason,
-      status,
-      allocated_date,
-      technician_allocated_date,
-      technician_allocated_notes,
-      technician_acceptance_status,
-      technician_rejection_reason,
-      rejected_by_technician_id,
-      is_rejected_pending_reschedule,
-      en_route_at,
-      arrived_at,
-      work_started_at,
-      completed_at,
-      incomplete_at,
-      incomplete_reason,
-      incomplete_note,
-      spare_parts_requested,
-      spare_parts_quantity,
-      completion_proof_uploaded,
-      completion_notes,
-      rescheduled_date,
-      type_of_service,
-      category_id,
-      customer_phone,
-      customer_name,
-      customer_address,
-      product_name,
-      serial_number,
-      product_description,
-      purchase_date,
-      warranty_period_months,
-      warranty_end_date,
-      warranty_status,
-      amc_end_date,
-      service_charge_type,
-      is_amc_service,
-      is_warranty_service,
-      billing_status,
-      visit_charge,
-      service_charge,
-      accessories_total,
-      grand_total,
-      payment_mode,
-      payment_collected,
-      payment_collected_at,
-      bill_generated,
-      bill_generated_at,
-      bill_number,
-      created_by,
-      assigned_by,
-      created_at,
-      brands:brand_id(name),
-      dealers:dealer_id(name),
-      rejected_by_profile:rejected_by_technician_id(display_name),
-      service_categories:category_id(name),
-      subject_photos(id,photo_type,storage_path,public_url,uploaded_by,uploaded_at,file_size_bytes,mime_type)
-      `,
-    )
+    .select(SUBJECT_DETAIL_SELECT)
     .eq('id', id)
     .eq('is_deleted', false)
     .single();
+
+  if (!primary.error || !isMissingAmcStartDateColumn(primary.error.message)) {
+    return primary;
+  }
+
+  const fallback = await admin
+    .from('subjects')
+    .select(SUBJECT_DETAIL_SELECT_LEGACY)
+    .eq('id', id)
+    .eq('is_deleted', false)
+    .single();
+
+  if (!fallback.error && fallback.data) {
+    return {
+      ...fallback,
+      data: {
+        ...(fallback.data as unknown as Record<string, unknown>),
+        amc_start_date: null,
+      },
+    };
+  }
+
+  return fallback;
 }
 
 export async function getSubjectTimeline(subjectId: string) {

@@ -701,7 +701,7 @@ export async function PATCH(
     return NextResponse.json({ ok: false, error }, { status: 400 });
   }
 
-  let body: { action?: string; billId?: string; paymentStatus?: 'paid' | 'due' | 'waived' };
+  let body: { action?: string; billId?: string; paymentStatus?: 'paid' | 'due' | 'waived'; paymentMode?: 'cash' | 'upi' | 'card' | 'cheque' };
   try {
     body = await request.json();
   } catch (err) {
@@ -734,6 +734,16 @@ export async function PATCH(
     return NextResponse.json({ ok: false, error }, { status: 400 });
   }
 
+  if (body.paymentStatus === 'paid' && (!body.paymentMode || !['cash', 'upi', 'card', 'cheque'].includes(body.paymentMode))) {
+    const error: ErrorResponse = {
+      step: '6. Validate Payment Update',
+      code: 'PAYMENT_MODE_REQUIRED',
+      message: 'paymentMode is required when marking bill as paid',
+      userMessage: 'Select payment mode before collecting payment',
+    };
+    return NextResponse.json({ ok: false, error }, { status: 400 });
+  }
+
   const auth = await authenticateBillingRequest(subjectId);
   if (!auth.ok) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
@@ -751,11 +761,13 @@ export async function PATCH(
 
   const nowIso = new Date().toISOString();
   const paymentCollectedAt = body.paymentStatus === 'paid' ? nowIso : null;
+  const normalizedPaymentMode = body.paymentStatus === 'paid' ? body.paymentMode ?? null : null;
 
   const billUpdate = await auth.admin
     .from('subject_bills')
     .update({
       payment_status: body.paymentStatus,
+      payment_mode: normalizedPaymentMode,
       payment_collected_at: paymentCollectedAt,
     })
     .eq('id', body.billId)
@@ -778,6 +790,7 @@ export async function PATCH(
     .from('subjects')
     .update({
       billing_status: body.paymentStatus,
+      payment_mode: normalizedPaymentMode,
       payment_collected: body.paymentStatus === 'paid',
       payment_collected_at: paymentCollectedAt,
     })

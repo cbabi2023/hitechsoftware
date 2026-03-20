@@ -1,5 +1,13 @@
 import React from 'react';
 
+type TextareaProps = {
+  className?: string;
+} & React.TextareaHTMLAttributes<HTMLTextAreaElement>;
+
+type InputProps = {
+  className?: string;
+} & React.InputHTMLAttributes<HTMLInputElement>;
+
 export function Select({ value, onValueChange, children }: { value: string; onValueChange: (val: string) => void; children: React.ReactNode }) {
   return (
     <select
@@ -24,7 +32,7 @@ export function SelectItem({ value, children }: { value: string; children: React
   return <option value={value}>{children}</option>;
 }
 
-export function SelectValue({ placeholder }: { placeholder?: string }) {
+export function SelectValue({ placeholder: _placeholder }: { placeholder?: string }) {
   return <></>;
 }
 
@@ -34,13 +42,7 @@ export function Textarea({
   placeholder,
   className = '',
   ...props
-}: {
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  placeholder?: string;
-  className?: string;
-  [key: string]: any;
-}) {
+}: TextareaProps) {
   return (
     <textarea
       value={value}
@@ -59,14 +61,7 @@ export function Input({
   placeholder,
   className = '',
   ...props
-}: {
-  type?: string;
-  value?: string;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder?: string;
-  className?: string;
-  [key: string]: any;
-}) {
+}: InputProps) {
   return (
     <input
       type={type}

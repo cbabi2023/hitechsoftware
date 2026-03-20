@@ -33,10 +33,14 @@ As of now, implemented routes are:
 - `GET /api/team/members/completed-counts`
 - `GET /api/team/members/{id}/performance`
 - `POST /api/subjects/{id}/respond`
+- `POST /api/subjects/{id}/billing`
+- `DELETE /api/subjects/{id}/billing`
+- `PATCH /api/subjects/{id}/billing`
 - `GET /api/bills/{id}/download`
 - `POST /api/attendance/toggle`
 - `GET /api/cron/attendance-absent-flag`
 - `GET /api/cron/attendance-reset`
+- `GET /api/dashboard/technician/completed-summary`
 
 Important notes:
 - Most read/list/create/update operations in the web app are currently executed directly via Supabase client/repository services (not through REST route handlers).
@@ -223,6 +227,103 @@ or
   - `accept` requires `visit_date` and `visit_time`, updates subject to `status = 'ACCEPTED'`, sets `technician_acceptance_status = 'accepted'`, persists `technician_allocated_date = visit_date`, and appends visit time into technician allocation notes.
   - `reject` updates subject to `status = 'RESCHEDULED'`, stores reason, sets `rejected_by_technician_id`, and marks `is_rejected_pending_reschedule = true`.
 
+### Subject Billing Actions
+
+- Method/Path: `POST /api/subjects/{id}/billing`
+- AuthZ: `technician` only, and only when subject is assigned to current technician.
+- Request body action modes:
+
+```json
+{
+  "action": "add_accessory",
+  "item_name": "Capacitor",
+  "quantity": 2,
+  "unit_price": 150
+}
+```
+
+```json
+{
+  "action": "generate_bill",
+  "visit_charge": 300,
+  "service_charge": 500,
+  "apply_gst": true,
+  "payment_mode": "cash"
+}
+```
+
+- Behavior:
+  - `add_accessory` only while subject is `IN_PROGRESS`.
+  - `generate_bill` requires at least 1 uploaded media item.
+  - For non-AMC jobs, warranty end date must be present; otherwise API returns `WARRANTY_DATE_NOT_NOTED`.
+  - Bill type is derived by runtime warranty state:
+    - AMC / in-warranty -> `brand_dealer_invoice`
+    - out-of-warranty -> `customer_receipt`
+  - Completes subject and persists bill/payment fields.
+
+- Method/Path: `DELETE /api/subjects/{id}/billing`
+- AuthZ: `technician` only, assigned technician only.
+- Request body:
+
+```json
+{
+  "action": "remove_accessory",
+  "accessoryId": "uuid"
+}
+```
+
+- Behavior:
+  - Accessory removal allowed only before bill generation while subject is `IN_PROGRESS`.
+
+- Method/Path: `PATCH /api/subjects/{id}/billing`
+- AuthZ: `office_staff` or `super_admin`.
+- Request body:
+
+```json
+{
+  "action": "update_payment_status",
+  "billId": "uuid",
+  "paymentStatus": "paid",
+  "paymentMode": "upi"
+}
+```
+
+- Behavior:
+  - Updates bill payment status and synchronizes subject payment fields.
+  - When `paymentStatus = paid`, `paymentMode` is mandatory.
+  - Sets `payment_collected_at` for paid status and clears it for non-paid statuses.
+
+### Subject Media Upload and Removal
+
+- Method/Path: `POST /api/subjects/{id}/photos/upload`
+- AuthZ:
+  - `technician` only for subjects assigned to current technician.
+  - `office_staff` and `super_admin` can upload for any subject.
+- Request: multipart form-data with:
+  - `file`
+  - `photoType` (`service_video` for videos, image types for photos)
+- Behavior:
+  - Enforces max count (`12`) per subject and file size/type validation.
+  - Stores media in `subject-photos` bucket and inserts metadata in `subject_photos`.
+  - Allowed for post-completion maintenance by authorized roles.
+
+- Method/Path: `DELETE /api/subjects/{id}/photos`
+- AuthZ:
+  - Assigned `technician` for own subject.
+  - `office_staff` and `super_admin` for any subject.
+- Request body:
+
+```json
+{
+  "photoId": "uuid",
+  "storagePath": "subject-id/file-name"
+}
+```
+
+- Behavior:
+  - Soft deletes photo metadata (`is_deleted = true`) and removes storage object.
+  - Allowed after job completion for media maintenance.
+
 ### Download Bill PDF
 
 - Method/Path: `GET /api/bills/{id}/download`
@@ -265,6 +366,46 @@ or
   - Inserts absent records for technicians with no ON toggle.
   - Auto-closes open attendance rows by setting `toggled_off_at`.
   - Resets technician online status (`profiles.is_online = false`).
+
+### Technician Completed Summary
+
+- Method/Path: `GET /api/dashboard/technician/completed-summary`
+- AuthZ: `technician` only (current authenticated technician)
+- Behavior:
+  - Returns completed service counts for:
+    - `today`
+    - `week` (week starts on Monday)
+    - `month`
+    - `year`
+  - Counts are computed from `subjects` using:
+    - `assigned_technician_id = auth.uid()`
+    - `status = 'COMPLETED'`
+    - `is_deleted = false`
+    - date filtering on `completed_at`
+  - Also returns sales metrics by the same periods:
+    - `products_sold`: customer receipts count (`subject_bills.bill_type = customer_receipt`)
+    - `parts_sold_qty`: total accessory quantity (`subject_accessories.quantity`)
+    - `parts_sold_amount`: total accessory value (`subject_accessories.total_price`)
+
+- Response shape:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "today": 2,
+    "week": 9,
+    "month": 26,
+    "year": 104,
+    "sales": {
+      "today": { "products_sold": 1, "parts_sold_qty": 3, "parts_sold_amount": 1450 },
+      "week": { "products_sold": 4, "parts_sold_qty": 11, "parts_sold_amount": 5320 },
+      "month": { "products_sold": 16, "parts_sold_qty": 39, "parts_sold_amount": 18760 },
+      "year": { "products_sold": 74, "parts_sold_qty": 188, "parts_sold_amount": 89210 }
+    }
+  }
+}
+```
 
 Common error shape for implemented handlers:
 

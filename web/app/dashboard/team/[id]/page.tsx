@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -23,11 +23,13 @@ export default function TeamMemberDetailPage() {
 
   const member = useMemo(() => members.find((item) => item.id === params.id), [members, params.id]);
 
-  const [displayName, setDisplayName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [role, setRole] = useState<UserRole>('technician');
-  const [technicianCode, setTechnicianCode] = useState('');
-  const [isActive, setIsActive] = useState(true);
+  const [formState, setFormState] = useState<{
+    displayName: string;
+    phoneNumber: string;
+    role: UserRole;
+    technicianCode: string;
+    isActive: boolean;
+  } | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const performanceQuery = useQuery({
@@ -52,18 +54,6 @@ export default function TeamMemberDetailPage() {
     },
   });
 
-  useEffect(() => {
-    if (!member) {
-      return;
-    }
-
-    setDisplayName(member.display_name);
-    setPhoneNumber(member.phone_number ?? '');
-    setRole(member.role);
-    setTechnicianCode(member.technician?.technician_code ?? '');
-    setIsActive(member.is_active);
-  }, [member]);
-
   if (isLoading) {
     return <div className="p-6 text-sm text-slate-600">Loading team member...</div>;
   }
@@ -71,6 +61,14 @@ export default function TeamMemberDetailPage() {
   if (!member) {
     return <div className="p-6 text-sm text-rose-600">{error ?? 'Team member not found.'}</div>;
   }
+
+  const effectiveForm = formState ?? {
+    displayName: member.display_name,
+    phoneNumber: member.phone_number ?? '',
+    role: member.role,
+    technicianCode: member.technician?.technician_code ?? '',
+    isActive: member.is_active,
+  };
 
   return (
     <div className="p-6">
@@ -91,15 +89,15 @@ export default function TeamMemberDetailPage() {
                 updateMutation.mutate({
                   id: member.id,
                   input: {
-                    display_name: displayName,
-                    phone_number: phoneNumber,
-                    role,
-                    is_active: isActive,
+                    display_name: effectiveForm.displayName,
+                    phone_number: effectiveForm.phoneNumber,
+                    role: effectiveForm.role,
+                    is_active: effectiveForm.isActive,
                     technician:
-                      role === 'technician'
+                      effectiveForm.role === 'technician'
                         ? {
-                            technician_code: technicianCode,
-                            is_active: isActive,
+                            technician_code: effectiveForm.technicianCode,
+                            is_active: effectiveForm.isActive,
                             is_deleted: false,
                           }
                         : undefined,
@@ -131,8 +129,11 @@ export default function TeamMemberDetailPage() {
             <label className="block">
               <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Display Name</span>
               <input
-                value={displayName}
-                onChange={(event) => setDisplayName(event.target.value)}
+                value={effectiveForm.displayName}
+                onChange={(event) => setFormState((prev) => ({
+                  ...(prev ?? effectiveForm),
+                  displayName: event.target.value,
+                }))}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2"
               />
             </label>
@@ -140,8 +141,11 @@ export default function TeamMemberDetailPage() {
             <label className="block">
               <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Phone Number</span>
               <input
-                value={phoneNumber}
-                onChange={(event) => setPhoneNumber(event.target.value)}
+                value={effectiveForm.phoneNumber}
+                onChange={(event) => setFormState((prev) => ({
+                  ...(prev ?? effectiveForm),
+                  phoneNumber: event.target.value,
+                }))}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2"
               />
             </label>
@@ -149,8 +153,15 @@ export default function TeamMemberDetailPage() {
             <label className="block">
               <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Role</span>
               <select
-                value={role}
-                onChange={(event) => setRole(event.target.value as UserRole)}
+                value={effectiveForm.role}
+                onChange={(event) => {
+                  const nextRole = event.target.value as UserRole;
+                  setFormState((prev) => ({
+                    ...(prev ?? effectiveForm),
+                    role: nextRole,
+                    technicianCode: nextRole === 'technician' ? (prev?.technicianCode ?? effectiveForm.technicianCode) : '',
+                  }));
+                }}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2"
               >
                 {ROLE_OPTIONS.map((option) => (
@@ -164,8 +175,11 @@ export default function TeamMemberDetailPage() {
             <label className="inline-flex items-center gap-2 pt-1 text-sm text-slate-700">
               <input
                 type="checkbox"
-                checked={isActive}
-                onChange={(event) => setIsActive(event.target.checked)}
+                checked={effectiveForm.isActive}
+                onChange={(event) => setFormState((prev) => ({
+                  ...(prev ?? effectiveForm),
+                  isActive: event.target.checked,
+                }))}
                 className="h-4 w-4 rounded border-slate-300"
               />
               Active account
@@ -175,12 +189,15 @@ export default function TeamMemberDetailPage() {
 
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Technician Info</h2>
-          {role === 'technician' ? (
+          {effectiveForm.role === 'technician' ? (
             <label className="block text-sm">
               <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Technician Code</span>
               <input
-                value={technicianCode}
-                onChange={(event) => setTechnicianCode(event.target.value)}
+                value={effectiveForm.technicianCode}
+                onChange={(event) => setFormState((prev) => ({
+                  ...(prev ?? effectiveForm),
+                  technicianCode: event.target.value,
+                }))}
                 placeholder="TECH-001"
                 className="w-full rounded-lg border border-slate-300 px-3 py-2"
               />

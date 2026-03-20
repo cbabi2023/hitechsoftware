@@ -96,16 +96,6 @@ export async function DELETE(
     return NextResponse.json({ ok: false, error }, { status: 404 });
   }
 
-  if (subjectResult.data.status === 'COMPLETED') {
-    const error: ErrorResponse = {
-      step: '5. Validate Status',
-      code: 'JOB_ALREADY_COMPLETED',
-      message: 'Cannot remove uploads from completed job',
-      userMessage: 'Uploads cannot be removed after job completion',
-    };
-    return NextResponse.json({ ok: false, error }, { status: 400 });
-  }
-
   const isOwnerTechnician = subjectResult.data.assigned_technician_id === userId;
   const isPrivileged = profileResult.data.role === 'super_admin' || profileResult.data.role === 'office_staff';
 

@@ -46,6 +46,7 @@ export interface SubjectDetail extends SubjectListItem {
   warranty_period_months: number | null;
   warranty_end_date: string | null;
   warranty_status: 'active' | 'expired' | null;
+  amc_start_date: string | null;
   amc_end_date: string | null;
   service_charge_type: 'customer' | 'brand_dealer';
   is_amc_service: boolean;
@@ -112,6 +113,8 @@ export interface SubjectListFilters {
   pending_only?: boolean;
   /** Show only overdue pending technician-assigned subjects. */
   overdue_only?: boolean;
+  /** Show customer-chargeable completed subjects that are pending payment collection. */
+  due_only?: boolean;
   page?: number;
   page_size?: number;
 }
@@ -143,6 +146,7 @@ export interface SubjectFormValues {
   product_description?: string;
   purchase_date?: string;
   warranty_end_date?: string;
+  amc_start_date?: string;
   amc_end_date?: string;
 }
 

@@ -1,10 +1,12 @@
 import React from 'react';
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 
+type PdfComponentProps = React.PropsWithChildren<{ [key: string]: unknown }>;
+
 const PdfDocument = Document as unknown as React.ComponentType<React.PropsWithChildren>;
-const PdfPage = Page as unknown as React.ComponentType<any>;
-const PdfText = Text as unknown as React.ComponentType<any>;
-const PdfView = View as unknown as React.ComponentType<any>;
+const PdfPage = Page as unknown as React.ComponentType<PdfComponentProps>;
+const PdfText = Text as unknown as React.ComponentType<PdfComponentProps>;
+const PdfView = View as unknown as React.ComponentType<PdfComponentProps>;
 import type { SubjectBill } from '@/modules/subjects/subject.types';
 
 const styles = StyleSheet.create({

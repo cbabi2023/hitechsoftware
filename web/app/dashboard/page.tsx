@@ -25,7 +25,6 @@ function formatTime(value: string | null) {
 export default function DashboardPage() {
   const { user, userRole } = useAuth();
   const [showTechnicianList, setShowTechnicianList] = useState(false);
-  const today = new Date().toISOString().split('T')[0];
 
   const todayAttendanceQuery = useTodayAttendance(user?.id ?? '');
   const toggleAttendanceMutation = useToggleAttendance();
@@ -44,6 +43,37 @@ export default function DashboardPage() {
       }
 
       return result.data.data;
+    },
+    enabled: Boolean(user?.id) && userRole === 'technician',
+    staleTime: 30 * 1000,
+  });
+
+  const technicianCompletedSummaryQuery = useQuery({
+    queryKey: ['technician-dashboard-completed-summary', user?.id],
+    queryFn: async () => {
+      const response = await fetch('/api/dashboard/technician/completed-summary');
+      const payload = await response.json() as {
+        ok: boolean;
+        data?: {
+          today: number;
+          week: number;
+          month: number;
+          year: number;
+          sales: {
+            today: { products_sold: number; parts_sold_qty: number; parts_sold_amount: number };
+            week: { products_sold: number; parts_sold_qty: number; parts_sold_amount: number };
+            month: { products_sold: number; parts_sold_qty: number; parts_sold_amount: number };
+            year: { products_sold: number; parts_sold_qty: number; parts_sold_amount: number };
+          };
+        };
+        error?: { userMessage?: string; message?: string };
+      };
+
+      if (!payload.ok || !payload.data) {
+        throw new Error(payload.error?.userMessage ?? payload.error?.message ?? 'Failed to load completed summary');
+      }
+
+      return payload.data;
     },
     enabled: Boolean(user?.id) && userRole === 'technician',
     staleTime: 30 * 1000,
@@ -75,10 +105,48 @@ export default function DashboardPage() {
     staleTime: 30 * 1000,
   });
 
+  const customerCountQuery = useQuery({
+    queryKey: [...CUSTOMER_QUERY_KEYS.all, 'count'],
+    queryFn: async () => {
+      const result = await getCustomerList({ page: 1, page_size: 1 });
+      if (!result.ok) {
+        throw new Error(result.error.message);
+      }
+      return result.data.total;
+    },
+    enabled: userRole !== 'technician',
+    staleTime: 30 * 1000,
+  });
+
+  const teamMemberCountQuery = useQuery({
+    queryKey: [...TEAM_QUERY_KEYS.all, 'count'],
+    queryFn: async () => {
+      const result = await getTeamMembers();
+      if (!result.ok) {
+        throw new Error(result.error.message);
+      }
+      return result.data.length;
+    },
+    enabled: userRole !== 'technician',
+    staleTime: 30 * 1000,
+  });
+
+  const liveTechnicianStatusQuery = useAllTechnicianStatus();
+  const liveTechnicians = liveTechnicianStatusQuery.data?.ok ? liveTechnicianStatusQuery.data.data : [];
+
+  const liveMeta = useMemo(() => {
+    const total = liveTechnicians.length;
+    const online = liveTechnicians.filter((item) => item.is_online).length;
+    const absent = liveTechnicians.filter((item) => !item.today_attendance || !item.today_attendance.is_present).length;
+
+    return { total, online, absent };
+  }, [liveTechnicians]);
+
   if (userRole === 'technician') {
     const todayAttendance = todayAttendanceQuery.data?.ok ? todayAttendanceQuery.data.data : null;
     const isOnline = Boolean(todayAttendance?.toggled_on_at) && !todayAttendance?.toggled_off_at;
     const pendingSubjects = technicianPendingSubjectsQuery.data ?? [];
+    const completedSummary = technicianCompletedSummaryQuery.data;
 
     return (
       <div className="p-4 md:p-6">
@@ -122,6 +190,80 @@ export default function DashboardPage() {
         </div>
 
         <div className="mt-4 rounded-2xl border border-ht-border bg-white p-5 shadow-sm">
+          <h2 className="text-base font-semibold text-ht-text-900">Completed Work Summary</h2>
+          <p className="mt-1 text-sm text-slate-600">Your completed services by period.</p>
+
+          <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Today</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">
+                {technicianCompletedSummaryQuery.isLoading ? '...' : completedSummary?.today ?? 0}
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500">This Week</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">
+                {technicianCompletedSummaryQuery.isLoading ? '...' : completedSummary?.week ?? 0}
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500">This Month</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">
+                {technicianCompletedSummaryQuery.isLoading ? '...' : completedSummary?.month ?? 0}
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500">This Year</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">
+                {technicianCompletedSummaryQuery.isLoading ? '...' : completedSummary?.year ?? 0}
+              </p>
+            </div>
+          </div>
+
+          {technicianCompletedSummaryQuery.isError ? (
+            <p className="mt-2 text-sm text-rose-600">Unable to load completed work summary right now.</p>
+          ) : null}
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-ht-border bg-white p-5 shadow-sm">
+          <h2 className="text-base font-semibold text-ht-text-900">Products & Parts Sold</h2>
+          <p className="mt-1 text-sm text-slate-600">Your product and parts sales by period.</p>
+
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full min-w-[520px] divide-y divide-slate-200 text-sm">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th className="px-3 py-2 text-left font-semibold text-slate-600">Period</th>
+                  <th className="px-3 py-2 text-right font-semibold text-slate-600">Products Sold</th>
+                  <th className="px-3 py-2 text-right font-semibold text-slate-600">Parts Sold (Qty)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {[
+                  { key: 'today', label: 'Today' },
+                  { key: 'week', label: 'This Week' },
+                  { key: 'month', label: 'This Month' },
+                  { key: 'year', label: 'This Year' },
+                ].map((row) => {
+                  const sales = completedSummary?.sales?.[row.key as 'today' | 'week' | 'month' | 'year'];
+                  return (
+                    <tr key={row.key}>
+                      <td className="px-3 py-2 font-medium text-slate-800">{row.label}</td>
+                      <td className="px-3 py-2 text-right text-slate-800">
+                        {technicianCompletedSummaryQuery.isLoading ? '...' : sales?.products_sold ?? 0}
+                      </td>
+                      <td className="px-3 py-2 text-right text-slate-800">
+                        {technicianCompletedSummaryQuery.isLoading ? '...' : sales?.parts_sold_qty ?? 0}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-ht-border bg-white p-5 shadow-sm">
           <h2 className="text-base font-semibold text-ht-text-900">Your Pending Subject Numbers</h2>
           {technicianPendingSubjectsQuery.isLoading ? (
             <p className="mt-2 text-sm text-slate-500">Loading...</p>
@@ -144,41 +286,6 @@ export default function DashboardPage() {
       </div>
     );
   }
-
-  const customerCountQuery = useQuery({
-    queryKey: [...CUSTOMER_QUERY_KEYS.all, 'count'],
-    queryFn: async () => {
-      const result = await getCustomerList({ page: 1, page_size: 1 });
-      if (!result.ok) {
-        throw new Error(result.error.message);
-      }
-      return result.data.total;
-    },
-    staleTime: 30 * 1000,
-  });
-
-  const teamMemberCountQuery = useQuery({
-    queryKey: [...TEAM_QUERY_KEYS.all, 'count'],
-    queryFn: async () => {
-      const result = await getTeamMembers();
-      if (!result.ok) {
-        throw new Error(result.error.message);
-      }
-      return result.data.length;
-    },
-    staleTime: 30 * 1000,
-  });
-
-  const liveTechnicianStatusQuery = useAllTechnicianStatus();
-  const liveTechnicians = liveTechnicianStatusQuery.data?.ok ? liveTechnicianStatusQuery.data.data : [];
-
-  const liveMeta = useMemo(() => {
-    const total = liveTechnicians.length;
-    const online = liveTechnicians.filter((item) => item.is_online).length;
-    const absent = liveTechnicians.filter((item) => !item.today_attendance || !item.today_attendance.is_present).length;
-
-    return { total, online, absent };
-  }, [liveTechnicians]);
 
   const stats = [
     {

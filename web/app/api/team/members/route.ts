@@ -254,6 +254,8 @@ export async function POST(request: Request) {
       userMsg = 'Database permission denied. This may be a Row Level Security (RLS) policy issue. Please contact support.';
     }
 
+    const profileErrorCode = typeof profileInsert.error?.code === 'string' ? profileInsert.error.code : null;
+
     return createErrorResponse(
       {
         step: '5. Create Profile Record',
@@ -265,7 +267,7 @@ export async function POST(request: Request) {
           email: parsed.data.email,
           phone: parsed.data.phone_number,
           error: profileErrorMsg,
-          dbCode: (profileInsert.error as any)?.code,
+          dbCode: profileErrorCode,
         },
         timestamp: now,
       },
@@ -311,6 +313,8 @@ export async function POST(request: Request) {
         }
       }
 
+      const technicianErrorCode = typeof technicianInsert.error?.code === 'string' ? technicianInsert.error.code : null;
+
       return createErrorResponse(
         {
           step: '6. Create Technician Record',
@@ -321,7 +325,7 @@ export async function POST(request: Request) {
             userId,
             technicianCode: parsed.data.technician.technician_code,
             error: techErrorMsg,
-            dbCode: (technicianInsert.error as any)?.code,
+            dbCode: technicianErrorCode,
           },
           timestamp: now,
         },

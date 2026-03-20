@@ -93,8 +93,8 @@ export default function SubjectForm({
     return 'custom';
   });
   const [amcPeriod, setAmcPeriod] = useState<WarrantyPeriod>(() => {
-    if (initialValues.purchase_date && initialValues.amc_end_date) {
-      const months = Math.round(diffInWholeDays(initialValues.purchase_date, initialValues.amc_end_date) / 30);
+    if (initialValues.amc_start_date && initialValues.amc_end_date) {
+      const months = Math.round(diffInWholeDays(initialValues.amc_start_date, initialValues.amc_end_date) / 30);
       return getWarrantyPeriodFromMonths(months);
     }
     return 'custom';
@@ -171,6 +171,11 @@ export default function SubjectForm({
       setField('warranty_end_date', addMonths(nextDate, selectedWarrantyMonths));
     }
 
+  };
+
+  const handleAmcStartDateChange = (nextDate: string) => {
+    setField('amc_start_date', nextDate || undefined);
+
     if (nextDate && amcPeriod !== 'custom' && selectedAmcMonths) {
       setField('amc_end_date', addMonths(nextDate, selectedAmcMonths));
     }
@@ -187,14 +192,14 @@ export default function SubjectForm({
   const handleAmcPeriodChange = (nextPeriod: WarrantyPeriod) => {
     setAmcPeriod(nextPeriod);
     const months = WARRANTY_PERIODS.find((item) => item.value === nextPeriod)?.months ?? null;
-    if (nextPeriod !== 'custom' && values.purchase_date && months) {
-      setField('amc_end_date', addMonths(values.purchase_date, months));
+    if (nextPeriod !== 'custom' && values.amc_start_date && months) {
+      setField('amc_end_date', addMonths(values.amc_start_date, months));
     }
   };
 
   const hasProductInfo =
     values.product_name || values.serial_number || values.product_description ||
-    values.purchase_date || values.warranty_end_date || values.amc_end_date;
+    values.purchase_date || values.warranty_end_date || values.amc_start_date || values.amc_end_date;
 
   const [showProduct, setShowProduct] = useState(!!hasProductInfo);
 
@@ -553,6 +558,15 @@ export default function SubjectForm({
                       </select>
                     </div>
                     <div>
+                      <label className="mb-1 block text-xs text-slate-500">AMC Purchase / Start Date</label>
+                      <input
+                        type="date"
+                        value={values.amc_start_date ?? ''}
+                        onChange={(event) => handleAmcStartDateChange(event.target.value)}
+                        className={FIELD_BASE}
+                      />
+                    </div>
+                    <div>
                       <label className="mb-1 block text-xs text-slate-500">AMC Ends</label>
                       <input
                         type="date"
@@ -560,8 +574,8 @@ export default function SubjectForm({
                         onChange={(event) => {
                           const next = event.target.value || undefined;
                           setField('amc_end_date', next);
-                          if (values.purchase_date && next) {
-                            const months = Math.round(diffInWholeDays(values.purchase_date, next) / 30);
+                          if (values.amc_start_date && next) {
+                            const months = Math.round(diffInWholeDays(values.amc_start_date, next) / 30);
                             setAmcPeriod(getWarrantyPeriodFromMonths(months));
                           } else {
                             setAmcPeriod('custom');

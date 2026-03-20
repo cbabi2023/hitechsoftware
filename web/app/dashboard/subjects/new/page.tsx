@@ -26,6 +26,7 @@ const DEFAULT_VALUES: SubjectFormValues = {
   product_description: undefined,
   purchase_date: undefined,
   warranty_end_date: undefined,
+  amc_start_date: undefined,
   amc_end_date: undefined,
 };
 

@@ -174,6 +174,8 @@ export function BillingSection({ subject, userRole, userId }: Props) {
   const isAssignedTechnician = userRole === 'technician' && userId === subject.assigned_technician_id;
   const canGenerate = isAssignedTechnician && subject.status === 'IN_PROGRESS' && !subject.bill_generated;
   const canUpdatePayment = userRole === 'office_staff' || userRole === 'super_admin';
+  const canManageMedia = isAssignedTechnician || userRole === 'office_staff' || userRole === 'super_admin';
+  const canMaintainCompletedMedia = subject.status === 'COMPLETED' && canManageMedia;
 
   const accessories = accessoriesQuery.data?.items ?? [];
   const accessoriesTotal = accessoriesQuery.data?.total ?? 0;
@@ -289,10 +291,10 @@ export function BillingSection({ subject, userRole, userId }: Props) {
           bill={billQuery.data}
           highlightCustomerPayment={isCustomerChargeable}
           canUpdatePayment={canUpdatePayment}
-          onUpdatePaymentStatus={(status) => {
+          onUpdatePaymentStatus={(status, paymentMode) => {
             const billId = billQuery.data?.id;
             if (!billId) return;
-            updatePaymentMutation.mutate({ billId, paymentStatus: status });
+            updatePaymentMutation.mutate({ billId, paymentStatus: status, paymentMode });
           }}
           isUpdatingPayment={updatePaymentMutation.isPending}
           onDownload={() => {
@@ -303,9 +305,11 @@ export function BillingSection({ subject, userRole, userId }: Props) {
         />
       ) : null}
 
-      {!billQuery.isLoading && !billQuery.data && canGenerate && (
+      {!billQuery.isLoading && ((!billQuery.data && canGenerate) || canMaintainCompletedMedia) && (
         <div className="space-y-4 rounded-xl border border-blue-200 bg-blue-50 p-4">
-          <p className="text-sm font-semibold text-blue-900">Generate Final Bill</p>
+          <p className="text-sm font-semibold text-blue-900">
+            {canMaintainCompletedMedia ? 'Post-Service Media Maintenance' : 'Generate Final Bill'}
+          </p>
 
           <div className="rounded-lg border border-slate-200 bg-white p-4">
               <div className="mb-3 flex items-center gap-2">
@@ -333,7 +337,7 @@ export function BillingSection({ subject, userRole, userId }: Props) {
                   <input
                     type="file"
                     className="hidden"
-                    disabled={uploadMediaMutation.isPending || uploadedMedia.length >= 12}
+                    disabled={!canManageMedia || uploadMediaMutation.isPending || uploadedMedia.length >= 12}
                     multiple
                     accept="image/*,video/mp4,video/quicktime"
                     onChange={async (event) => {
@@ -409,7 +413,7 @@ export function BillingSection({ subject, userRole, userId }: Props) {
                             }}
                           />
                         )}
-                        {subject.status !== 'COMPLETED' && (
+                        {canManageMedia && (
                           <button
                             type="button"
                             className="absolute right-1 top-1 rounded-full bg-rose-600 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
@@ -427,9 +431,13 @@ export function BillingSection({ subject, userRole, userId }: Props) {
               {uploadedMedia.length > 0 && (
                 <p className="text-xs text-slate-500">You can remove any uploaded item using the X button on its preview.</p>
               )}
+              {!canManageMedia && (
+                <p className="text-xs text-slate-500">You can view uploads, but only assigned technician, office staff, or super admin can modify media.</p>
+              )}
             </div>
           </div>
 
+          {!canMaintainCompletedMedia && (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <label className="text-sm text-slate-700">
               <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Visit Charge (Optional)</span>
@@ -475,7 +483,9 @@ export function BillingSection({ subject, userRole, userId }: Props) {
               </div>
             )}
           </div>
+          )}
 
+          {!canMaintainCompletedMedia && (
           <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
             <input
               type="checkbox"
@@ -485,7 +495,9 @@ export function BillingSection({ subject, userRole, userId }: Props) {
             />
             <span className="font-medium">Apply GST (18%)</span>
           </label>
+          )}
 
+          {!canMaintainCompletedMedia && (
           <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
             <div className="flex items-center justify-between text-slate-700">
               <span>Accessories Total</span>
@@ -504,7 +516,9 @@ export function BillingSection({ subject, userRole, userId }: Props) {
               <span>INR {formatMoney(grandTotal)}</span>
             </div>
           </div>
+          )}
 
+          {!canMaintainCompletedMedia && (
           <button
             type="button"
             disabled={generateMutation.isPending || uploadMediaMutation.isPending || uploadedMedia.length === 0 || isWarrantyDateNotNoted}
@@ -535,9 +549,12 @@ export function BillingSection({ subject, userRole, userId }: Props) {
           >
             {generateMutation.isPending ? 'Generating Bill & Completing Job...' : 'Generate Bill & Complete Job'}
           </button>
+          )}
+          {!canMaintainCompletedMedia && (
           <p className="text-xs text-slate-600">
             Charges and payment mode are optional. Upload at least one media item to continue.
           </p>
+          )}
         </div>
       )}
 

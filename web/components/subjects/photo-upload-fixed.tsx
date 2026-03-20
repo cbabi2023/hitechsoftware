@@ -92,7 +92,7 @@ export function PhotoUpload({
 
       onUpload(file, photoType);
     },
-    [photoType, onUpload],
+    [photoType, onUpload, validateFile],
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

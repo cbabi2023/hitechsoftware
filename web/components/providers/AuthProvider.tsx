@@ -23,11 +23,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (event === 'SIGNED_OUT') {
         clearAuth();
         setHydrated(true);
-        router.push(ROUTES.LOGIN);
+        router.replace(ROUTES.LOGIN);
         return;
       }
 
-      if (event === 'TOKEN_REFRESHED' && session) {
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION' || event === 'USER_UPDATED') && session) {
         const refreshed = await getCurrentAuthState();
         if (refreshed.ok) {
           setAuth({

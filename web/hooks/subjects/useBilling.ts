@@ -167,13 +167,13 @@ export function useUpdateBillPaymentStatus(subjectId: string) {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ billId, paymentStatus }: { billId: string; paymentStatus: 'paid' | 'due' | 'waived' }) => {
+    mutationFn: async ({ billId, paymentStatus, paymentMode }: { billId: string; paymentStatus: 'paid' | 'due' | 'waived'; paymentMode?: 'cash' | 'upi' | 'card' | 'cheque' }) => {
       if (!user?.id) throw new Error('Not authenticated');
       
       const res = await fetch(`/api/subjects/${subjectId}/billing`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'update_payment_status', billId, paymentStatus }),
+        body: JSON.stringify({ action: 'update_payment_status', billId, paymentStatus, paymentMode }),
       });
       
       const json = await res.json() as { 
