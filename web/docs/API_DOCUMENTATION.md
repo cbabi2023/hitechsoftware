@@ -202,7 +202,9 @@ Response shape:
 
 ```json
 {
-  "action": "accept"
+  "action": "accept",
+  "visit_date": "2026-03-20",
+  "visit_time": "14:30"
 }
 ```
 
@@ -217,7 +219,7 @@ or
 
 - Behavior:
   - Reject/accept is allowed only when `technician_acceptance_status = 'pending'`.
-  - `accept` updates subject to `status = 'ACCEPTED'` and `technician_acceptance_status = 'accepted'`.
+  - `accept` requires `visit_date` and `visit_time`, updates subject to `status = 'ACCEPTED'`, sets `technician_acceptance_status = 'accepted'`, persists `technician_allocated_date = visit_date`, and appends visit time into technician allocation notes.
   - `reject` updates subject to `status = 'RESCHEDULED'`, stores reason, sets `rejected_by_technician_id`, and marks `is_rejected_pending_reschedule = true`.
 
 ### Technician Attendance Toggle

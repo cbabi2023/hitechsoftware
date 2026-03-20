@@ -3,6 +3,33 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 15:54:43 +05:30] Feat: Technician Workflow Alignment — Accept Date/Time + Multi-Part Incomplete Capture
+- Summary: Aligned implementation to confirmed technician workflow by requiring visit date/time on accept and supporting detailed multi-item spare-part capture when job cannot be completed.
+- Work done:
+  - Added accept confirmation modal in subject detail for technicians to provide mandatory `visit_date` and `visit_time` before accepting.
+  - Extended `POST /api/subjects/{id}/respond` accept flow to validate required visit date/time and persist them (`technician_allocated_date`, visit-time note in `technician_allocated_notes`).
+  - Enhanced cannot-complete modal for `spare_parts_not_available` reason to support multiple spare-part rows with fields: part name, quantity, and price.
+  - Extended incomplete input type with `sparePartsItems` and updated workflow service validation/persistence:
+    - Validates each spare part row
+    - Serializes part list into `spare_parts_requested`
+    - Stores total quantity in `spare_parts_quantity`
+  - Updated incomplete details display to parse and render serialized spare-parts list with qty and price breakdown.
+  - Updated API documentation to reflect new accept payload contract (`visit_date`, `visit_time`) and behavior.
+- Files changed:
+  - web/app/dashboard/subjects/[id]/page.tsx
+  - web/app/api/subjects/[id]/respond/route.ts
+  - web/components/subjects/cannot-complete-modal.tsx
+  - web/components/subjects/job-workflow-section.tsx
+  - web/modules/subjects/subject.types.ts
+  - web/modules/subjects/subject.job-workflow.ts
+  - web/docs/API_DOCUMENTATION.md
+  - doc/WORK_LOG.md
+- Verification:
+  - `npm run build --workspace=web` passed successfully (compile + TypeScript + route generation).
+  - No diagnostics in modified files via error checks after fixes.
+- Next:
+  - Optional: move spare-parts data to a dedicated normalized table (`subject_spare_parts`) for cleaner reporting and pricing analytics.
+
 ## [2026-03-20 15:48:36 +05:30] Feat: Allow Backdated Technician Assignment Dates
 - Summary: Enabled assigning technician visit dates in previous days for operational correction and overdue queue handling.
 - Work done:

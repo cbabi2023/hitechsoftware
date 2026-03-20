@@ -15,8 +15,9 @@ interface CannotCompleteModalProps {
 export function CannotCompleteModal({ isOpen, isSubmitting, onClose, onSubmit }: CannotCompleteModalProps) {
   const [reason, setReason] = useState<IncompleteReason | ''>('');
   const [note, setNote] = useState('');
-  const [partName, setPartName] = useState('');
-  const [partQty, setPartQty] = useState(1);
+  const [spareParts, setSpareParts] = useState<Array<{ name: string; quantity: number; price: number }>>([
+    { name: '', quantity: 1, price: 0 },
+  ]);
   const [rescheduleDate, setRescheduleDate] = useState('');
 
   if (!isOpen) return null;
@@ -24,7 +25,7 @@ export function CannotCompleteModal({ isOpen, isSubmitting, onClose, onSubmit }:
   const isSparePartsReason = reason === 'spare_parts_not_available';
   const isOtherReason = reason === 'other';
   const noteValid = !isOtherReason || note.trim().length >= 10;
-  const sparePartsValid = !isSparePartsReason || (partName.trim().length > 0 && partQty > 0);
+  const sparePartsValid = !isSparePartsReason || spareParts.every((part) => part.name.trim().length > 0 && part.quantity > 0 && part.price > 0);
   const canSubmit = reason !== '' && noteValid && sparePartsValid && !isSubmitting;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -33,8 +34,15 @@ export function CannotCompleteModal({ isOpen, isSubmitting, onClose, onSubmit }:
     onSubmit({
       reason,
       note: note || '',
-      sparePartsRequested: isSparePartsReason ? partName : undefined,
-      sparePartsQuantity: isSparePartsReason ? partQty : undefined,
+      sparePartsRequested: isSparePartsReason ? spareParts.map((part) => part.name.trim()).join(', ') : undefined,
+      sparePartsQuantity: isSparePartsReason ? spareParts.reduce((sum, part) => sum + (part.quantity || 0), 0) : undefined,
+      sparePartsItems: isSparePartsReason
+        ? spareParts.map((part) => ({
+            name: part.name.trim(),
+            quantity: part.quantity,
+            price: part.price,
+          }))
+        : undefined,
       rescheduledDate: rescheduleDate || undefined,
     });
   };
@@ -42,10 +50,21 @@ export function CannotCompleteModal({ isOpen, isSubmitting, onClose, onSubmit }:
   const handleClose = () => {
     setReason('');
     setNote('');
-    setPartName('');
-    setPartQty(1);
+    setSpareParts([{ name: '', quantity: 1, price: 0 }]);
     setRescheduleDate('');
     onClose();
+  };
+
+  const updatePart = (index: number, field: 'name' | 'quantity' | 'price', value: string | number) => {
+    setSpareParts((prev) => prev.map((part, i) => (i === index ? { ...part, [field]: value } : part)));
+  };
+
+  const addPartRow = () => {
+    setSpareParts((prev) => [...prev, { name: '', quantity: 1, price: 0 }]);
+  };
+
+  const removePartRow = (index: number) => {
+    setSpareParts((prev) => (prev.length === 1 ? prev : prev.filter((_, i) => i !== index)));
   };
 
   return (
@@ -79,24 +98,51 @@ export function CannotCompleteModal({ isOpen, isSubmitting, onClose, onSubmit }:
 
           {isSparePartsReason && (
             <>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Part Name *</label>
-                <input
-                  value={partName}
-                  onChange={(e) => setPartName(e.target.value)}
-                  placeholder="e.g. Compressor Motor"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Quantity *</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={partQty}
-                  onChange={(e) => setPartQty(parseInt(e.target.value) || 1)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                />
+              <div className="space-y-2 rounded-lg border border-slate-200 p-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-slate-700">Spare Parts (name, qty, price) *</label>
+                  <button
+                    type="button"
+                    onClick={addPartRow}
+                    className="rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    Add Part
+                  </button>
+                </div>
+
+                {spareParts.map((part, index) => (
+                  <div key={`spare-part-${index}`} className="grid grid-cols-12 gap-2">
+                    <input
+                      value={part.name}
+                      onChange={(e) => updatePart(index, 'name', e.target.value)}
+                      placeholder="Part name"
+                      className="col-span-6 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    />
+                    <input
+                      type="number"
+                      min="1"
+                      value={part.quantity}
+                      onChange={(e) => updatePart(index, 'quantity', parseInt(e.target.value) || 1)}
+                      className="col-span-2 rounded-lg border border-slate-300 px-2 py-2 text-sm"
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={part.price}
+                      onChange={(e) => updatePart(index, 'price', parseFloat(e.target.value) || 0)}
+                      className="col-span-3 rounded-lg border border-slate-300 px-2 py-2 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removePartRow(index)}
+                      className="col-span-1 rounded-md border border-slate-300 px-2 text-xs text-slate-600 hover:bg-slate-50"
+                      aria-label="Remove part row"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
               </div>
             </>
           )}

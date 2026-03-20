@@ -21,11 +21,22 @@ import { ROUTES } from '@/lib/constants/routes';
 import { SUBJECT_QUERY_KEYS } from '@/modules/subjects/subject.constants';
 import { removeSubject } from '@/modules/subjects/subject.service';
 
-async function respondToSubjectApi(subjectId: string, action: 'accept' | 'reject', rejectionReason?: string) {
+async function respondToSubjectApi(
+  subjectId: string,
+  action: 'accept' | 'reject',
+  rejectionReason?: string,
+  visitDate?: string,
+  visitTime?: string,
+) {
   const response = await fetch(`/api/subjects/${subjectId}/respond`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, rejection_reason: rejectionReason }),
+    body: JSON.stringify({
+      action,
+      rejection_reason: rejectionReason,
+      visit_date: visitDate,
+      visit_time: visitTime,
+    }),
   });
   return response.json() as Promise<{ ok: boolean; error?: { message: string } }>;
 }
@@ -56,8 +67,11 @@ export default function SubjectDetailPage() {
   const queryClient = useQueryClient();
   const { userRole, user } = useAuth();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [visitDate, setVisitDate] = useState('');
+  const [visitTime, setVisitTime] = useState('');
 
   const query = useSubjectDetail(id);
   const contractsQuery = useContractsBySubject(id);
@@ -79,15 +93,26 @@ export default function SubjectDetailPage() {
   });
 
   const respondMutation = useMutation({
-    mutationFn: ({ action, reason }: { action: 'accept' | 'reject'; reason?: string }) =>
-      respondToSubjectApi(id, action, reason),
+    mutationFn: ({
+      action,
+      reason,
+      acceptVisitDate,
+      acceptVisitTime,
+    }: {
+      action: 'accept' | 'reject';
+      reason?: string;
+      acceptVisitDate?: string;
+      acceptVisitTime?: string;
+    }) => respondToSubjectApi(id, action, reason, acceptVisitDate, acceptVisitTime),
     onSuccess: (result, variables) => {
       if (result.ok) {
         toast.success(variables.action === 'accept' ? 'Service accepted successfully' : 'Service rejected');
         queryClient.invalidateQueries({ queryKey: SUBJECT_QUERY_KEYS.all });
         queryClient.invalidateQueries({ queryKey: SUBJECT_QUERY_KEYS.detail(id) });
+        setShowAcceptModal(false);
         setShowRejectModal(false);
         setRejectionReason('');
+        setVisitTime('');
       } else {
         toast.error(result.error?.message ?? 'Failed to respond');
       }
@@ -99,6 +124,8 @@ export default function SubjectDetailPage() {
 
   const subject = query.data?.ok ? query.data.data : null;
   const contracts = contractsQuery.data?.ok ? contractsQuery.data.data : [];
+
+  const effectiveVisitDate = visitDate || subject?.technician_allocated_date || '';
 
   const today = new Date().toISOString().split('T')[0];
   const isWarrantyActive = Boolean(subject?.warranty_end_date && subject.warranty_end_date >= today);
@@ -221,7 +248,10 @@ export default function SubjectDetailPage() {
             <button
               type="button"
               disabled={respondMutation.isPending}
-              onClick={() => respondMutation.mutate({ action: 'accept' })}
+              onClick={() => {
+                setVisitDate(subject.technician_allocated_date ?? new Date().toISOString().split('T')[0]);
+                setShowAcceptModal(true);
+              }}
               className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
             >
               <CheckCircle2 className="h-4 w-4" />
@@ -284,6 +314,51 @@ export default function SubjectDetailPage() {
           deleteSubjectMutation.mutate(subject.id);
         }}
       />
+
+      {/* Reject reason modal */}
+      {showAcceptModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="text-base font-semibold text-slate-900">Confirm Visit Date and Time</h3>
+            <p className="mt-1 text-sm text-slate-600">Before accepting, set the planned customer visit date and time.</p>
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <input
+                type="date"
+                value={effectiveVisitDate}
+                onChange={(e) => setVisitDate(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              />
+              <input
+                type="time"
+                value={visitTime}
+                onChange={(e) => setVisitTime(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              />
+            </div>
+            <div className="mt-4 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => { setShowAcceptModal(false); setVisitTime(''); }}
+                className="ht-btn ht-btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!effectiveVisitDate || !visitTime || respondMutation.isPending}
+                onClick={() => respondMutation.mutate({
+                  action: 'accept',
+                  acceptVisitDate: effectiveVisitDate,
+                  acceptVisitTime: visitTime,
+                })}
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+              >
+                {respondMutation.isPending ? 'Accepting...' : 'Confirm & Accept'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reject reason modal */}
       {showRejectModal && (

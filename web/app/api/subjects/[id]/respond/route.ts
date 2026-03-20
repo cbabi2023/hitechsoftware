@@ -28,14 +28,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ ok: false, error: { message: 'Only technicians can respond to subjects' } }, { status: 403 });
   }
 
-  let body: { action?: string; rejection_reason?: string };
+  let body: { action?: string; rejection_reason?: string; visit_date?: string; visit_time?: string };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ ok: false, error: { message: 'Invalid JSON body' } }, { status: 400 });
   }
 
-  const { action, rejection_reason } = body;
+  const { action, rejection_reason, visit_date, visit_time } = body;
 
   if (action !== 'accept' && action !== 'reject') {
     return NextResponse.json({ ok: false, error: { message: 'action must be "accept" or "reject"' } }, { status: 400 });
@@ -45,12 +45,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ ok: false, error: { message: 'A rejection reason is required' } }, { status: 400 });
   }
 
+  if (action === 'accept') {
+    if (!visit_date || !visit_time) {
+      return NextResponse.json({ ok: false, error: { message: 'Visit date and time are required when accepting' } }, { status: 400 });
+    }
+  }
+
   const admin = createAdminClient();
 
   // Verify the subject is assigned to this technician and is in ALLOCATED status
   const subjectCheck = await admin
     .from('subjects')
-    .select('id,status,assigned_technician_id,technician_acceptance_status')
+    .select('id,status,assigned_technician_id,technician_acceptance_status,technician_allocated_notes')
     .eq('id', subjectId)
     .eq('is_deleted', false)
     .maybeSingle<{
@@ -58,6 +64,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       status: string;
       assigned_technician_id: string | null;
       technician_acceptance_status: string;
+      technician_allocated_notes: string | null;
     }>();
 
   if (subjectCheck.error || !subjectCheck.data) {
@@ -78,14 +85,21 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   if (action === 'accept') {
+    const existingNotes = subject.technician_allocated_notes?.trim() ?? '';
+    const visitTimeNote = `Visit Time: ${visit_time}`;
+
     const updateResult = await admin
       .from('subjects')
       .update({
         technician_acceptance_status: 'accepted',
         status: 'ACCEPTED',
+        technician_allocated_date: visit_date,
+        technician_allocated_notes: existingNotes
+          ? `${existingNotes} | ${visitTimeNote}`
+          : visitTimeNote,
       })
       .eq('id', subjectId)
-      .select('id,status,technician_acceptance_status')
+      .select('id,status,technician_acceptance_status,technician_allocated_date,technician_allocated_notes')
       .single();
 
     if (updateResult.error) {

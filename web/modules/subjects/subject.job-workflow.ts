@@ -234,10 +234,15 @@ export async function markJobIncomplete(
 
   // For spare_parts_not_available — part name and quantity are mandatory
   if (input.reason === 'spare_parts_not_available') {
-    if (!input.sparePartsRequested || !input.sparePartsQuantity || input.sparePartsQuantity <= 0) {
+    const hasItemList = Array.isArray(input.sparePartsItems) && input.sparePartsItems.length > 0;
+    const itemListValid = hasItemList
+      ? input.sparePartsItems!.every((item) => item.name.trim().length > 0 && item.quantity > 0 && item.price > 0)
+      : false;
+
+    if (!itemListValid && (!input.sparePartsRequested || !input.sparePartsQuantity || input.sparePartsQuantity <= 0)) {
       return {
         ok: false,
-        error: { message: 'Part name and quantity required for spare parts reason' },
+        error: { message: 'At least one spare part with name, quantity, and price is required' },
       };
     }
   }
@@ -250,9 +255,14 @@ export async function markJobIncomplete(
     incomplete_note: input.note,
   };
 
-  if (input.sparePartsRequested) {
-    updateData.spare_parts_requested = input.sparePartsRequested;
-    updateData.spare_parts_quantity = input.sparePartsQuantity ?? null;
+  if (input.reason === 'spare_parts_not_available') {
+    if (input.sparePartsItems && input.sparePartsItems.length > 0) {
+      updateData.spare_parts_requested = JSON.stringify(input.sparePartsItems);
+      updateData.spare_parts_quantity = input.sparePartsItems.reduce((sum, item) => sum + item.quantity, 0);
+    } else {
+      updateData.spare_parts_requested = input.sparePartsRequested ?? null;
+      updateData.spare_parts_quantity = input.sparePartsQuantity ?? null;
+    }
   }
 
   if (input.rescheduledDate) {

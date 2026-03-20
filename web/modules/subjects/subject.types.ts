@@ -179,6 +179,11 @@ export interface IncompleteJobInput {
   note: string;
   sparePartsRequested?: string;
   sparePartsQuantity?: number;
+  sparePartsItems?: Array<{
+    name: string;
+    quantity: number;
+    price: number;
+  }>;
   rescheduledDate?: string; // ISO date string YYYY-MM-DD
 }
 

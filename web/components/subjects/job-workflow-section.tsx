@@ -75,6 +75,16 @@ export function JobWorkflowSection({ subject, userRole, userId }: Props) {
     ? (INCOMPLETE_REASONS.find((r) => r.value === subject.incomplete_reason)?.label ?? subject.incomplete_reason)
     : null;
 
+  const parsedSpareParts = (() => {
+    if (!subject.spare_parts_requested) return null;
+    try {
+      const parsed = JSON.parse(subject.spare_parts_requested) as Array<{ name: string; quantity: number; price: number }>;
+      return Array.isArray(parsed) ? parsed : null;
+    } catch {
+      return null;
+    }
+  })();
+
   return (
     <div className="mb-4 space-y-4">
       {/* ── PART A: Status Action Bar ───────────────────────────────────────── */}
@@ -232,8 +242,20 @@ export function JobWorkflowSection({ subject, userRole, userId }: Props) {
               <div className="flex gap-2">
                 <dt className="w-32 flex-shrink-0 font-medium text-rose-700">Part Required:</dt>
                 <dd className="text-rose-900">
-                  {subject.spare_parts_requested}
-                  {subject.spare_parts_quantity ? ` × ${subject.spare_parts_quantity}` : ''}
+                  {parsedSpareParts ? (
+                    <ul className="space-y-1">
+                      {parsedSpareParts.map((part, index) => (
+                        <li key={`part-${index}`}>
+                          {part.name} — Qty: {part.quantity}, Price: {part.price}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <>
+                      {subject.spare_parts_requested}
+                      {subject.spare_parts_quantity ? ` × ${subject.spare_parts_quantity}` : ''}
+                    </>
+                  )}
                 </dd>
               </div>
             )}
