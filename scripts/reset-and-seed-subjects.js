@@ -133,7 +133,7 @@ async function main() {
 
   const priorities = ['critical', 'high', 'medium', 'low'];
   const serviceTypes = ['service', 'installation'];
-  const warrantyTypes = ['in_warranty', 'amc', 'out_of_warranty'];
+  const warrantyTypes = ['in_warranty', 'amc', 'warranty_out', 'warranty_not_noted'];
   const productNames = [
     'Split AC', 'Window AC', 'Refrigerator', 'Washing Machine', 'Microwave Oven',
     'Dishwasher', 'Water Purifier', 'Air Cooler', 'Deep Freezer', 'Inverter AC',
@@ -172,6 +172,9 @@ async function main() {
     const warrantyEndDate = new Date(purchaseDate);
     warrantyEndDate.setDate(purchaseDate.getDate() + 365);
 
+    const expiredWarrantyEndDate = new Date(now);
+    expiredWarrantyEndDate.setDate(now.getDate() - (7 + randomInt(365)));
+
     const amcEndDate = new Date(purchaseDate);
     amcEndDate.setDate(purchaseDate.getDate() + 730);
 
@@ -194,7 +197,10 @@ async function main() {
       p_serial_number: `SN-${runToken}-${String(i).padStart(4, '0')}`,
       p_product_description: `${product} — seeded test subject ${subjectNumber}`,
       p_purchase_date: purchaseDate.toISOString().slice(0, 10),
-      p_warranty_end_date: wType === 'in_warranty' ? warrantyEndDate.toISOString().slice(0, 10) : null,
+      p_warranty_end_date:
+        wType === 'in_warranty'
+          ? warrantyEndDate.toISOString().slice(0, 10)
+          : (wType === 'warranty_out' ? expiredWarrantyEndDate.toISOString().slice(0, 10) : null),
       p_amc_end_date: wType === 'amc' ? amcEndDate.toISOString().slice(0, 10) : null,
       p_created_by: createdBy,
     };

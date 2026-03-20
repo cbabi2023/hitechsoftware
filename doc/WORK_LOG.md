@@ -3,6 +3,46 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 22:12:30 +05:30] Data reset + seeded 150 subjects with mixed warranty scenarios and terminal validation
+
+- Summary: Deleted all existing subjects, generated 150 fresh subjects with explicit mixed warranty scenarios, and validated scenario/status coverage through terminal-based DB checks.
+- Work done:
+  - Updated reset/seed script to generate explicit warranty scenarios for current billing rules:
+    - `in_warranty`
+    - `amc`
+    - `warranty_out` (expired warranty date)
+    - `warranty_not_noted` (missing warranty date)
+  - Executed terminal reset + seed:
+    - command: `node scripts/reset-and-seed-subjects.js 150`
+    - existing subjects deleted: 92
+    - created: 150
+    - failures: 0
+  - Ran terminal verification query for warranty scenario distribution:
+    - total: 150
+    - in_warranty: 20
+    - amc: 28
+    - warranty_out: 64
+    - warranty_not_noted: 38
+  - Prepared mixed workflow states for test readiness via terminal update:
+    - IN_PROGRESS: 60
+    - ALLOCATED: 50
+    - PENDING: 40
+  - Ran terminal billing-projection validation against current rules:
+    - eligible in-progress: 46
+    - blocked by warranty-date-not-noted: 14
+  - API documentation review:
+    - No API contract changes were introduced in this task; `web/docs/API_DOCUMENTATION.md` update not required.
+- Files changed:
+  - scripts/reset-and-seed-subjects.js
+  - doc/WORK_LOG.md
+- Verification:
+  - Terminal seeding and validation commands completed successfully.
+  - Final subject count in DB after reset/seed: 150.
+- Issues:
+  - none
+- Next:
+  - Optionally run automated technician-path API tests against the seeded dataset to validate end-to-end bill generation responses per scenario.
+
 ## [2026-03-20 22:01:10 +05:30] Billing rule fix: enforce warranty state (in-warranty / warranty-out / warranty-date-not-noted)
 
 - Summary: Added strict warranty-state checks before bill generation and made warranty status explicit in billing UI so jobs can only be billed after warranty condition is properly determined.
