@@ -3,6 +3,46 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 20:31:18 +05:30] UX: customer-chargeable billing highlighted in light yellow with payment guidance
+
+- Summary: Updated billing UI so customer-chargeable jobs are clearly understandable with a light-yellow theme and explicit payment collection guidance.
+- Work done:
+  - Added customer-chargeable visual mode in Billing section based on `service_charge_type === 'customer'`.
+  - Applied light-yellow styling to the Billing container and bill card when customer-chargeable.
+  - Added a prominent helper message: `Record Payment From Customer` for customer-chargeable bills.
+  - Corrected payment action visibility to show status update buttons for customer receipts (`bill_type === 'customer_receipt'`) instead of brand/dealer invoices.
+- Files changed:
+  - web/components/subjects/BillCard.tsx
+  - web/components/subjects/BillingSection.tsx
+- Verification:
+  - VS Code diagnostics: no TypeScript/compile errors in edited files.
+- Issues:
+  - none
+- Next:
+  - If required, extend the same light-yellow visual language to subject list rows/cards in dashboard list views.
+
+## [2026-03-20 20:22:40 +05:30] Fix: clarify upload 400 causes and relax image size limit
+
+- Summary: Investigated recurring `400 Bad Request` on photo upload and fixed the most common causes by improving validation/messages and increasing image size allowance.
+- Work done:
+  - Identified upload endpoint failure points that return 400 (`INVALID_FILE_TYPE`, `FILE_TOO_LARGE`, `STORAGE_UPLOAD_FAILED`, metadata save failures).
+  - Increased image upload limit from 2MB to 10MB in upload API to better match real technician photos.
+  - Added explicit MIME type validation before storage upload:
+    - images: `image/jpeg`, `image/png`, `image/webp`
+    - videos: `video/mp4`, `video/quicktime`
+  - Improved storage failure user messages to surface likely root cause (mime/content-type rejection or size limits).
+  - Updated Billing upload UI wording to remove unsupported “documents” wording and show exact file type/size limits.
+- Files changed:
+  - web/app/api/subjects/[id]/photos/upload/route.ts
+  - web/components/subjects/BillingSection.tsx
+- Verification:
+  - VS Code diagnostics: no TypeScript/compile errors in edited files.
+  - Runtime impact: upload errors now return clearer user-facing reasons instead of generic failure text.
+- Issues:
+  - Root issue: frequent 400 errors were caused by strict/unclear upload constraints (2MB image limit and unsupported MIME types at storage level).
+- Next:
+  - If you need document upload (PDF/DOC), we should add explicit backend support and align Supabase bucket allowed MIME types.
+
 ## [2026-03-20 20:06:12 +05:30] Workflow simplification: single media upload section before billing + completion
 
 - Summary: Simplified the technician completion flow to one upload area only (inside Billing) with one Upload Media button, uploaded media gallery, 12-item max, then optional charges/items and Generate Bill & Complete.

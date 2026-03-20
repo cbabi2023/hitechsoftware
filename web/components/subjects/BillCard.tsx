@@ -8,6 +8,7 @@ interface Props {
   onUpdatePaymentStatus: (status: 'paid' | 'due' | 'waived') => void;
   isUpdatingPayment: boolean;
   onDownload: () => void;
+  highlightCustomerPayment?: boolean;
 }
 
 function formatMoney(value: number) {
@@ -27,7 +28,10 @@ export function BillCard({
   onUpdatePaymentStatus,
   isUpdatingPayment,
   onDownload,
+  highlightCustomerPayment = false,
 }: Props) {
+  const showCustomerPaymentActions = canUpdatePayment && bill.bill_type === 'customer_receipt';
+
   const paymentClass = bill.payment_status === 'paid'
     ? 'bg-emerald-100 text-emerald-700'
     : bill.payment_status === 'waived'
@@ -35,7 +39,7 @@ export function BillCard({
       : 'bg-amber-100 text-amber-700';
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
+    <div className={`rounded-xl border p-4 ${highlightCustomerPayment ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-white'}`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-slate-900">{bill.bill_number}</p>
@@ -45,6 +49,13 @@ export function BillCard({
           {formatPaymentStatus(bill.payment_status)}
         </span>
       </div>
+
+      {showCustomerPaymentActions && (
+        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-100 px-3 py-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">Record Payment From Customer</p>
+          <p className="mt-0.5 text-xs text-amber-800">This is a customer-chargeable bill. Update payment status after collecting amount from customer.</p>
+        </div>
+      )}
 
       <div className="mt-4 grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
         <div>
@@ -74,7 +85,7 @@ export function BillCard({
           Download PDF
         </button>
 
-        {canUpdatePayment && bill.bill_type === 'brand_dealer_invoice' && (
+        {showCustomerPaymentActions && (
           <>
             <button
               type="button"

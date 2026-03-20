@@ -42,6 +42,7 @@ export function BillingSection({ subject, userRole, userId }: Props) {
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const isOutOfWarranty = !subject.is_warranty_service && !subject.is_amc_service;
+  const isCustomerChargeable = subject.service_charge_type === 'customer';
   const isAssignedTechnician = userRole === 'technician' && userId === subject.assigned_technician_id;
   const canGenerate = isAssignedTechnician && subject.status === 'IN_PROGRESS' && !subject.bill_generated;
   const canUpdatePayment = userRole === 'office_staff' || userRole === 'super_admin';
@@ -111,15 +112,22 @@ export function BillingSection({ subject, userRole, userId }: Props) {
   }, [visitCharge, serviceCharge, accessoriesTotal]);
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5">
+    <div className={`rounded-xl border p-5 ${isCustomerChargeable ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-white'}`}>
       <div className="mb-4">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Billing</h3>
         <p className="mt-1 text-xs text-slate-500">Generate exactly one bill after job completion evidence is ready.</p>
+        {isCustomerChargeable && (
+          <div className="mt-2 rounded-lg border border-amber-200 bg-amber-100 px-3 py-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">Customer Chargeable</p>
+            <p className="mt-0.5 text-xs text-amber-800">Use the Record Payment From Customer action after collecting payment.</p>
+          </div>
+        )}
       </div>
 
       {billQuery.data ? (
         <BillCard
           bill={billQuery.data}
+          highlightCustomerPayment={isCustomerChargeable}
           canUpdatePayment={canUpdatePayment}
           onUpdatePaymentStatus={(status) => {
             const billId = billQuery.data?.id;
@@ -140,9 +148,9 @@ export function BillingSection({ subject, userRole, userId }: Props) {
           <p className="text-sm font-semibold text-blue-900">Generate Final Bill</p>
 
           <div className="rounded-lg border border-slate-200 bg-white p-4">
-            <div className="mb-3 flex items-center gap-2">
+              <div className="mb-3 flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-amber-600" />
-              <p className="text-sm font-semibold text-slate-900">Upload Documents / Photos / Videos</p>
+                <p className="text-sm font-semibold text-slate-900">Upload Photos / Videos</p>
             </div>
 
             <div className="space-y-3">
@@ -193,6 +201,7 @@ export function BillingSection({ subject, userRole, userId }: Props) {
                 </label>
                 <span className="text-xs text-slate-500">Maximum 12 items</span>
               </div>
+              <p className="text-xs text-slate-500">Allowed: JPG, PNG, WEBP (up to 10MB each), MP4/MOV (up to 50MB each).</p>
 
               {uploadError && (
                 <p className="text-xs text-rose-600">{uploadError}</p>
