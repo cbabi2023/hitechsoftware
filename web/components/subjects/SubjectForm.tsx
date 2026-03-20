@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useBrands } from '@/hooks/brands/useBrands';
 import { useDealers } from '@/hooks/dealers/useDealers';
 import { useServiceCategories } from '@/hooks/service-categories/useServiceCategories';
 import { useAssignableTechnicians } from '@/hooks/subjects/useSubjects';
 import { lookupCustomerByPhone } from '@/modules/customers/customer.service';
+import { WARRANTY_PERIODS } from '@/modules/subjects/subject.constants';
 import type { SubjectFormValues, SubjectPriority, SubjectSourceType, SubjectTypeOfService } from '@/modules/subjects/subject.types';
+import type { WarrantyPeriod } from '@/modules/subjects/subject.types';
 
 const PRIORITY_CONFIG: Record<SubjectPriority, { label: string; active: string; ring: string }> = {
   critical: { label: 'Critical', active: 'bg-rose-600 text-white border-rose-600', ring: 'border-slate-200 text-rose-700 hover:border-rose-300 hover:bg-rose-50' },
@@ -16,6 +18,37 @@ const PRIORITY_CONFIG: Record<SubjectPriority, { label: string; active: string; 
 };
 
 const FIELD_BASE = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors';
+
+function toIsoDate(value: string) {
+  return new Date(value).toISOString().split('T')[0];
+}
+
+function addMonths(dateText: string, months: number) {
+  const date = new Date(dateText);
+  date.setMonth(date.getMonth() + months);
+  return toIsoDate(date.toISOString());
+}
+
+function getWarrantyPeriodFromMonths(months: number | null): WarrantyPeriod {
+  const match = WARRANTY_PERIODS.find((item) => item.months === months);
+  return (match?.value as WarrantyPeriod | undefined) ?? 'custom';
+}
+
+function diffInWholeDays(fromDate: string, toDate: string) {
+  const from = new Date(fromDate);
+  const to = new Date(toDate);
+  const ms = to.getTime() - from.getTime();
+  return Math.ceil(ms / (1000 * 60 * 60 * 24));
+}
+
+function getRemainingDaysText(endDate: string | undefined) {
+  if (!endDate) return 'Not set';
+  const today = new Date().toISOString().split('T')[0];
+  const days = diffInWholeDays(today, endDate);
+  if (days > 0) return `${days} day(s) remaining`;
+  if (days === 0) return 'Ends today';
+  return `${Math.abs(days)} day(s) overdue`;
+}
 
 function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
@@ -52,13 +85,36 @@ export default function SubjectForm({
   const categories = useServiceCategories();
   const techniciansQuery = useAssignableTechnicians();
   const [values, setValues] = useState<SubjectFormValues>(initialValues);
+  const [warrantyPeriod, setWarrantyPeriod] = useState<WarrantyPeriod>(() => {
+    if (initialValues.purchase_date && initialValues.warranty_end_date) {
+      const months = Math.round(diffInWholeDays(initialValues.purchase_date, initialValues.warranty_end_date) / 30);
+      return getWarrantyPeriodFromMonths(months);
+    }
+    return 'custom';
+  });
+  const [amcPeriod, setAmcPeriod] = useState<WarrantyPeriod>(() => {
+    if (initialValues.purchase_date && initialValues.amc_end_date) {
+      const months = Math.round(diffInWholeDays(initialValues.purchase_date, initialValues.amc_end_date) / 30);
+      return getWarrantyPeriodFromMonths(months);
+    }
+    return 'custom';
+  });
   const [phoneAutoFilled, setPhoneAutoFilled] = useState(false);
   const phoneLookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    setValues(initialValues);
-    setPhoneAutoFilled(false);
-  }, [initialValues]);
+  const setField = <K extends keyof SubjectFormValues>(field: K, value: SubjectFormValues[K]) => {
+    setValues((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const selectedWarrantyMonths = useMemo(
+    () => WARRANTY_PERIODS.find((item) => item.value === warrantyPeriod)?.months ?? null,
+    [warrantyPeriod],
+  );
+
+  const selectedAmcMonths = useMemo(
+    () => WARRANTY_PERIODS.find((item) => item.value === amcPeriod)?.months ?? null,
+    [amcPeriod],
+  );
 
   const activeBrands = useMemo(() => brands.data.filter((item) => item.is_active), [brands.data]);
   const activeDealers = useMemo(() => dealers.data.filter((item) => item.is_active), [dealers.data]);
@@ -72,10 +128,6 @@ export default function SubjectForm({
     !values.allocated_date ||
     !values.category_id ||
     (values.source_type === 'brand' ? !values.brand_id : !values.dealer_id);
-
-  const setField = <K extends keyof SubjectFormValues>(field: K, value: SubjectFormValues[K]) => {
-    setValues((prev) => ({ ...prev, [field]: value }));
-  };
 
   const handleSourceToggle = (next: SubjectSourceType) => {
     setValues((prev) => ({
@@ -110,6 +162,34 @@ export default function SubjectForm({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     await onSubmit(values);
+  };
+
+  const handleCoveragePurchaseDateChange = (nextDate: string) => {
+    setField('purchase_date', nextDate || undefined);
+
+    if (nextDate && warrantyPeriod !== 'custom' && selectedWarrantyMonths) {
+      setField('warranty_end_date', addMonths(nextDate, selectedWarrantyMonths));
+    }
+
+    if (nextDate && amcPeriod !== 'custom' && selectedAmcMonths) {
+      setField('amc_end_date', addMonths(nextDate, selectedAmcMonths));
+    }
+  };
+
+  const handleWarrantyPeriodChange = (nextPeriod: WarrantyPeriod) => {
+    setWarrantyPeriod(nextPeriod);
+    const months = WARRANTY_PERIODS.find((item) => item.value === nextPeriod)?.months ?? null;
+    if (nextPeriod !== 'custom' && values.purchase_date && months) {
+      setField('warranty_end_date', addMonths(values.purchase_date, months));
+    }
+  };
+
+  const handleAmcPeriodChange = (nextPeriod: WarrantyPeriod) => {
+    setAmcPeriod(nextPeriod);
+    const months = WARRANTY_PERIODS.find((item) => item.value === nextPeriod)?.months ?? null;
+    if (nextPeriod !== 'custom' && values.purchase_date && months) {
+      setField('amc_end_date', addMonths(values.purchase_date, months));
+    }
   };
 
   const hasProductInfo =
@@ -419,36 +499,80 @@ export default function SubjectForm({
 
                 <div>
                   <p className="mb-2 text-sm font-medium text-slate-700">Coverage Dates</p>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <div>
                       <label className="mb-1 block text-xs text-slate-500">Purchase Date</label>
                       <input
                         type="date"
                         value={values.purchase_date ?? ''}
-                        onChange={(event) => setField('purchase_date', event.target.value || undefined)}
+                        onChange={(event) => handleCoveragePurchaseDateChange(event.target.value)}
                         className={FIELD_BASE}
                       />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs text-slate-500">Warranty Period</label>
+                      <select
+                        value={warrantyPeriod}
+                        onChange={(event) => handleWarrantyPeriodChange(event.target.value as WarrantyPeriod)}
+                        className={FIELD_BASE}
+                      >
+                        {WARRANTY_PERIODS.map((period) => (
+                          <option key={period.value} value={period.value}>{period.label}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="mb-1 block text-xs text-slate-500">Warranty Ends</label>
                       <input
                         type="date"
                         value={values.warranty_end_date ?? ''}
-                        onChange={(event) => setField('warranty_end_date', event.target.value || undefined)}
+                        onChange={(event) => {
+                          const next = event.target.value || undefined;
+                          setField('warranty_end_date', next);
+                          if (values.purchase_date && next) {
+                            const months = Math.round(diffInWholeDays(values.purchase_date, next) / 30);
+                            setWarrantyPeriod(getWarrantyPeriodFromMonths(months));
+                          } else {
+                            setWarrantyPeriod('custom');
+                          }
+                        }}
                         className={FIELD_BASE}
                       />
+                      <p className="mt-1 text-xs text-slate-400">{getRemainingDaysText(values.warranty_end_date)}</p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs text-slate-500">AMC Period</label>
+                      <select
+                        value={amcPeriod}
+                        onChange={(event) => handleAmcPeriodChange(event.target.value as WarrantyPeriod)}
+                        className={FIELD_BASE}
+                      >
+                        {WARRANTY_PERIODS.map((period) => (
+                          <option key={period.value} value={period.value}>{period.label}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="mb-1 block text-xs text-slate-500">AMC Ends</label>
                       <input
                         type="date"
                         value={values.amc_end_date ?? ''}
-                        onChange={(event) => setField('amc_end_date', event.target.value || undefined)}
+                        onChange={(event) => {
+                          const next = event.target.value || undefined;
+                          setField('amc_end_date', next);
+                          if (values.purchase_date && next) {
+                            const months = Math.round(diffInWholeDays(values.purchase_date, next) / 30);
+                            setAmcPeriod(getWarrantyPeriodFromMonths(months));
+                          } else {
+                            setAmcPeriod('custom');
+                          }
+                        }}
                         className={FIELD_BASE}
                       />
+                      <p className="mt-1 text-xs text-slate-400">{getRemainingDaysText(values.amc_end_date)}</p>
                     </div>
                   </div>
-                  <p className="mt-1.5 text-xs text-slate-400">AMC and warranty status will be calculated automatically from these dates.</p>
+                  <p className="mt-1.5 text-xs text-slate-400">Pick a period to auto-calculate end date, or set end date manually to auto-detect nearest period.</p>
                 </div>
               </div>
             )}

@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { ContractCard } from '@/components/contracts/ContractCard';
 import { useContractsBySubject, useCreateContract, useDeleteContract } from '@/hooks/contracts/useContracts';
-import { useAssignableTechnicians as _unused } from '@/hooks/subjects/useSubjects';
 import { useSaveSubjectWarranty } from '@/hooks/subjects/useSubjects';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { WARRANTY_PERIODS } from '@/modules/subjects/subject.constants';
@@ -22,6 +21,22 @@ function addMonths(dateText: string, months: number) {
   const date = new Date(dateText);
   date.setMonth(date.getMonth() + months);
   return toIsoDate(date.toISOString());
+}
+
+function diffInWholeDays(fromDate: string, toDate: string) {
+  const from = new Date(fromDate);
+  const to = new Date(toDate);
+  const ms = to.getTime() - from.getTime();
+  return Math.ceil(ms / (1000 * 60 * 60 * 24));
+}
+
+function getRemainingDaysText(endDate: string | null) {
+  if (!endDate) return 'Not set';
+  const today = new Date().toISOString().split('T')[0];
+  const days = diffInWholeDays(today, endDate);
+  if (days > 0) return `${days} day(s) remaining`;
+  if (days === 0) return 'Ends today';
+  return `${Math.abs(days)} day(s) overdue`;
 }
 
 function getWarrantyPeriodFromMonths(months: number | null): WarrantyPeriod {
@@ -110,31 +125,61 @@ export function WarrantyAndContractsSection({ subject, userRole }: WarrantyAndCo
     return today;
   }, [effectiveWarrantyEndDate, sortedContracts, today]);
 
-  // ── effects ─────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    setPurchaseDate(subject.purchase_date ?? '');
-    setWarrantyEndDate(subject.warranty_end_date ?? '');
-    setWarrantyPeriod(getWarrantyPeriodFromMonths(subject.warranty_period_months));
-  }, [subject]);
+  const handlePurchaseDateChange = (nextDate: string) => {
+    setPurchaseDate(nextDate);
 
-  useEffect(() => {
-    if (!showContractForm) return;
-    setContractStartDate(recommendedContractStartDate);
-  }, [recommendedContractStartDate, showContractForm]);
-
-  useEffect(() => {
-    if (warrantyPeriod === 'custom') return;
-    if (purchaseDate && selectedWarrantyMonths) {
-      setWarrantyEndDate(addMonths(purchaseDate, selectedWarrantyMonths));
+    if (warrantyPeriod !== 'custom' && selectedWarrantyMonths && nextDate) {
+      setWarrantyEndDate(addMonths(nextDate, selectedWarrantyMonths));
     }
-  }, [purchaseDate, selectedWarrantyMonths, warrantyPeriod]);
 
-  useEffect(() => {
-    if (contractPeriod === 'custom') return;
-    if (contractStartDate && selectedContractMonths) {
-      setContractEndDate(addMonths(contractStartDate, selectedContractMonths));
+    if (contractPeriod !== 'custom' && selectedContractMonths && nextDate && !contractStartDate) {
+      setContractStartDate(nextDate);
+      setContractEndDate(addMonths(nextDate, selectedContractMonths));
     }
-  }, [contractStartDate, selectedContractMonths, contractPeriod]);
+  };
+
+  const handleWarrantyPeriodChange = (nextPeriod: WarrantyPeriod) => {
+    setWarrantyPeriod(nextPeriod);
+    const nextMonths = WARRANTY_PERIODS.find((item) => item.value === nextPeriod)?.months ?? null;
+    if (nextPeriod !== 'custom' && purchaseDate && nextMonths) {
+      setWarrantyEndDate(addMonths(purchaseDate, nextMonths));
+    }
+  };
+
+  const handleWarrantyEndDateChange = (nextEndDate: string) => {
+    setWarrantyEndDate(nextEndDate);
+    if (!purchaseDate || !nextEndDate) {
+      setWarrantyPeriod('custom');
+      return;
+    }
+    const months = Math.round(diffInWholeDays(purchaseDate, nextEndDate) / 30);
+    setWarrantyPeriod(getWarrantyPeriodFromMonths(months));
+  };
+
+  const handleContractStartDateChange = (nextStartDate: string) => {
+    setContractStartDate(nextStartDate);
+    if (contractPeriod !== 'custom' && selectedContractMonths && nextStartDate) {
+      setContractEndDate(addMonths(nextStartDate, selectedContractMonths));
+    }
+  };
+
+  const handleContractPeriodChange = (nextPeriod: WarrantyPeriod) => {
+    setContractPeriod(nextPeriod);
+    const nextMonths = WARRANTY_PERIODS.find((item) => item.value === nextPeriod)?.months ?? null;
+    if (nextPeriod !== 'custom' && contractStartDate && nextMonths) {
+      setContractEndDate(addMonths(contractStartDate, nextMonths));
+    }
+  };
+
+  const handleContractEndDateChange = (nextEndDate: string) => {
+    setContractEndDate(nextEndDate);
+    if (!contractStartDate || !nextEndDate) {
+      setContractPeriod('custom');
+      return;
+    }
+    const months = Math.round(diffInWholeDays(contractStartDate, nextEndDate) / 30);
+    setContractPeriod(getWarrantyPeriodFromMonths(months));
+  };
 
   // ── render ───────────────────────────────────────────────────────────────────
   return (
@@ -162,7 +207,7 @@ export function WarrantyAndContractsSection({ subject, userRole }: WarrantyAndCo
               <input
                 type="date"
                 value={purchaseDate}
-                onChange={(e) => setPurchaseDate(e.target.value)}
+                onChange={(e) => handlePurchaseDateChange(e.target.value)}
                 disabled={!isEditingWarranty || !canManage || saveWarrantyMutation.isPending}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-100"
               />
@@ -171,7 +216,7 @@ export function WarrantyAndContractsSection({ subject, userRole }: WarrantyAndCo
               <label className="mb-1 block text-xs font-medium text-slate-700">Warranty Period</label>
               <select
                 value={warrantyPeriod}
-                onChange={(e) => setWarrantyPeriod(e.target.value as WarrantyPeriod)}
+                onChange={(e) => handleWarrantyPeriodChange(e.target.value as WarrantyPeriod)}
                 disabled={!isEditingWarranty || !canManage || saveWarrantyMutation.isPending}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-100"
               >
@@ -185,10 +230,11 @@ export function WarrantyAndContractsSection({ subject, userRole }: WarrantyAndCo
               <input
                 type="date"
                 value={warrantyEndDate}
-                onChange={(e) => setWarrantyEndDate(e.target.value)}
+                onChange={(e) => handleWarrantyEndDateChange(e.target.value)}
                 disabled={!isEditingWarranty || !canManage || saveWarrantyMutation.isPending}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-100"
               />
+              <p className="mt-1 text-[11px] text-slate-500">{getRemainingDaysText(warrantyEndDate || null)}</p>
             </div>
           </div>
 
@@ -248,7 +294,17 @@ export function WarrantyAndContractsSection({ subject, userRole }: WarrantyAndCo
             {canManage && (
               <button
                 type="button"
-                onClick={() => setShowContractForm((prev) => !prev)}
+                onClick={() => {
+                  if (showContractForm) {
+                    setShowContractForm(false);
+                    return;
+                  }
+                  setShowContractForm(true);
+                  setContractStartDate(recommendedContractStartDate);
+                  if (contractPeriod !== 'custom' && selectedContractMonths) {
+                    setContractEndDate(addMonths(recommendedContractStartDate, selectedContractMonths));
+                  }
+                }}
                 className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100"
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -297,11 +353,11 @@ export function WarrantyAndContractsSection({ subject, userRole }: WarrantyAndCo
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-700">Start Date</label>
+                  <label className="mb-1 block text-xs font-medium text-slate-700">AMC Purchase / Start Date</label>
                   <input
                     type="date"
                     value={contractStartDate}
-                    onChange={(e) => setContractStartDate(e.target.value)}
+                    onChange={(e) => handleContractStartDateChange(e.target.value)}
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                   />
                   <p className="mt-1 text-[11px] text-slate-500">
@@ -312,7 +368,7 @@ export function WarrantyAndContractsSection({ subject, userRole }: WarrantyAndCo
                   <label className="mb-1 block text-xs font-medium text-slate-700">Duration</label>
                   <select
                     value={contractPeriod}
-                    onChange={(e) => setContractPeriod(e.target.value as WarrantyPeriod)}
+                    onChange={(e) => handleContractPeriodChange(e.target.value as WarrantyPeriod)}
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                   >
                     {WARRANTY_PERIODS.map((period) => (
@@ -325,9 +381,10 @@ export function WarrantyAndContractsSection({ subject, userRole }: WarrantyAndCo
                   <input
                     type="date"
                     value={contractEndDate}
-                    onChange={(e) => setContractEndDate(e.target.value)}
+                    onChange={(e) => handleContractEndDateChange(e.target.value)}
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                   />
+                  <p className="mt-1 text-[11px] text-slate-500">{getRemainingDaysText(contractEndDate || null)}</p>
                 </div>
               </div>
               <div className="mt-3 flex items-center gap-2">

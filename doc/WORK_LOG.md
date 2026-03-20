@@ -3,6 +3,37 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 22:27:20 +05:30] Warranty/AMC UX enhancement: period presets, auto date calculation, custom date inference, and remaining days
+
+- Summary: Added two-way warranty and AMC date logic so users can choose period presets or custom end dates, with automatic calculation and remaining-days visibility.
+- Work done:
+  - Updated subject form coverage section:
+    - Added warranty period presets: 6 months, 1/2/3/4/5 years, custom.
+    - Added AMC period presets with same options.
+    - Purchase date + period now auto-calculates end dates.
+    - Manual end-date selection now auto-infers nearest preset period (falls back to custom when unmatched).
+    - Added remaining-days text for warranty and AMC end dates.
+  - Updated warranty/contracts section:
+    - Kept period presets and end-date auto calculation for warranty card.
+    - Added reverse inference when manual warranty end date is edited.
+    - Added remaining-days display for warranty.
+    - Enhanced AMC contract form to support start date + duration => auto end date, and manual end date => inferred period.
+    - Updated label to `AMC Purchase / Start Date` for clearer workflow.
+  - Refactored state synchronization to event-driven updates (removed setState-in-effect patterns) to satisfy lint rules.
+  - API documentation review:
+    - No API route/contract change in this task; `web/docs/API_DOCUMENTATION.md` update not required.
+- Files changed:
+  - web/components/subjects/SubjectForm.tsx
+  - web/components/warranty/WarrantyAndContractsSection.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - ESLint: clean for both edited components.
+  - Production build: `npm run build` passed successfully.
+- Issues:
+  - none
+- Next:
+  - Optionally persist explicit AMC start date in subject schema if reporting requires it separately from purchase date.
+
 ## [2026-03-20 22:12:30 +05:30] Data reset + seeded 150 subjects with mixed warranty scenarios and terminal validation
 
 - Summary: Deleted all existing subjects, generated 150 fresh subjects with explicit mixed warranty scenarios, and validated scenario/status coverage through terminal-based DB checks.
