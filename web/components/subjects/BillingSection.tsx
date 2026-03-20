@@ -267,7 +267,7 @@ export function BillingSection({ subject, userRole, userId }: Props) {
                     className="hidden"
                     disabled={uploadMediaMutation.isPending || uploadedMedia.length >= 12}
                     multiple
-                    accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
+                    accept="image/*,video/mp4,video/quicktime"
                     onChange={async (event) => {
                       const files = Array.from(event.currentTarget.files ?? []);
                       event.currentTarget.value = '';
@@ -296,7 +296,7 @@ export function BillingSection({ subject, userRole, userId }: Props) {
                 </label>
                 <span className="text-xs text-slate-500">Maximum 12 items</span>
               </div>
-              <p className="text-xs text-slate-500">Allowed: JPG, PNG, WEBP (up to 10MB each), MP4/MOV (up to 50MB each).</p>
+              <p className="text-xs text-slate-500">Allowed: any image format (up to 10MB each), MP4/MOV videos (up to 50MB each).</p>
               <p className="text-xs text-slate-500">Images are auto-compressed before upload (about 90% smaller when possible).</p>
 
               {uploadError && (

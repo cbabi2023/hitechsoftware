@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import type { PhotoType } from '@/modules/subjects/subject.types';
 
 const STORAGE_BUCKET = 'subject-photos';
-const MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2MB
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
 const MAX_PHOTOS_PER_SUBJECT = 12; // Max 12 photos/videos per subject
+const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/quicktime'] as const;
 
 interface ErrorResponse {
   step: string;
@@ -174,11 +174,27 @@ export async function POST(
   console.log(`[${timestamp}] ✓ Step 5 passed: Subject verified`);
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Step 6: Validate file size
+  // Step 6: Validate file type and size
   // ──────────────────────────────────────────────────────────────────────────
   const isVideo = photoType === 'service_video';
+  const isAllowedVideo = ALLOWED_VIDEO_TYPES.includes(file.type as (typeof ALLOWED_VIDEO_TYPES)[number]);
+  const isAllowedImage = file.type.startsWith('image/');
+
+  if ((isVideo && !isAllowedVideo) || (!isVideo && !isAllowedImage)) {
+    const error: ErrorResponse = {
+      step: '6. Validate File Type',
+      code: 'INVALID_FILE_TYPE',
+      message: `Received '${file.type || 'unknown'}' for ${isVideo ? 'video' : 'image'} upload`,
+      userMessage: isVideo
+        ? 'Invalid video format. Use MP4 or MOV.'
+        : 'Invalid image file. Please upload an image.',
+    };
+    console.log(`[${timestamp}] ✗ Step 6 failed:`, error.code);
+    return NextResponse.json({ ok: false, error }, { status: 400 });
+  }
+
   const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
-  const maxSizeLabel = isVideo ? '50MB' : '2MB';
+  const maxSizeLabel = isVideo ? '50MB' : '10MB';
 
   if (file.size > maxSize) {
     const error: ErrorResponse = {
@@ -245,11 +261,18 @@ export async function POST(
     });
 
   if (uploadResult.error) {
+    const normalizedStorageMessage = uploadResult.error.message.toLowerCase();
+    const userMessage = normalizedStorageMessage.includes('mime') || normalizedStorageMessage.includes('content type')
+      ? (isVideo ? 'Storage rejected the video type. Use MP4 or MOV.' : 'Storage rejected this image format. Try JPG or PNG if the issue continues.')
+      : normalizedStorageMessage.includes('size')
+        ? `File exceeds storage limit. Maximum size is ${maxSizeLabel}.`
+        : 'Failed to upload file to storage. Please try again.';
+
     const error: ErrorResponse = {
       step: '8. Upload to Storage',
       code: 'STORAGE_UPLOAD_FAILED',
       message: uploadResult.error.message,
-      userMessage: 'Failed to upload file to storage. Please try again.',
+      userMessage,
     };
     console.log(`[${timestamp}] ✗ Step 8 failed:`, error.code);
     return NextResponse.json({ ok: false, error }, { status: 400 });

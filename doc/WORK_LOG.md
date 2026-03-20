@@ -3,6 +3,24 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 20:54:28 +05:30] Upload update: allow any image format selection in billing flow
+
+- Summary: Expanded image upload acceptance so technicians can select any image type without client-side format blocking.
+- Work done:
+  - Updated billing file picker `accept` to allow `image/*` (plus existing MP4/MOV video support).
+  - Updated upload API validation to allow any MIME type that starts with `image/` for image uploads.
+  - Kept video uploads restricted to MP4/MOV.
+  - Updated UI helper text to communicate broader image support.
+- Files changed:
+  - web/components/subjects/BillingSection.tsx
+  - web/app/api/subjects/[id]/photos/upload/route.ts
+- Verification:
+  - VS Code diagnostics: no TypeScript/compile errors in edited files.
+- Issues:
+  - Some uncommon image formats may still be rejected by storage policy depending on Supabase bucket MIME settings.
+- Next:
+  - If storage rejects certain formats, align Supabase bucket allowed MIME list with `image/*`.
+
 ## [2026-03-20 20:46:52 +05:30] Layout fix: keep Activity Timeline as last section in subject details
 
 - Summary: Reordered the subject details page so Activity Timeline always appears below all other sections.
