@@ -401,7 +401,10 @@ export async function POST(
 
     const visit_charge = toNumber(billInput.visit_charge);
     const service_charge = toNumber(billInput.service_charge);
-    const grand_total = visit_charge + service_charge + accessories_total;
+    const subtotal = visit_charge + service_charge + accessories_total;
+    const applyGst = Boolean(billInput.apply_gst);
+    const gstAmount = applyGst ? subtotal * 0.18 : 0;
+    const grand_total = subtotal + gstAmount;
 
     const isBrandDealerBill = subject.is_warranty_service || subject.is_amc_service;
 

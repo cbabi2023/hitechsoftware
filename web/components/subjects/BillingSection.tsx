@@ -147,8 +147,10 @@ export function BillingSection({ subject, userRole, userId }: Props) {
 
   const [visitCharge, setVisitCharge] = useState(subject.visit_charge ?? 0);
   const [serviceCharge, setServiceCharge] = useState(subject.service_charge ?? 0);
+  const [applyGst, setApplyGst] = useState(false);
   const [paymentMode, setPaymentMode] = useState<PaymentMode | ''>('');
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [imagePreviewErrors, setImagePreviewErrors] = useState<Record<string, string>>({});
 
   const isOutOfWarranty = !subject.is_warranty_service && !subject.is_amc_service;
   const isCustomerChargeable = subject.service_charge_type === 'customer';
@@ -172,15 +174,30 @@ export function BillingSection({ subject, userRole, userId }: Props) {
         body: formData,
       });
 
-      const json = await res.json() as {
-        ok: boolean;
-        error?: { step?: string; userMessage?: string; message?: string };
+      let payload: unknown = null;
+      const responseText = await res.text();
+      if (responseText) {
+        try {
+          payload = JSON.parse(responseText) as unknown;
+        } catch {
+          payload = { ok: false, error: { message: responseText } };
+        }
+      }
+
+      const apiPayload = payload as {
+        ok?: boolean;
+        error?: { code?: string; step?: string; userMessage?: string; message?: string };
       };
 
-      if (!json.ok) {
-        const detail = json.error?.userMessage ?? json.error?.message ?? 'Failed to upload media';
-        const step = json.error?.step ? ` (${json.error.step})` : '';
-        throw new Error(`${detail}${step}`);
+      if (!res.ok || !apiPayload?.ok) {
+        const code = apiPayload?.error?.code ?? `HTTP_${res.status}`;
+        const step = apiPayload?.error?.step ? ` | ${apiPayload.error.step}` : '';
+        const userReason = apiPayload?.error?.userMessage ?? '';
+        const technicalReason = apiPayload?.error?.message ?? '';
+        const reason = userReason && technicalReason && technicalReason !== userReason
+          ? `${userReason} (Reason: ${technicalReason})`
+          : (userReason || technicalReason || `Upload failed with status ${res.status}`);
+        throw new Error(`[${code}] ${reason}${step}`);
       }
     },
     onSuccess: () => {
@@ -218,9 +235,18 @@ export function BillingSection({ subject, userRole, userId }: Props) {
     },
   });
 
-  const grandTotal = useMemo(() => {
+  const subtotal = useMemo(() => {
     return Number(visitCharge || 0) + Number(serviceCharge || 0) + Number(accessoriesTotal || 0);
   }, [visitCharge, serviceCharge, accessoriesTotal]);
+
+  const gstAmount = useMemo(() => {
+    if (!applyGst) {
+      return 0;
+    }
+    return subtotal * 0.18;
+  }, [applyGst, subtotal]);
+
+  const grandTotal = useMemo(() => subtotal + gstAmount, [subtotal, gstAmount]);
 
   return (
     <div className={`rounded-xl border p-5 ${isCustomerChargeable ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-white'}`}>
@@ -299,6 +325,8 @@ export function BillingSection({ subject, userRole, userId }: Props) {
                         return;
                       }
 
+                      setUploadError(null);
+
                       const filesToUpload = files.slice(0, availableSlots);
                       for (const file of filesToUpload) {
                         try {
@@ -320,7 +348,10 @@ export function BillingSection({ subject, userRole, userId }: Props) {
               <p className="text-xs text-slate-500">Images are auto-compressed before upload (about 90% smaller when possible).</p>
 
               {uploadError && (
-                <p className="text-xs text-rose-600">{uploadError}</p>
+                <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2">
+                  <p className="text-xs font-semibold text-rose-700">Upload failed</p>
+                  <p className="mt-0.5 text-xs text-rose-700">{uploadError}</p>
+                </div>
               )}
 
               <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
@@ -337,8 +368,23 @@ export function BillingSection({ subject, userRole, userId }: Props) {
                           <div className="relative flex h-24 items-center justify-center bg-slate-200">
                             <Video className="h-6 w-6 text-slate-600" />
                           </div>
+                        ) : imagePreviewErrors[item.id] ? (
+                          <div className="flex h-24 flex-col items-center justify-center bg-amber-100 px-2 text-center">
+                            <p className="text-[10px] font-semibold text-amber-800">Preview unavailable</p>
+                            <p className="mt-0.5 text-[10px] text-amber-700">{imagePreviewErrors[item.id]}</p>
+                          </div>
                         ) : (
-                          <img src={item.public_url} alt="Uploaded item" className="h-24 w-full object-cover" />
+                          <img
+                            src={item.public_url}
+                            alt="Uploaded item"
+                            className="h-24 w-full object-cover"
+                            onError={() => {
+                              setImagePreviewErrors((prev) => ({
+                                ...prev,
+                                [item.id]: 'Storage URL is not accessible. Check bucket public/read access.',
+                              }));
+                            }}
+                          />
                         )}
                         {subject.status !== 'COMPLETED' && (
                           <button
@@ -407,10 +453,28 @@ export function BillingSection({ subject, userRole, userId }: Props) {
             )}
           </div>
 
+          <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={applyGst}
+              onChange={(event) => setApplyGst(event.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+            />
+            <span className="font-medium">Apply GST (18%)</span>
+          </label>
+
           <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
             <div className="flex items-center justify-between text-slate-700">
               <span>Accessories Total</span>
               <span>INR {formatMoney(accessoriesTotal)}</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between text-slate-700">
+              <span>Subtotal</span>
+              <span>INR {formatMoney(subtotal)}</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between text-slate-700">
+              <span>GST (18%)</span>
+              <span>INR {formatMoney(gstAmount)}</span>
             </div>
             <div className="mt-1 flex items-center justify-between font-semibold text-slate-900">
               <span>Grand Total</span>
@@ -430,6 +494,7 @@ export function BillingSection({ subject, userRole, userId }: Props) {
               generateMutation.mutate({
                 visit_charge: visitCharge,
                 service_charge: serviceCharge,
+                apply_gst: applyGst,
                 payment_mode: isOutOfWarranty && paymentMode ? paymentMode : undefined,
                 accessories: accessories.map((item) => ({
                   item_name: item.item_name,

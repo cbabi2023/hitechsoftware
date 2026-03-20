@@ -3,6 +3,54 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 21:36:44 +05:30] Upload diagnostics: show exact failure reason and preview-access issue in billing
+
+- Summary: Improved upload error handling so users can see exact backend failure code/step/reason instead of only a generic 400, and added explicit preview-access diagnostics for uploaded images.
+- Work done:
+  - Updated billing upload request handling to parse non-OK responses robustly (JSON or text fallback).
+  - Error text now includes:
+    - API error code (example: `STORAGE_UPLOAD_FAILED`, `FILE_TOO_LARGE`)
+    - API step label
+    - backend technical reason when different from user message
+  - Added upload error panel in UI for clearer visibility.
+  - Added image preview fallback state with explicit message when storage URL cannot be read (e.g., bucket/read policy issue).
+  - Kept remove action available even if preview fails.
+- Files changed:
+  - web/components/subjects/BillingSection.tsx
+- Verification:
+  - VS Code diagnostics: no TypeScript/compile errors in edited file.
+- Issues:
+  - Root usability issue: previous UI surfaced only generic 400 context, making real cause invisible to users.
+- Next:
+  - Re-test upload once to capture exact error code/step; then apply targeted backend/storage fix based on that concrete reason.
+
+## [2026-03-20 21:28:22 +05:30] Billing enhancement: optional GST checkbox (18%)
+
+- Summary: Added an optional GST switch in billing so 18% GST is included only when checked.
+- Work done:
+  - Added `Apply GST (18%)` checkbox in billing section UI.
+  - Added billing summary breakdown:
+    - Accessories Total
+    - Subtotal
+    - GST (18%)
+    - Grand Total
+  - Extended bill generation payload with `apply_gst` flag.
+  - Updated billing API calculation:
+    - `subtotal = visit + service + accessories`
+    - `gstAmount = subtotal * 0.18` only if `apply_gst` is true
+    - `grand_total = subtotal + gstAmount`
+  - Kept behavior unchanged when GST checkbox is not selected.
+- Files changed:
+  - web/components/subjects/BillingSection.tsx
+  - web/app/api/subjects/[id]/billing/route.ts
+  - web/modules/subjects/subject.types.ts
+- Verification:
+  - VS Code diagnostics: no TypeScript/compile errors in edited files.
+- Issues:
+  - none
+- Next:
+  - If needed, add GST amount and GST-applied flag as explicit columns in bill schema for reporting/export.
+
 ## [2026-03-20 21:20:14 +05:30] Upload fix: reduce 400 failures from MIME detection and improve error clarity
 
 - Summary: Fixed remaining upload 400 cases by hardening image detection/compression and surfacing exact failing step in UI.

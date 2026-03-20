@@ -240,6 +240,7 @@ export interface GenerateBillInput {
   service_charge?: number;
   accessories: AddAccessoryInput[];
   payment_mode?: PaymentMode;
+  apply_gst?: boolean;
 }
 
 export interface BillSummary {
