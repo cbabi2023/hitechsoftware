@@ -22,6 +22,34 @@ interface ErrorResponse {
   details?: Record<string, unknown>;
 }
 
+async function ensureStorageBucket(admin: Awaited<ReturnType<typeof createAdminClient>>) {
+  const bucketResult = await admin.storage.getBucket(STORAGE_BUCKET);
+
+  if (!bucketResult.error) {
+    return { ok: true as const };
+  }
+
+  const createResult = await admin.storage.createBucket(STORAGE_BUCKET, {
+    public: true,
+    fileSizeLimit: MAX_VIDEO_SIZE,
+    allowedMimeTypes: ['image/*', 'video/mp4', 'video/quicktime'],
+  });
+
+  if (createResult.error) {
+    const msg = createResult.error.message.toLowerCase();
+    if (msg.includes('already exists') || msg.includes('duplicate')) {
+      return { ok: true as const };
+    }
+
+    return {
+      ok: false as const,
+      message: createResult.error.message,
+    };
+  }
+
+  return { ok: true as const };
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -249,6 +277,23 @@ export async function POST(
   }
 
   console.log(`[${timestamp}] ✓ Step 7 passed: Photo count okay (${currentPhotoCount}/${MAX_PHOTOS_PER_SUBJECT})`);
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Step 7.5: Ensure storage bucket exists
+  // ──────────────────────────────────────────────────────────────────────────
+  const bucketReady = await ensureStorageBucket(admin);
+  if (!bucketReady.ok) {
+    const error: ErrorResponse = {
+      step: '7.5. Ensure Storage Bucket',
+      code: 'STORAGE_BUCKET_UNAVAILABLE',
+      message: bucketReady.message,
+      userMessage: 'Storage is not configured correctly. Please contact admin.',
+    };
+    console.log(`[${timestamp}] ✗ Step 7.5 failed:`, error.code, bucketReady.message);
+    return NextResponse.json({ ok: false, error }, { status: 500 });
+  }
+
+  console.log(`[${timestamp}] ✓ Step 7.5 passed: Storage bucket ready`);
 
   // ──────────────────────────────────────────────────────────────────────────
   // Step 8: Upload to storage

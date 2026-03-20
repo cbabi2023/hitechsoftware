@@ -3,6 +3,26 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 21:52:18 +05:30] Fix: auto-create missing storage bucket for subject uploads
+
+- Summary: Resolved upload failure `STORAGE_UPLOAD_FAILED (Reason: Bucket not found)` by adding automatic bucket readiness check and creation in photo upload API.
+- Work done:
+  - Added `ensureStorageBucket` helper in photo upload API route.
+  - Upload flow now checks for `subject-photos` bucket and creates it if missing before upload attempt.
+  - Bucket is created with:
+    - public access enabled
+    - file size limit aligned to max video size
+    - allowed MIME types for images/videos used by app
+  - Added explicit `STORAGE_BUCKET_UNAVAILABLE` error path with clear admin-facing message if creation/check fails.
+- Files changed:
+  - web/app/api/subjects/[id]/photos/upload/route.ts
+- Verification:
+  - VS Code diagnostics: no TypeScript/compile errors in edited file.
+- Issues:
+  - Root issue: Supabase storage bucket `subject-photos` did not exist in active environment, causing step 8 upload failure.
+- Next:
+  - Retry upload once; bucket should be created automatically and file upload should proceed.
+
 ## [2026-03-20 21:44:40 +05:30] Build verification check after latest billing/upload updates
 
 - Summary: Ran a full production build to verify current project health after recent API/UI billing and upload changes.
