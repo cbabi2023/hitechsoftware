@@ -7,12 +7,8 @@ import type {
 } from '@/modules/subjects/subject.types';
 import {
   uploadPhoto as uploadPhotoRepo,
-  findBySubjectId,
-  findBySubjectAndType,
-  deletePhoto as deletePhotoRepo,
 } from '@/repositories/photo.repository';
 import {
-  getSubjectById as getSubjectRepo,
   getSubjectByIdAdmin,
   markArrived as repoMarkArrived,
   markInProgress as repoMarkInProgress,
@@ -137,7 +133,13 @@ export async function checkCompletionRequirements(
     return requiredResult;
   }
 
-  const photosResult = await findBySubjectId(subjectId);
+  const admin = createAdminClient();
+  const photosResult = await admin
+    .from('subject_photos')
+    .select('photo_type')
+    .eq('subject_id', subjectId)
+    .eq('is_deleted', false);
+
   if (photosResult.error) {
     return { ok: false, error: { message: photosResult.error.message } };
   }
@@ -166,7 +168,7 @@ export async function uploadJobPhoto(
   photoType: PhotoType,
 ): Promise<ServiceResult<{ id: string; public_url: string }>> {
   // Verify technician owns subject
-  const subjectResult = await getSubjectRepo(subjectId);
+  const subjectResult = await getSubjectByIdAdmin(subjectId);
   if (subjectResult.error || !subjectResult.data) {
     return { ok: false, error: { message: 'Subject not found' } };
   }

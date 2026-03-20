@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/auth/useAuth';
+import { SUBJECT_QUERY_KEYS } from '@/modules/subjects/subject.constants';
 import {
   getAccessoriesBySubject,
   getBillBySubject,
@@ -105,10 +106,11 @@ export function useGenerateBill(subjectId: string) {
       return json.data!;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subject', subjectId] });
+      queryClient.invalidateQueries({ queryKey: SUBJECT_QUERY_KEYS.detail(subjectId) });
+      queryClient.invalidateQueries({ queryKey: SUBJECT_QUERY_KEYS.list });
       queryClient.invalidateQueries({ queryKey: ['subject-accessories', subjectId] });
       queryClient.invalidateQueries({ queryKey: ['subject-bill', subjectId] });
-      toast.success('Bill generated successfully');
+      toast.success('Bill generated and job completed successfully');
     },
     onError: (error: Error) => toast.error(error.message),
   });

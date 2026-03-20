@@ -122,21 +122,23 @@ export async function POST(
   const subjectResult = await admin
     .from('subjects')
     .select(
-      'id,assigned_technician_id,status,brand_id,dealer_id,is_warranty_service,is_amc_service,source_name,customer_name,service_charge_type',
+      'id,source_type,assigned_technician_id,status,brand_id,dealer_id,is_warranty_service,is_amc_service,customer_name,service_charge_type,brands:brand_id(name),dealers:dealer_id(name)',
     )
     .eq('id', subjectId)
     .eq('is_deleted', false)
     .maybeSingle<{
       id: string;
+      source_type: 'brand' | 'dealer';
       assigned_technician_id: string | null;
       status: string;
       brand_id: string | null;
       dealer_id: string | null;
       is_warranty_service: boolean;
       is_amc_service: boolean;
-      source_name: string | null;
       customer_name: string | null;
       service_charge_type: string;
+      brands?: { name?: string | null } | null;
+      dealers?: { name?: string | null } | null;
     }>();
 
   if (subjectResult.error) {
@@ -177,11 +179,15 @@ export async function POST(
 
   console.log(`[${timestamp}] ✓ Step 5 passed: Subject verified, status=${subject.status}`);
 
+  const sourceName = subject.source_type === 'brand'
+    ? (subject.brands?.name ?? 'Brand')
+    : (subject.dealers?.name ?? 'Dealer');
+
   // ──────────────────────────────────────────────────────────────────────────
   // ROUTE: add_accessory
   // ──────────────────────────────────────────────────────────────────────────
   if (body.action === 'add_accessory') {
-    const input = body as AddAccessoryInput & { action: string };
+    const input = body as unknown as AddAccessoryInput & { action: string };
 
     if (!input.item_name?.trim()) {
       const error: ErrorResponse = {
@@ -246,7 +252,7 @@ export async function POST(
   // ROUTE: generate_bill
   // ──────────────────────────────────────────────────────────────────────────
   if (body.action === 'generate_bill') {
-    const billInput = body as GenerateBillInput & { action: string };
+    const billInput = body as unknown as GenerateBillInput & { action: string };
 
     if (subject.status !== 'IN_PROGRESS') {
       const error: ErrorResponse = {
@@ -356,7 +362,7 @@ export async function POST(
         subject_id: subjectId,
         bill_number,
         bill_type: isBrandDealerBill ? 'brand_dealer_invoice' : 'customer_receipt',
-        issued_to: isBrandDealerBill ? subject.source_name : (subject.customer_name ?? 'Customer'),
+        issued_to: isBrandDealerBill ? sourceName : (subject.customer_name ?? 'Customer'),
         issued_to_type: isBrandDealerBill ? 'brand_dealer' : 'customer',
         brand_id: subject.brand_id ?? null,
         dealer_id: subject.dealer_id ?? null,
@@ -367,7 +373,7 @@ export async function POST(
         payment_mode: isBrandDealerBill ? null : (billInput.payment_mode ?? null),
         payment_status: isBrandDealerBill ? 'due' : 'paid',
         payment_collected_at: isBrandDealerBill ? null : new Date().toISOString(),
-        created_by: userId,
+        generated_by: userId,
       })
       .select('id,bill_number,grand_total,bill_type')
       .single();
@@ -384,7 +390,45 @@ export async function POST(
       return NextResponse.json({ ok: false, error }, { status: 400 });
     }
 
-    console.log(`[${timestamp}] ✓✓✓ Bill generated successfully: ${bill_number}`);
+    const subjectUpdateResult = await admin
+      .from('subjects')
+      .update({
+        visit_charge,
+        service_charge,
+        accessories_total,
+        grand_total,
+        payment_mode: isBrandDealerBill ? null : (billInput.payment_mode ?? null),
+        payment_collected: !isBrandDealerBill,
+        payment_collected_at: !isBrandDealerBill ? new Date().toISOString() : null,
+        billing_status: isBrandDealerBill ? 'due' : 'paid',
+        bill_generated: true,
+        bill_generated_at: new Date().toISOString(),
+        bill_number,
+        status: 'COMPLETED',
+        completed_at: new Date().toISOString(),
+        completion_proof_uploaded: true,
+        status_changed_by_id: userId,
+      })
+      .eq('id', subjectId)
+      .eq('is_deleted', false)
+      .select('id')
+      .single();
+
+    if (subjectUpdateResult.error) {
+      await admin.from('subject_bills').update({ is_deleted: true }).eq('id', billResult.data.id);
+
+      const error: ErrorResponse = {
+        step: '6. Complete Subject',
+        code: 'SUBJECT_COMPLETE_FAILED',
+        message: subjectUpdateResult.error.message,
+        userMessage: 'Bill was created but the job could not be completed. Please try again.',
+        details: isDev ? { dbError: subjectUpdateResult.error.message, billId: billResult.data.id } : undefined,
+      };
+      console.log(`[${timestamp}] ✗ Failed:`, error.code);
+      return NextResponse.json({ ok: false, error }, { status: 400 });
+    }
+
+    console.log(`[${timestamp}] ✓✓✓ Bill generated and subject completed successfully: ${bill_number}`);
     return NextResponse.json({
       ok: true,
       data: {

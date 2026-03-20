@@ -3,6 +3,28 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 19:09:12 +05:30] Fix: Generate Bill & Complete Job flow
+
+- Summary: Fixed the technician billing completion path so the Generate Bill & Complete Job action now uses a valid subject query, checks uploaded photos on the server with the admin client, creates the bill, and completes the subject in the same request.
+- Work done:
+  - Replaced the invalid `source_name` direct subject select in the billing API with real subject fields plus brand/dealer joins.
+  - Derived the bill `issued_to` value from `source_type` and joined brand/dealer names.
+  - Updated the billing API to complete the subject after bill creation by writing billing totals, payment fields, `bill_generated`, `completed_at`, `status='COMPLETED'`, and `status_changed_by_id`.
+  - Added rollback handling so a failed subject completion soft-deletes the just-created bill instead of leaving a partial state.
+  - Moved completion requirement photo checks to admin-side queries in job workflow logic so API routes no longer depend on the browser Supabase client.
+  - Updated the billing hook success handling and loading text to reflect the combined bill-generation and completion behavior.
+- Files changed:
+  - web/app/api/subjects/[id]/billing/route.ts
+  - web/modules/subjects/subject.job-workflow.ts
+  - web/hooks/subjects/useBilling.ts
+  - web/components/subjects/BillingSection.tsx
+- Verification:
+  - VS Code diagnostics: no errors in all edited files.
+  - Targeted ESLint: `npx eslint app/api/subjects/[id]/billing/route.ts modules/subjects/subject.job-workflow.ts hooks/subjects/useBilling.ts components/subjects/BillingSection.tsx` -> `LINT_OK`.
+  - Full `npm run lint` still reports unrelated pre-existing workspace issues outside this fix.
+- Next:
+  - Verify the technician flow against a live subject record in the app.
+
 ## [2026-03-20 18:50:32 +05:30] Fix: Add missing photo upload UI and improve billing error messages
 
 - Summary: Resolved two issues: (1) Photo upload interface was hidden during IN_PROGRESS status, only appearing when completing the job, making it undiscoverable for technicians; (2) Bill generation error message "This subject could not be found" was generic and unhelpful. Added visible photo upload section during IN_PROGRESS and improved billing API error diagnostics.
