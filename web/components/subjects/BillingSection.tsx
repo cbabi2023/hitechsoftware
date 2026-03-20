@@ -23,6 +23,27 @@ interface Props {
 
 const IMAGE_COMPRESSION_RATIO = 0.1; // target ~90% reduction, e.g. 1MB -> ~100KB
 const IMAGE_MIN_TARGET_BYTES = 80 * 1024;
+const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'tif', 'tiff', 'heic', 'heif', 'avif'];
+const VIDEO_EXTENSIONS = ['mp4', 'mov', 'm4v', 'webm'];
+
+function getFileExtension(fileName: string): string {
+  const parts = fileName.toLowerCase().split('.');
+  return parts.length > 1 ? parts[parts.length - 1] : '';
+}
+
+function isLikelyVideoFile(file: File): boolean {
+  if (file.type.startsWith('video/')) {
+    return true;
+  }
+  return VIDEO_EXTENSIONS.includes(getFileExtension(file.name));
+}
+
+function isLikelyImageFile(file: File): boolean {
+  if (file.type.startsWith('image/')) {
+    return true;
+  }
+  return IMAGE_EXTENSIONS.includes(getFileExtension(file.name));
+}
 
 async function createImageBitmapFromFile(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -56,15 +77,11 @@ async function canvasToWebpBlob(canvas: HTMLCanvasElement, quality: number): Pro
 }
 
 async function compressImageForUpload(file: File): Promise<File> {
-  if (!file.type.startsWith('image/')) {
+  if (!isLikelyImageFile(file)) {
     return file;
   }
 
   const targetBytes = Math.max(IMAGE_MIN_TARGET_BYTES, Math.floor(file.size * IMAGE_COMPRESSION_RATIO));
-
-  if (file.size <= targetBytes) {
-    return file;
-  }
 
   const image = await createImageBitmapFromFile(file);
 
@@ -148,7 +165,7 @@ export function BillingSection({ subject, userRole, userId }: Props) {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('photoType', file.type.startsWith('video/') ? 'service_video' : 'machine');
+      formData.append('photoType', isLikelyVideoFile(file) ? 'service_video' : 'machine');
 
       const res = await fetch(`/api/subjects/${subject.id}/photos/upload`, {
         method: 'POST',
@@ -157,11 +174,13 @@ export function BillingSection({ subject, userRole, userId }: Props) {
 
       const json = await res.json() as {
         ok: boolean;
-        error?: { userMessage?: string; message?: string };
+        error?: { step?: string; userMessage?: string; message?: string };
       };
 
       if (!json.ok) {
-        throw new Error(json.error?.userMessage ?? json.error?.message ?? 'Failed to upload media');
+        const detail = json.error?.userMessage ?? json.error?.message ?? 'Failed to upload media';
+        const step = json.error?.step ? ` (${json.error.step})` : '';
+        throw new Error(`${detail}${step}`);
       }
     },
     onSuccess: () => {
@@ -283,11 +302,12 @@ export function BillingSection({ subject, userRole, userId }: Props) {
                       const filesToUpload = files.slice(0, availableSlots);
                       for (const file of filesToUpload) {
                         try {
-                          const preparedFile = file.type.startsWith('image/')
+                          const preparedFile = isLikelyImageFile(file)
                             ? await compressImageForUpload(file)
                             : file;
                           await uploadMediaMutation.mutateAsync(preparedFile);
-                        } catch {
+                        } catch (error) {
+                          setUploadError(error instanceof Error ? error.message : 'Failed to upload media');
                           break;
                         }
                       }

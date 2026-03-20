@@ -7,6 +7,12 @@ const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
 const MAX_PHOTOS_PER_SUBJECT = 12; // Max 12 photos/videos per subject
 const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/quicktime'] as const;
+const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'tif', 'tiff', 'heic', 'heif', 'avif'];
+
+function getFileExtension(fileName: string): string {
+  const parts = fileName.toLowerCase().split('.');
+  return parts.length > 1 ? parts[parts.length - 1] : '';
+}
 
 interface ErrorResponse {
   step: string;
@@ -178,7 +184,7 @@ export async function POST(
   // ──────────────────────────────────────────────────────────────────────────
   const isVideo = photoType === 'service_video';
   const isAllowedVideo = ALLOWED_VIDEO_TYPES.includes(file.type as (typeof ALLOWED_VIDEO_TYPES)[number]);
-  const isAllowedImage = file.type.startsWith('image/');
+  const isAllowedImage = file.type.startsWith('image/') || IMAGE_EXTENSIONS.includes(getFileExtension(file.name));
 
   if ((isVideo && !isAllowedVideo) || (!isVideo && !isAllowedImage)) {
     const error: ErrorResponse = {

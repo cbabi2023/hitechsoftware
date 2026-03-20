@@ -3,6 +3,25 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 21:20:14 +05:30] Upload fix: reduce 400 failures from MIME detection and improve error clarity
+
+- Summary: Fixed remaining upload 400 cases by hardening image detection/compression and surfacing exact failing step in UI.
+- Work done:
+  - Updated billing upload flow to detect image/video by MIME and filename extension.
+  - Changed image pipeline to always attempt WebP conversion for image-like files before upload.
+  - Added fallback image detection in upload API using filename extension when MIME is missing.
+  - Improved upload error text to include API `step` so failures are easier to diagnose.
+  - Added explicit UI error reporting when preprocessing/compression fails (instead of silent loop break).
+- Files changed:
+  - web/components/subjects/BillingSection.tsx
+  - web/app/api/subjects/[id]/photos/upload/route.ts
+- Verification:
+  - VS Code diagnostics: no TypeScript/compile errors in edited files.
+- Issues:
+  - Root issue: some device files had missing/unexpected MIME handling, causing upload validation/storage rejection paths and generic 400 reports.
+- Next:
+  - Re-test with phone camera images and verify successful upload plus remove behavior in billing gallery.
+
 ## [2026-03-20 21:10:56 +05:30] Follow-up fix: resolve accessory remove 404 in billing API
 
 - Summary: Fixed persistent 404 on accessory removal by aligning billing API queries with actual `subject_accessories` / `subject_bills` schema.
