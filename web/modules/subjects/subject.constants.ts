@@ -80,3 +80,12 @@ export const PHOTO_SIZE_LIMITS = {
   images: 2 * 1024 * 1024,  // 2 MB
   videos: 50 * 1024 * 1024, // 50 MB
 } as const;
+
+export const PAYMENT_MODES = [
+  { label: 'Cash', value: 'cash' },
+  { label: 'UPI', value: 'upi' },
+  { label: 'Card', value: 'card' },
+  { label: 'Cheque', value: 'cheque' },
+] as const;
+
+export const BILL_NUMBER_PREFIX = 'HT-BILL';

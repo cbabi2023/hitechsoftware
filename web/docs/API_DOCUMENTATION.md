@@ -33,6 +33,7 @@ As of now, implemented routes are:
 - `GET /api/team/members/completed-counts`
 - `GET /api/team/members/{id}/performance`
 - `POST /api/subjects/{id}/respond`
+- `GET /api/bills/{id}/download`
 - `POST /api/attendance/toggle`
 - `GET /api/cron/attendance-absent-flag`
 - `GET /api/cron/attendance-reset`
@@ -221,6 +222,21 @@ or
   - Reject/accept is allowed only when `technician_acceptance_status = 'pending'`.
   - `accept` requires `visit_date` and `visit_time`, updates subject to `status = 'ACCEPTED'`, sets `technician_acceptance_status = 'accepted'`, persists `technician_allocated_date = visit_date`, and appends visit time into technician allocation notes.
   - `reject` updates subject to `status = 'RESCHEDULED'`, stores reason, sets `rejected_by_technician_id`, and marks `is_rejected_pending_reschedule = true`.
+
+### Download Bill PDF
+
+- Method/Path: `GET /api/bills/{id}/download`
+- AuthZ:
+  - Any authenticated role can request, with role guard:
+    - `technician` can download only bills where the bill subject is assigned to that technician.
+    - `office_staff` and `super_admin` can download any bill.
+- Behavior:
+  - Reads bill (`subject_bills`) and related subject metadata.
+  - Includes category, assigned technician name, and accessories in the PDF payload.
+  - Returns generated PDF as an attachment response.
+- Response headers:
+  - `Content-Type: application/pdf`
+  - `Content-Disposition: attachment; filename="<bill_number>.pdf"`
 
 ### Technician Attendance Toggle
 

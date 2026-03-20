@@ -3,6 +3,51 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-20 16:23:54 +05:30] Feat: Complete Billing Completion System (API, UI, Brand/Dealer Due Profiles)
+- Summary: Implemented end-to-end billing completion flow with accessory capture, bill generation/download, payment status updates, and brand/dealer due visibility pages.
+- Work done:
+  - Added bill PDF download API route `GET /api/bills/{id}/download` with auth guard and technician ownership check.
+  - Implemented billing UI components for subject detail: accessories management, bill generation panel, and bill summary card with payment update and download actions.
+  - Integrated billing UI into subject detail page below workflow section.
+  - Extended subject detail repository/service mapping to include billing fields (`visit_charge`, `service_charge`, `accessories_total`, `grand_total`, `payment_mode`, `payment_collected`, `bill_generated`, `bill_number`, timestamps).
+  - Added brand and dealer billing profile detail pages with due summaries and invoice tables; made brand/dealer list rows clickable and added due columns.
+  - Added route constants for brand/dealer detail pages.
+  - Updated billing repository to sync `subjects.billing_status` and payment collection fields when bill payment status changes.
+  - Updated billing migration policy to allow assigned technician bill insert alongside office staff/super admin.
+  - Fixed build issues encountered during implementation:
+    - Renamed `generateBillPDF.ts` to `generateBillPDF.tsx` to support JSX parsing.
+    - Added React component type-safe wrappers for `@react-pdf/renderer` components to satisfy TypeScript.
+    - Fixed nullability handling in `BillingSection` for `billQuery.data`.
+  - Updated API documentation to include the new bill download endpoint and response/auth behavior.
+  - Issues/bugs during this work item: compile-time errors were detected and resolved as listed above; no unresolved issues remain.
+- Files changed:
+  - web/app/api/bills/[id]/download/route.ts
+  - web/components/subjects/AccessoriesSection.tsx
+  - web/components/subjects/BillCard.tsx
+  - web/components/subjects/BillingSection.tsx
+  - web/app/dashboard/subjects/[id]/page.tsx
+  - web/repositories/subject.repository.ts
+  - web/modules/subjects/subject.service.ts
+  - web/hooks/subjects/useBilling.ts
+  - web/lib/pdf/BillPDF.tsx
+  - web/lib/pdf/generateBillPDF.tsx
+  - web/lib/constants/routes.ts
+  - web/app/dashboard/service/brands/page.tsx
+  - web/app/dashboard/service/dealers/page.tsx
+  - web/app/dashboard/service/brands/[id]/page.tsx
+  - web/app/dashboard/service/dealers/[id]/page.tsx
+  - web/repositories/bill.repository.ts
+  - web/modules/subjects/billing.service.ts
+  - supabase/migrations/20260318_011_billing_completion.sql
+  - web/docs/API_DOCUMENTATION.md
+  - doc/WORK_LOG.md
+- Verification:
+  - `npm run build --workspace=web` passed successfully (compile + TypeScript + route generation).
+  - New dynamic routes generated: `/dashboard/service/brands/[id]`, `/dashboard/service/dealers/[id]`, `/api/bills/[id]/download`.
+- Next:
+  - Apply and verify migration in target environments before rollout.
+  - Optionally add pagination and date/payment filters on brand/dealer invoice profile pages.
+
 ## [2026-03-20 15:56:11 +05:30] Feat: Backdated Badge in Subject Rows for Admin Visibility
 - Summary: Added a small `Backdated` badge in subject rows when technician assigned date is earlier than today, helping admin/staff quickly spot manual backdated assignments.
 - Work done:

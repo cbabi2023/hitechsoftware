@@ -4,6 +4,7 @@ export type SubjectTypeOfService = 'installation' | 'service';
 export type WarrantyPeriod = '6_months' | '1_year' | '2_years' | '3_years' | '4_years' | '5_years' | 'custom';
 export type PhotoType = 'serial_number' | 'machine' | 'bill' | 'job_sheet' | 'defective_part' | 'site_photo_1' | 'site_photo_2' | 'site_photo_3' | 'service_video';
 export type IncompleteReason = 'customer_cannot_afford' | 'power_issue' | 'door_locked' | 'spare_parts_not_available' | 'site_not_ready' | 'other';
+export type PaymentMode = 'cash' | 'upi' | 'card' | 'cheque';
 
 export interface SubjectListItem {
   id: string;
@@ -65,6 +66,16 @@ export interface SubjectDetail extends SubjectListItem {
   completion_proof_uploaded: boolean;
   completion_notes: string | null;
   rescheduled_date: string | null;
+  visit_charge?: number | null;
+  service_charge?: number | null;
+  accessories_total?: number | null;
+  grand_total?: number | null;
+  payment_mode?: PaymentMode | null;
+  payment_collected?: boolean;
+  payment_collected_at?: string | null;
+  bill_generated?: boolean;
+  bill_generated_at?: string | null;
+  bill_number?: string | null;
   photos: SubjectPhoto[];
   created_by: string | null;
   assigned_by: string | null;
@@ -185,6 +196,59 @@ export interface IncompleteJobInput {
     price: number;
   }>;
   rescheduledDate?: string; // ISO date string YYYY-MM-DD
+}
+
+export interface SubjectAccessory {
+  id: string;
+  subject_id: string;
+  item_name: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+  added_by: string | null;
+  created_at: string;
+}
+
+export interface SubjectBill {
+  id: string;
+  subject_id: string;
+  bill_number: string;
+  bill_type: 'customer_receipt' | 'brand_dealer_invoice';
+  issued_to: string;
+  issued_to_type: 'customer' | 'brand_dealer';
+  brand_id: string | null;
+  dealer_id: string | null;
+  visit_charge: number;
+  service_charge: number;
+  accessories_total: number;
+  grand_total: number;
+  payment_mode: PaymentMode | null;
+  payment_status: 'paid' | 'due' | 'waived';
+  payment_collected_at: string | null;
+  generated_by: string | null;
+  generated_at: string;
+}
+
+export interface AddAccessoryInput {
+  item_name: string;
+  quantity: number;
+  unit_price: number;
+}
+
+export interface GenerateBillInput {
+  visit_charge?: number;
+  service_charge?: number;
+  accessories: AddAccessoryInput[];
+  payment_mode?: PaymentMode;
+}
+
+export interface BillSummary {
+  bill_number: string;
+  bill_type: 'customer_receipt' | 'brand_dealer_invoice';
+  issued_to: string;
+  grand_total: number;
+  payment_status: 'paid' | 'due' | 'waived';
+  generated_at: string;
 }
 
 /** All valid status values for the job workflow. */

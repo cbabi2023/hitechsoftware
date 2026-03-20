@@ -260,6 +260,16 @@ export async function getSubjectDetails(id: string): Promise<ServiceResult<Subje
     is_amc_service: boolean;
     is_warranty_service: boolean;
     billing_status: 'not_applicable' | 'due' | 'partially_paid' | 'paid' | 'waived';
+    visit_charge?: number | null;
+    service_charge?: number | null;
+    accessories_total?: number | null;
+    grand_total?: number | null;
+    payment_mode?: 'cash' | 'upi' | 'card' | 'cheque' | null;
+    payment_collected?: boolean;
+    payment_collected_at?: string | null;
+    bill_generated?: boolean;
+    bill_generated_at?: string | null;
+    bill_number?: string | null;
     en_route_at?: string | null;
     arrived_at?: string | null;
     work_started_at?: string | null;
@@ -339,6 +349,16 @@ export async function getSubjectDetails(id: string): Promise<ServiceResult<Subje
       is_amc_service: typed.is_amc_service,
       is_warranty_service: typed.is_warranty_service,
       billing_status: typed.billing_status,
+      visit_charge: typed.visit_charge ?? null,
+      service_charge: typed.service_charge ?? null,
+      accessories_total: typed.accessories_total ?? null,
+      grand_total: typed.grand_total ?? null,
+      payment_mode: typed.payment_mode ?? null,
+      payment_collected: typed.payment_collected ?? false,
+      payment_collected_at: typed.payment_collected_at ?? null,
+      bill_generated: typed.bill_generated ?? false,
+      bill_generated_at: typed.bill_generated_at ?? null,
+      bill_number: typed.bill_number ?? null,
       en_route_at: typed.en_route_at ?? null,
       arrived_at: typed.arrived_at ?? null,
       work_started_at: typed.work_started_at ?? null,

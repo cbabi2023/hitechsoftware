@@ -1,14 +1,45 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Check, Pencil, Trash2, X } from 'lucide-react';
 import { ProtectedComponent } from '@/components/ui/ProtectedComponent';
 import { useBrands } from '@/hooks/brands/useBrands';
 import { usePermission } from '@/hooks/auth/usePermission';
+import { createClient } from '@/lib/supabase/client';
+import { ROUTES } from '@/lib/constants/routes';
 
 export default function ServiceBrandsPage() {
   const { can } = usePermission();
   const { data, isLoading, error, createMutation, renameMutation, deleteMutation } = useBrands();
+  const supabase = createClient();
+  const dueSummaryQuery = useQuery({
+    queryKey: ['brand-due-summary'],
+    queryFn: async () => {
+      const result = await supabase
+        .from('subject_bills')
+        .select('brand_id,grand_total')
+        .eq('payment_status', 'due')
+        .not('brand_id', 'is', null);
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      const map = new Map<string, { dueCount: number; dueAmount: number }>();
+
+      for (const row of result.data ?? []) {
+        const typed = row as { brand_id: string; grand_total: number };
+        const existing = map.get(typed.brand_id) ?? { dueCount: 0, dueAmount: 0 };
+        existing.dueCount += 1;
+        existing.dueAmount += Number(typed.grand_total || 0);
+        map.set(typed.brand_id, existing);
+      }
+
+      return map;
+    },
+  });
   const [name, setName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -69,13 +100,14 @@ export default function ServiceBrandsPage() {
             <tr>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Name</th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Due</th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {isLoading ? <tr><td colSpan={3} className="px-4 py-8 text-center text-sm text-slate-500">Loading...</td></tr> : null}
-            {!isLoading && error ? <tr><td colSpan={3} className="px-4 py-8 text-center text-sm text-rose-600">{error}</td></tr> : null}
-            {!isLoading && !error && data.length === 0 ? <tr><td colSpan={3} className="px-4 py-8 text-center text-sm text-slate-400">No brands yet. Add one above.</td></tr> : null}
+            {isLoading ? <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-slate-500">Loading...</td></tr> : null}
+            {!isLoading && error ? <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-rose-600">{error}</td></tr> : null}
+            {!isLoading && !error && data.length === 0 ? <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-slate-400">No brands yet. Add one above.</td></tr> : null}
             {!isLoading && !error ? data.map((item) => (
               <tr key={item.id} className="hover:bg-slate-50/50">
                 <td className="px-4 py-3 text-sm font-medium text-slate-800">
@@ -87,12 +119,27 @@ export default function ServiceBrandsPage() {
                       autoFocus
                       onKeyDown={(e) => { if (e.key === 'Enter') commitRename(item.id); if (e.key === 'Escape') setEditingId(null); }}
                     />
-                  ) : item.name}
+                  ) : (
+                    <Link href={ROUTES.DASHBOARD_SERVICE_BRAND_DETAIL(item.id)} className="text-blue-700 hover:text-blue-800 hover:underline">
+                      {item.name}
+                    </Link>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${item.is_active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
                     {item.is_active ? 'Active' : 'Inactive'}
                   </span>
+                </td>
+                <td className="px-4 py-3 text-sm text-slate-700">
+                  {(() => {
+                    const summary = dueSummaryQuery.data?.get(item.id);
+                    if (!summary) return <span className="text-slate-400">No due</span>;
+                    return (
+                      <span className="font-semibold text-amber-700">
+                        {summary.dueCount} / INR {summary.dueAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    );
+                  })()}
                 </td>
                 <td className="px-4 py-3">
                   {editingId === item.id ? (

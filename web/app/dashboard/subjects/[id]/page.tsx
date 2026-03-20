@@ -14,6 +14,8 @@ import { ProductInfoCard } from '@/components/subjects/ProductInfoCard';
 import { ActivityTimeline } from '@/components/subjects/ActivityTimeline';
 import { AttendanceGuard } from '@/components/attendance/AttendanceGuard';
 import { JobWorkflowSection } from '@/components/subjects/job-workflow-section';
+import { AccessoriesSection } from '@/components/subjects/AccessoriesSection';
+import { BillingSection } from '@/components/subjects/BillingSection';
 import { useContractsBySubject } from '@/hooks/contracts/useContracts';
 import { useSubjectDetail } from '@/hooks/subjects/useSubjects';
 import { useAuth } from '@/hooks/auth/useAuth';
@@ -297,9 +299,13 @@ export default function SubjectDetailPage() {
         <SubjectInfoCard subject={subject} />
         <ProductInfoCard subject={subject} />
         <ActivityTimeline timeline={subject.timeline} />
+      </div>
 
+      <div className="mt-4 space-y-4">
         {/* Job Workflow — shown when technician has accepted or beyond */}
         <JobWorkflowSection subject={subject} userRole={userRole ?? ''} userId={user?.id ?? ''} />
+        <AccessoriesSection subject={subject} userRole={userRole} userId={user?.id ?? null} />
+        <BillingSection subject={subject} userRole={userRole} userId={user?.id ?? null} />
       </div>
 
       <DeleteConfirmModal
