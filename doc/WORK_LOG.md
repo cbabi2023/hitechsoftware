@@ -3,6 +3,28 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-22 20:00:00 +05:30] Fix: State Management Bugs — Query Key Mismatch, Realtime Leak, Billing Invalidation, staleTime
+
+- Summary: Fixed 4 state management bugs identified in the previous audit. The critical fix corrects a query key prefix mismatch that prevented any `invalidateQueries` call on the subject list root from ever refreshing detail-page cache entries. Secondary fixes: stabilised the realtime subscription reference (was torn down every render), added subject detail invalidation after bill payment update, and added `staleTime` to workflow requirements query.
+- Work done:
+  - **BUG #1 (CRITICAL)** — Changed `SUBJECT_QUERY_KEYS.detail` from `['subject', id]` (singular, isolated) to `['subjects', 'detail', id]` (plural, nested under `all`). Every mutation that calls `invalidateQueries({ queryKey: SUBJECT_QUERY_KEYS.all })` now correctly also invalidates all detail cache entries. No call sites needed updating — they all use the accessor.
+  - **BUG #2 (SIGNIFICANT)** — Wrapped `subscribe` in `useCallback([supabase])` inside `useRealtime.ts`. Previously, `subscribe` was a new function reference on every render; since `useAllTechnicianStatus` listed it as a `useEffect` dependency, the Supabase realtime channel was torn down and rebuilt on every re-render (every 30 s via `refetchInterval`).
+  - **BUG #3 (MINOR)** — Added `queryClient.invalidateQueries({ queryKey: SUBJECT_QUERY_KEYS.detail(subjectId) })` to `useUpdateBillPaymentStatus.onSuccess` in `useBilling.ts`. Previously only `['subject-bill', subjectId]` was invalidated, leaving the subject detail page stale after a payment status change.
+  - **BUG #5 (MINOR)** — Added `staleTime: 30 * 1000` to `workflowRequirementsQuery` in `use-job-workflow.ts` so workflow requirements are considered fresh for 30 s instead of inheriting the 5-minute global default.
+  - Note: BUG #4 (`window.confirm` inside `mutationFn` in `useDeleteContract`) is an antipattern but was not fixed in this pass — it requires coordinated UI changes. Deferred to a future cleanup task.
+- Files changed:
+  - web/modules/subjects/subject.constants.ts
+  - web/hooks/useRealtime.ts
+  - web/hooks/subjects/useBilling.ts
+  - web/hooks/subjects/use-job-workflow.ts
+- Verification:
+  - `npx tsc --noEmit` → 0 errors
+  - Pushed commit `e508503` to `main`
+- Issues/bugs encountered:
+  - None during implementation — fix was mechanical once root cause was confirmed in previous audit.
+- Next:
+  - Consider moving `window.confirm` in `useDeleteContract` to the UI button onClick (BUG #4 deferred cleanup).
+
 ## [2026-03-22 18:45:00 +05:30] Analysis: Full State Management Audit — web/ Next.js App
 
 - Summary: Performed a thorough exploration and audit of all state management in the Next.js web app. Identified libraries, query key structures, mutation invalidation coverage, and all bugs.
