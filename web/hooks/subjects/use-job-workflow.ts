@@ -15,6 +15,7 @@ export function useJobWorkflow(subjectId: string) {
 
   const workflowRequirementsQuery = useQuery({
     queryKey: ['job-workflow', subjectId, 'requirements'],
+    staleTime: 30 * 1000,
     queryFn: async () => {
       const res = await fetch(`/api/subjects/${subjectId}/workflow`, {
         method: 'GET',

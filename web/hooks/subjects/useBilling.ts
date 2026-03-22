@@ -186,6 +186,7 @@ export function useUpdateBillPaymentStatus(subjectId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subject-bill', subjectId] });
+      queryClient.invalidateQueries({ queryKey: SUBJECT_QUERY_KEYS.detail(subjectId) });
       toast.success('Payment status updated');
     },
     onError: (error: Error) => toast.error(error.message),

@@ -3,6 +3,29 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-22 18:45:00 +05:30] Analysis: Full State Management Audit — web/ Next.js App
+
+- Summary: Performed a thorough exploration and audit of all state management in the Next.js web app. Identified libraries, query key structures, mutation invalidation coverage, and all bugs.
+- Work done:
+  - Read all 3 Zustand stores (auth, notification, ui).
+  - Read all 11 hook files across 10 subdirectories plus useRealtime.ts.
+  - Read QueryClient configuration in query-provider.tsx.
+  - Read all query key constant files across 7 modules.
+  - Traced every mutation's onSuccess invalidation to build a full coverage matrix.
+  - Identified 5 bugs: 1 critical (query key singular/plural mismatch), 1 significant (realtime subscription recreation every render), 1 minor (missing bill-to-detail invalidation), 1 antipattern (window.confirm in mutationFn), 1 minor (workflow requirements staleTime).
+- Files changed: none (analysis only)
+- Verification:
+  - All findings are based on direct source code reading, no changes made.
+- Bugs found:
+  - BUG #1 CRITICAL: SUBJECT_QUERY_KEYS.detail uses ['subject', id] (singular) while SUBJECT_QUERY_KEYS.all = ['subjects'] (plural). TanStack Query prefix matching means invalidating "all" never hits cached detail queries. Misleadingly named; quickAssignSubjectMutation is the only functional gap (mitigated by 5s staleTime on detail).
+  - BUG #2 SIGNIFICANT: useRealtime() returns a new subscribe function reference on every render (inline in returned object). useAllTechnicianStatus has subscribe in its useEffect deps array, so the Supabase realtime subscription is torn down and recreated on every re-render (every 30s via refetchInterval). Fix: wrap subscribe in useCallback inside useRealtime.
+  - BUG #3 MINOR: useUpdateBillPaymentStatus only invalidates ['subject-bill', subjectId], not the subject detail. Benign now but fragile if API ever embeds payment status in subject record.
+  - BUG #4 ANTIPATTERN: window.confirm() called inside mutationFn in useDeleteContract. Should be in UI layer before calling mutate().
+  - BUG #5 MINOR: workflowRequirementsQuery in use-job-workflow.ts has no staleTime, inherits 5min global default. Other users' photo uploads won't be visible for 5 min without explicit refetch.
+- Next:
+  - Fix BUG #1: rename detail key to ['subjects', 'detail', id]
+  - Fix BUG #2: wrap subscribe in useCallback in useRealtime.ts
+
 ## [2026-03-22 16:30:00 +05:30] Fix: Technician Cannot See Allocated Subject — completed_at Not Reset on Re-Allocation
 
 - Summary: Diagnosed and fixed a bug where a technician could not see a service allocated to them for the current date. Root cause: the subject `WREWRW` had `status = ALLOCATED` (re-allocated today) but still had `completed_at` set from a previous completion. The `technician_pending_only` filter uses `completed_at IS NULL`, so the subject was excluded from the technician's pending queue despite being actively allocated.

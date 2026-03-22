@@ -3,7 +3,7 @@ import type { PhotoType } from '@/modules/subjects/subject.types';
 export const SUBJECT_QUERY_KEYS = {
   all: ['subjects'] as const,
   list: ['subjects', 'list'] as const,
-  detail: (id: string) => ['subject', id] as const,
+  detail: (id: string) => ['subjects', 'detail', id] as const,
   assignableTechnicians: ['subjects', 'assignable-technicians'] as const,
 };
 

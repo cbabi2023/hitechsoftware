@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
 
@@ -16,25 +16,25 @@ interface RealtimeSubscribeInput {
 export function useRealtime() {
   const supabase = useMemo(() => createClient(), []);
 
-  return {
-    subscribe: ({ channelName, schema = 'public', table, event = '*', filter, onChange }: RealtimeSubscribeInput) => {
-      const channel = supabase
-        .channel(channelName)
-        .on(
-          'postgres_changes',
-          {
-            event,
-            schema,
-            table,
-            ...(filter ? { filter } : {}),
-          },
-          onChange,
-        )
-        .subscribe();
+  const subscribe = useCallback(({ channelName, schema = 'public', table, event = '*', filter, onChange }: RealtimeSubscribeInput) => {
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event,
+          schema,
+          table,
+          ...(filter ? { filter } : {}),
+        },
+        onChange,
+      )
+      .subscribe();
 
-      return () => {
-        void supabase.removeChannel(channel);
-      };
-    },
-  };
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [supabase]);
+
+  return { subscribe };
 }
