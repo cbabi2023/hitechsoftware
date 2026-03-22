@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { usePermission } from '@/hooks/auth/usePermission';
+import { useAuthStore } from '@/stores/auth.store';
 import { createSubjectTicket, getSubjects, removeSubject, updateSubjectRecord } from '@/modules/subjects/subject.service';
 import { SUBJECT_DEFAULT_PAGE_SIZE, SUBJECT_QUERY_KEYS } from '@/modules/subjects/subject.constants';
 import type { CreateSubjectInput, SubjectListFilters, UpdateSubjectInput } from '@/modules/subjects/subject.types';
@@ -13,6 +14,7 @@ export { useAssignableTechnicians, useAssignTechnician, useQuickAssignTechnician
 
 export function useSubjects() {
   const { role } = usePermission();
+  const userId = useAuthStore((state) => state.user?.id);
   const queryClient = useQueryClient();
   const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
@@ -42,6 +44,7 @@ export function useSubjects() {
       from_date: fromDate || undefined,
       to_date: toDate || undefined,
       technician_date: technicianDate || undefined,
+      assigned_technician_id: role === 'technician' ? (userId ?? undefined) : undefined,
       technician_pending_only: role === 'technician' ? true : undefined,
       pending_only: pendingOnly || undefined,
       overdue_only: overdueOnly || undefined,
@@ -49,7 +52,7 @@ export function useSubjects() {
       page,
       page_size: pageSize,
     };
-  }, [searchInput, sourceType, priority, status, categoryId, brandId, dealerId, fromDate, toDate, technicianDate, pendingOnly, overdueOnly, dueOnly, role, page, pageSize]);
+  }, [searchInput, sourceType, priority, status, categoryId, brandId, dealerId, fromDate, toDate, technicianDate, userId, pendingOnly, overdueOnly, dueOnly, role, page, pageSize]);
 
   const query = useQuery({
     queryKey: [...SUBJECT_QUERY_KEYS.list, filters],

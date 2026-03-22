@@ -3,6 +3,26 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-23 10:30:00 +05:30] Fix: Technicians Only See Their Own Assigned Services
+
+- Summary: Technicians were seeing ALL subjects in their service list (including unallocated ones and those assigned to other technicians). Root cause was no `assigned_technician_id` ownership filter in the Supabase query chain. Fixed across all three layers: type definition, repository query, and React hook.
+- Work done:
+  - Added `assigned_technician_id?: string` field to `SubjectListFilters` interface
+  - Added `.eq('assigned_technician_id', id)` filter in `listSubjects()` repository function — applied only when value is provided
+  - Updated `useSubjects` hook to import `useAuthStore`, extract `userId`, and pass `assigned_technician_id: userId` when `role === 'technician'` (admins and office_staff get `undefined` → see all subjects)
+  - Added `userId` to `useMemo` dependency array so filter updates reactively on login/logout
+- Files changed:
+  - web/modules/subjects/subject.types.ts
+  - web/repositories/subject.repository.ts
+  - web/hooks/subjects/useSubjects.ts
+- Verification:
+  - TypeScript type-check (`npx tsc --noEmit`) — zero errors
+  - Admin/office_staff: `assigned_technician_id` is `undefined` → query returns all subjects (no change)
+  - Technician: `assigned_technician_id` is their own user ID → query returns only their assigned subjects
+- Issues/bugs found: No `assigned_technician_id` filter existed at all — technicians could see the full subject dataset
+- Next:
+  - Manual test: log in as technician and verify only allocated services appear
+
 ## [2026-03-22 18:50:00 +05:30] Comprehensive 125-Scenario E2E Test Suite — 129/131 Pass, 1 Bug Fixed
 
 - Summary: Created and ran a comprehensive E2E terminal test suite covering 125+ scenarios across 15 categories. Discovered and fixed 1 real workflow bug (AWAITING_PARTS → IN_PROGRESS transition missing). All 129 tests pass, 2 skipped (warranty-specific photo types covered by other tests), 0 failures.

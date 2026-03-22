@@ -107,6 +107,8 @@ export interface SubjectListFilters {
   to_date?: string;
   /** Filter by technician_allocated_date (used for technician role to see today's assignments) */
   technician_date?: string;
+  /** When set, only return subjects assigned to this technician user ID. */
+  assigned_technician_id?: string;
   /** Restrict technician views to active work queue (non-terminal statuses). */
   technician_pending_only?: boolean;
   /** Show unfinished work queue using schema-safe criteria. */

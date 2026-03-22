@@ -93,6 +93,10 @@ export async function listSubjects(filters: SubjectListFilters) {
       .order('completed_at', { ascending: true });
   }
 
+  if (filters.assigned_technician_id) {
+    query = query.eq('assigned_technician_id', filters.assigned_technician_id);
+  }
+
   if (filters.category_id) {
     query = query.eq('category_id', filters.category_id);
   }
