@@ -8,12 +8,14 @@ import { SUBJECT_QUERY_KEYS } from '@/modules/subjects/subject.constants';
 import { PAYMENT_MODES } from '@/modules/subjects/subject.constants';
 import {
   useDownloadBill,
+  useEditBill,
   useGenerateBill,
   useSubjectAccessories,
   useSubjectBill,
   useUpdateBillPaymentStatus,
 } from '@/hooks/subjects/useBilling';
 import { BillCard } from '@/components/subjects/BillCard';
+import { BillEditPanel } from '@/components/subjects/BillEditPanel';
 import { isLikelyVideoFile, isLikelyImageFile, compressImageForUpload } from '@/lib/utils/image-compression';
 import { formatMoney } from '@/lib/utils/format';
 
@@ -29,6 +31,7 @@ export function BillingSection({ subject, userRole, userId }: Props) {
   const billQuery = useSubjectBill(subject.id);
   const generateMutation = useGenerateBill(subject.id);
   const updatePaymentMutation = useUpdateBillPaymentStatus(subject.id);
+  const editBillMutation = useEditBill(subject.id);
   const downloadBill = useDownloadBill();
 
   const [visitCharge, setVisitCharge] = useState(subject.visit_charge ?? 0);
@@ -37,6 +40,7 @@ export function BillingSection({ subject, userRole, userId }: Props) {
   const [paymentMode, setPaymentMode] = useState<PaymentMode | ''>('');
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [imagePreviewErrors, setImagePreviewErrors] = useState<Record<string, string>>({});
+  const [isEditingBill, setIsEditingBill] = useState(false);
 
   const todayIso = new Date().toISOString().split('T')[0];
   const isWarrantyDateNotNoted = !subject.is_amc_service && !subject.warranty_end_date;
@@ -60,6 +64,7 @@ export function BillingSection({ subject, userRole, userId }: Props) {
   const isAssignedTechnician = userRole === 'technician' && userId === subject.assigned_technician_id;
   const canGenerate = isAssignedTechnician && subject.status === 'IN_PROGRESS' && !subject.bill_generated;
   const canUpdatePayment = userRole === 'office_staff' || userRole === 'super_admin';
+  const canEditBill = userRole === 'super_admin' && Boolean(subject.bill_generated);
   const canManageMedia = isAssignedTechnician || userRole === 'office_staff' || userRole === 'super_admin';
   const canMaintainCompletedMedia = subject.status === 'COMPLETED' && canManageMedia;
 
@@ -173,22 +178,39 @@ export function BillingSection({ subject, userRole, userId }: Props) {
       </div>
 
       {billQuery.data ? (
-        <BillCard
-          bill={billQuery.data}
-          highlightCustomerPayment={isCustomerChargeable}
-          canUpdatePayment={canUpdatePayment}
-          onUpdatePaymentStatus={(status, paymentMode) => {
-            const billId = billQuery.data?.id;
-            if (!billId) return;
-            updatePaymentMutation.mutate({ billId, paymentStatus: status, paymentMode });
-          }}
-          isUpdatingPayment={updatePaymentMutation.isPending}
-          onDownload={() => {
-            const billId = billQuery.data?.id;
-            if (!billId) return;
-            downloadBill(billId);
-          }}
-        />
+        <>
+          <BillCard
+            bill={billQuery.data}
+            highlightCustomerPayment={isCustomerChargeable}
+            canUpdatePayment={canUpdatePayment}
+            onUpdatePaymentStatus={(status, paymentMode) => {
+              const billId = billQuery.data?.id;
+              if (!billId) return;
+              updatePaymentMutation.mutate({ billId, paymentStatus: status, paymentMode });
+            }}
+            isUpdatingPayment={updatePaymentMutation.isPending}
+            onDownload={() => {
+              const billId = billQuery.data?.id;
+              if (!billId) return;
+              downloadBill(billId);
+            }}
+            canEditBill={canEditBill}
+            onEditBill={() => setIsEditingBill(true)}
+          />
+          {isEditingBill && billQuery.data && (
+            <BillEditPanel
+              bill={billQuery.data}
+              accessories={accessories}
+              isSaving={editBillMutation.isPending}
+              onSave={(payload) => {
+                editBillMutation.mutate(payload, {
+                  onSuccess: () => setIsEditingBill(false),
+                });
+              }}
+              onCancel={() => setIsEditingBill(false)}
+            />
+          )}
+        </>
       ) : null}
 
       {!billQuery.isLoading && ((!billQuery.data && canGenerate) || canMaintainCompletedMedia) && (

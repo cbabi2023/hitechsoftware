@@ -3,6 +3,32 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-22 22:15:00 +05:30] Feature: Super Admin Bill Editing
+
+- Summary: Super admin can now edit an existing bill — change visit/service charges, apply/remove GST, add new accessory items, remove existing accessories, and update payment mode. A live total preview recalculates as the form changes. All changes are applied atomically in one PUT request.
+- Work done:
+  - Added `EditBillInput` interface to `subject.types.ts`
+  - Added `PUT /api/subjects/[id]/billing` handler in `route.ts`: super_admin-only, removes specified accessories, inserts new ones, recalculates totals, updates `subject_bills` and `subjects` tables
+  - Added `useEditBill(subjectId)` hook to `useBilling.ts` — calls PUT and invalidates bill, accessories, and subject queries on success
+  - Created `BillEditPanel.tsx` component: shows visit/service charge inputs, GST toggle, accessories list with undo-remove buttons, new-item add form with live preview, Save/Cancel buttons
+  - Added `canEditBill` and `onEditBill` props to `BillCard.tsx`; shows "Edit Bill" button in violet for super admin
+  - Updated `BillingSection.tsx`: added `isEditingBill` state, `canEditBill` flag (super_admin + bill_generated), `BillEditPanel` rendered below `BillCard` when editing
+- Files changed:
+  - web/modules/subjects/subject.types.ts
+  - web/app/api/subjects/[id]/billing/route.ts
+  - web/hooks/subjects/useBilling.ts
+  - web/components/subjects/BillEditPanel.tsx (new)
+  - web/components/subjects/BillCard.tsx
+  - web/components/subjects/BillingSection.tsx
+- Verification:
+  - `npx tsc --noEmit` — zero errors
+  - VS Code diagnostics — no errors in any changed file
+  - Only `super_admin` role can call PUT; `technician` and `office_staff` are rejected with 403
+  - Totals recalculate correctly in the live preview and on the server
+- Issues/bugs found: none
+- Next:
+  - Manual test: log in as super admin, open a COMPLETED subject, click "Edit Bill", modify charges / add item, save and verify PDF reflects new total
+
 ## [2026-03-23 10:30:00 +05:30] Fix: Technicians Only See Their Own Assigned Services
 
 - Summary: Technicians were seeing ALL subjects in their service list (including unallocated ones and those assigned to other technicians). Root cause was no `assigned_technician_id` ownership filter in the Supabase query chain. Fixed across all three layers: type definition, repository query, and React hook.

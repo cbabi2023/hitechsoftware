@@ -249,6 +249,15 @@ export interface GenerateBillInput {
   apply_gst?: boolean;
 }
 
+export interface EditBillInput {
+  visit_charge: number;
+  service_charge: number;
+  apply_gst: boolean;
+  payment_mode?: PaymentMode | null;
+  accessories_to_add?: AddAccessoryInput[];
+  accessories_to_remove?: string[];
+}
+
 export interface BillSummary {
   bill_number: string;
   bill_type: 'customer_receipt' | 'brand_dealer_invoice';

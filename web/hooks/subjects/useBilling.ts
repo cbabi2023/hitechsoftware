@@ -6,7 +6,7 @@ import {
   getAccessoriesBySubject,
   getBillBySubject,
 } from '@/modules/subjects/billing.service';
-import type { AddAccessoryInput, GenerateBillInput } from '@/modules/subjects/subject.types';
+import type { AddAccessoryInput, EditBillInput, GenerateBillInput } from '@/modules/subjects/subject.types';
 
 export function useSubjectAccessories(subjectId: string) {
   return useQuery({
@@ -188,6 +188,37 @@ export function useUpdateBillPaymentStatus(subjectId: string) {
       queryClient.invalidateQueries({ queryKey: ['subject-bill', subjectId] });
       queryClient.invalidateQueries({ queryKey: SUBJECT_QUERY_KEYS.detail(subjectId) });
       toast.success('Payment status updated');
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+}
+
+export function useEditBill(subjectId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: EditBillInput) => {
+      const res = await fetch(`/api/subjects/${subjectId}/billing`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      });
+
+      const json = await res.json() as {
+        ok: boolean;
+        data?: { id: string; grand_total: number; accessories_total: number; visit_charge: number; service_charge: number };
+        error?: { userMessage: string };
+      };
+
+      if (!json.ok) throw new Error(json.error?.userMessage ?? 'Failed to update bill');
+      return json.data!;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subject-bill', subjectId] });
+      queryClient.invalidateQueries({ queryKey: ['subject-accessories', subjectId] });
+      queryClient.invalidateQueries({ queryKey: SUBJECT_QUERY_KEYS.detail(subjectId) });
+      queryClient.invalidateQueries({ queryKey: SUBJECT_QUERY_KEYS.list });
+      toast.success('Bill updated successfully');
     },
     onError: (error: Error) => toast.error(error.message),
   });

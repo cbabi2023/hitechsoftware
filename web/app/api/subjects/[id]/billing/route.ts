@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireAuth } from '@/lib/api/with-auth';
-import type { GenerateBillInput, AddAccessoryInput } from '@/modules/subjects/subject.types';
+import type { GenerateBillInput, AddAccessoryInput, EditBillInput, SubjectBill } from '@/modules/subjects/subject.types';
 
 interface ErrorResponse {
   step: string;
@@ -760,6 +760,262 @@ export async function PATCH(
     data: {
       id: billUpdate.data.id,
       payment_status: billUpdate.data.payment_status,
+    },
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// PUT /api/subjects/[id]/billing — Super admin bill editing
+// ────────────────────────────────────────────────────────────────────────────
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id: subjectId } = await params;
+  const timestamp = new Date().toISOString();
+
+  if (!subjectId || typeof subjectId !== 'string' || subjectId.trim() === '') {
+    const error: ErrorResponse = {
+      step: '1. Validate Subject ID',
+      code: 'INVALID_SUBJECT_ID',
+      message: 'Subject ID is required',
+      userMessage: 'Invalid subject ID',
+    };
+    return NextResponse.json({ ok: false, error }, { status: 400 });
+  }
+
+  // ── Auth: super_admin only ──────────────────────────────────────────────
+  const supabase = await createServerClient();
+  const authState = await supabase.auth.getUser();
+
+  if (authState.error || !authState.data.user) {
+    const error: ErrorResponse = {
+      step: '2. Authentication',
+      code: 'UNAUTHORIZED',
+      message: 'No authenticated user found',
+      userMessage: 'You must be logged in',
+    };
+    return NextResponse.json({ ok: false, error }, { status: 401 });
+  }
+
+  const userId = authState.data.user.id;
+  const admin = await createAdminClient();
+
+  const profileResult = await admin
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .maybeSingle<{ role: string }>();
+
+  if (!profileResult.data || profileResult.data.role !== 'super_admin') {
+    const error: ErrorResponse = {
+      step: '3. Verify Role',
+      code: 'FORBIDDEN',
+      message: 'Only super_admin can edit bills',
+      userMessage: 'Only super admin can edit an existing bill',
+    };
+    return NextResponse.json({ ok: false, error }, { status: 403 });
+  }
+
+  console.log(`[${timestamp}] ✓ Edit Bill: super_admin ${userId} for subject ${subjectId}`);
+
+  // ── Parse body ───────────────────────────────────────────────────────────
+  let body: EditBillInput;
+  try {
+    body = await request.json() as EditBillInput;
+  } catch (err) {
+    const error: ErrorResponse = {
+      step: '4. Parse Request',
+      code: 'INVALID_JSON',
+      message: err instanceof Error ? err.message : 'Invalid JSON',
+      userMessage: 'Request body must be valid JSON',
+    };
+    return NextResponse.json({ ok: false, error }, { status: 400 });
+  }
+
+  // ── Load subject (must already have a bill) ──────────────────────────────
+  const subjectResult = await admin
+    .from('subjects')
+    .select('id,bill_generated,is_amc_service,warranty_end_date,service_charge_type')
+    .eq('id', subjectId)
+    .eq('is_deleted', false)
+    .maybeSingle<{
+      id: string;
+      bill_generated: boolean;
+      is_amc_service: boolean;
+      warranty_end_date: string | null;
+      service_charge_type: string;
+    }>();
+
+  if (subjectResult.error) {
+    const error: ErrorResponse = {
+      step: '5. Load Subject',
+      code: 'SUBJECT_QUERY_ERROR',
+      message: subjectResult.error.message,
+      userMessage: 'Failed to load subject details.',
+      details: isDev ? { dbError: subjectResult.error.message } : undefined,
+    };
+    return NextResponse.json({ ok: false, error }, { status: 500 });
+  }
+
+  if (!subjectResult.data) {
+    const error: ErrorResponse = {
+      step: '5. Load Subject',
+      code: 'SUBJECT_NOT_FOUND',
+      message: `Subject ${subjectId} not found`,
+      userMessage: 'This subject could not be found',
+    };
+    return NextResponse.json({ ok: false, error }, { status: 404 });
+  }
+
+  if (!subjectResult.data.bill_generated) {
+    const error: ErrorResponse = {
+      step: '5. Verify Bill',
+      code: 'NO_BILL',
+      message: 'Subject has no generated bill',
+      userMessage: 'No bill exists for this subject. Generate the bill first.',
+    };
+    return NextResponse.json({ ok: false, error }, { status: 400 });
+  }
+
+  // ── Load existing bill ────────────────────────────────────────────────────
+  const billResult = await admin
+    .from('subject_bills')
+    .select('id,payment_mode,payment_status,bill_type')
+    .eq('subject_id', subjectId)
+    .single<Pick<SubjectBill, 'id' | 'payment_mode' | 'payment_status' | 'bill_type'>>();
+
+  if (billResult.error || !billResult.data) {
+    const error: ErrorResponse = {
+      step: '5. Load Bill',
+      code: 'BILL_NOT_FOUND',
+      message: 'Bill record not found in database',
+      userMessage: 'Could not find the bill record. Please try again.',
+      details: isDev ? { dbError: billResult.error?.message } : undefined,
+    };
+    return NextResponse.json({ ok: false, error }, { status: 404 });
+  }
+
+  const existingBill = billResult.data;
+
+  // ── Remove accessories ────────────────────────────────────────────────────
+  if (body.accessories_to_remove?.length) {
+    const removeResult = await admin
+      .from('subject_accessories')
+      .delete()
+      .in('id', body.accessories_to_remove)
+      .eq('subject_id', subjectId);
+
+    if (removeResult.error) {
+      const error: ErrorResponse = {
+        step: '6. Remove Accessories',
+        code: 'ACCESSORY_REMOVE_FAILED',
+        message: removeResult.error.message,
+        userMessage: 'Failed to remove accessories. Please try again.',
+        details: isDev ? { dbError: removeResult.error.message } : undefined,
+      };
+      return NextResponse.json({ ok: false, error }, { status: 500 });
+    }
+  }
+
+  // ── Add new accessories ───────────────────────────────────────────────────
+  if (body.accessories_to_add?.length) {
+    const newRows = body.accessories_to_add
+      .filter((acc) => acc.item_name?.trim())
+      .map((acc) => ({
+        subject_id: subjectId,
+        item_name: acc.item_name.trim(),
+        quantity: Math.max(1, Math.floor(toNumber(acc.quantity))),
+        unit_price: Math.max(0, toNumber(acc.unit_price)),
+        added_by: userId,
+      }));
+
+    if (newRows.length > 0) {
+      const addResult = await admin.from('subject_accessories').insert(newRows);
+      if (addResult.error) {
+        const error: ErrorResponse = {
+          step: '6. Add Accessories',
+          code: 'ACCESSORY_ADD_FAILED',
+          message: addResult.error.message,
+          userMessage: 'Failed to add new accessories. Please try again.',
+          details: isDev ? { dbError: addResult.error.message } : undefined,
+        };
+        return NextResponse.json({ ok: false, error }, { status: 500 });
+      }
+    }
+  }
+
+  // ── Recalculate totals ────────────────────────────────────────────────────
+  const accessoriesResult = await admin
+    .from('subject_accessories')
+    .select('total_price')
+    .eq('subject_id', subjectId);
+
+  const accessories_total = (accessoriesResult.data ?? []).reduce(
+    (sum, row) => sum + toNumber((row as { total_price: number }).total_price),
+    0,
+  );
+
+  const visit_charge = Math.max(0, toNumber(body.visit_charge));
+  const service_charge = Math.max(0, toNumber(body.service_charge));
+  const subtotal = visit_charge + service_charge + accessories_total;
+  const gstAmount = body.apply_gst ? subtotal * 0.18 : 0;
+  const grand_total = subtotal + gstAmount;
+
+  // ── Determine payment_mode: use new value, or keep existing ─────────────
+  const isBrandDealerBill = existingBill.bill_type === 'brand_dealer_invoice';
+  const updatedPaymentMode = isBrandDealerBill
+    ? null
+    : (body.payment_mode ?? existingBill.payment_mode);
+
+  // ── Update bill record ────────────────────────────────────────────────────
+  const billUpdateResult = await admin
+    .from('subject_bills')
+    .update({
+      visit_charge,
+      service_charge,
+      accessories_total,
+      grand_total,
+      payment_mode: updatedPaymentMode,
+    })
+    .eq('id', existingBill.id)
+    .select('id,grand_total')
+    .single();
+
+  if (billUpdateResult.error) {
+    const error: ErrorResponse = {
+      step: '7. Update Bill',
+      code: 'BILL_UPDATE_FAILED',
+      message: billUpdateResult.error.message,
+      userMessage: 'Failed to update the bill. Please try again.',
+      details: isDev ? { dbError: billUpdateResult.error.message } : undefined,
+    };
+    return NextResponse.json({ ok: false, error }, { status: 500 });
+  }
+
+  // ── Sync denormalised columns on subjects ─────────────────────────────────
+  await admin
+    .from('subjects')
+    .update({
+      visit_charge,
+      service_charge,
+      accessories_total,
+      grand_total,
+      payment_mode: updatedPaymentMode,
+    })
+    .eq('id', subjectId)
+    .eq('is_deleted', false);
+
+  console.log(`[${timestamp}] ✓✓✓ Bill edited successfully for subject ${subjectId}; new grand_total=${grand_total}`);
+
+  return NextResponse.json({
+    ok: true,
+    data: {
+      id: existingBill.id,
+      grand_total,
+      accessories_total,
+      visit_charge,
+      service_charge,
     },
   });
 }

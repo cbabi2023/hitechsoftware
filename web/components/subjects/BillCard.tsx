@@ -12,6 +12,8 @@ interface Props {
   isUpdatingPayment: boolean;
   onDownload: () => void;
   highlightCustomerPayment?: boolean;
+  canEditBill?: boolean;
+  onEditBill?: () => void;
 }
 
 const PAYMENT_MODE_OPTIONS: Array<{ value: 'cash' | 'upi' | 'card' | 'cheque'; label: string }> = [
@@ -39,6 +41,8 @@ export function BillCard({
   isUpdatingPayment,
   onDownload,
   highlightCustomerPayment = false,
+  canEditBill = false,
+  onEditBill,
 }: Props) {
   const showCustomerPaymentActions = canUpdatePayment && bill.bill_type === 'customer_receipt';
   const [selectedPaymentMode, setSelectedPaymentMode] = useState<'cash' | 'upi' | 'card' | 'cheque'>(bill.payment_mode ?? 'cash');
@@ -122,6 +126,16 @@ export function BillCard({
         >
           Download PDF
         </button>
+
+        {canEditBill && onEditBill && (
+          <button
+            type="button"
+            onClick={onEditBill}
+            className="rounded-lg border border-violet-300 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-100"
+          >
+            Edit Bill
+          </button>
+        )}
 
         {showCustomerPaymentActions && (
           <>
