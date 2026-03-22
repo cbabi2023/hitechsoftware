@@ -41,7 +41,7 @@ const NAV_ITEMS = [
   { icon: ClipboardList, label: 'Service Module', href: ROUTES.DASHBOARD_SUBJECTS, isAvailable: true },
   { icon: Users, label: 'Customers', href: ROUTES.DASHBOARD_CUSTOMERS, isAvailable: true },
   { icon: UserCog, label: 'Team', href: ROUTES.DASHBOARD_TEAM, isAvailable: true },
-  { icon: Package, label: 'Inventory', href: ROUTES.DASHBOARD_INVENTORY, isAvailable: false },
+  { icon: Package, label: 'Inventory', href: ROUTES.DASHBOARD_INVENTORY, isAvailable: true },
   { icon: DollarSign, label: 'Billing', href: '#', isAvailable: false },
   { icon: BarChart3, label: 'Reports', href: '#', isAvailable: false },
   { icon: Settings, label: 'Settings', href: '#', isAvailable: false },

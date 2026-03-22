@@ -3,7 +3,51 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
-## [2026-03-22 22:15:00 +05:30] Feature: Super Admin Bill Editing
+## [2026-03-22 23:45:00 +05:30] Feature: Inventory Module — Phase 1 (Parts Catalogue + Stock)
+
+- Summary: Full inventory module built from scratch on top of the existing database schema. Covers parts catalogue CRUD, real-time stock level tracking (on-hand / reserved / available), inline stock adjustments, and permission-gated UI. Navigation entry is now live.
+- Work done:
+  - **Types** (`inventory.types.ts`): `InventoryItem`, `StockLevel`, `InventoryWithStock`, `CreateInventoryInput`, `UpdateInventoryInput`, `StockAdjustmentInput`, `InventoryFilters`, `InventoryListResponse`
+  - **Validation** (`inventory.validation.ts`): Zod v4 schemas — `createInventorySchema` (item_code alphanumeric regex, MRP ≥ unit_cost cross-field rule), `updateInventorySchema` (partial), `stockAdjustmentSchema` (non-zero integer)
+  - **Constants** (`inventory.constants.ts`): Added `detail(id)` key, `INVENTORY_DEFAULT_PAGE_SIZE = 20`, `INVENTORY_CATEGORIES` list (15 AC-service-specific categories)
+  - **Repository** (`inventory.repository.ts`): Replaced stub with full CRUD — `findAll` (paginated + stock join + search/category/status filters), `findById`, `findByItemCode` (uniqueness), `create`, `update` (patch only changed fields), `softDelete`, `initStockRecord`
+  - **Stock repository** (`stock.repository.ts`): Replaced stub — `findByInventoryId`, `adjustStock` (upsert + negative-stock guard + available recalc)
+  - **Service** (`inventory.service.ts`): Replaced stub — `getInventoryList`, `getInventoryById`, `createInventoryItem` (duplicate code check + auto-init stock), `updateInventoryItem`, `deleteInventoryItem`, `adjustInventoryStock`
+  - **Hooks**: Updated `useInventory.ts` (debounced search, multi-filter, pagination, all mutations); added `useInventoryItem.ts` (detail query)
+  - **Components**: `InventoryStatusBadge.tsx`, `StockBadge.tsx` (out-of-stock / low / ok states vs reorder_level), `InventoryForm.tsx` (React Hook Form + Zod, category dropdown, price fields), `StockAdjustmentForm.tsx` (add/remove mode toggle, live preview of resulting on-hand, negative-stock prevention)
+  - **Pages**: `inventory/page.tsx` (list with search/category/status filters + paginated table), `inventory/new/page.tsx`, `inventory/[id]/page.tsx` (detail + inline stock adjustment + soft-delete confirm), `inventory/[id]/edit/page.tsx`
+  - **Navigation**: Enabled Inventory nav item in `app/dashboard/layout.tsx` (`isAvailable: true`)
+- Files changed:
+  - web/modules/inventory/inventory.types.ts (new)
+  - web/modules/inventory/inventory.validation.ts (new)
+  - web/modules/inventory/inventory.constants.ts (updated)
+  - web/modules/inventory/inventory.service.ts (replaced stub)
+  - web/repositories/inventory.repository.ts (replaced stub)
+  - web/repositories/stock.repository.ts (replaced stub)
+  - web/hooks/inventory/useInventory.ts (replaced stub)
+  - web/hooks/inventory/useInventoryItem.ts (new)
+  - web/components/inventory/InventoryStatusBadge.tsx (new)
+  - web/components/inventory/StockBadge.tsx (new)
+  - web/components/inventory/InventoryForm.tsx (new)
+  - web/components/inventory/StockAdjustmentForm.tsx (new)
+  - web/app/dashboard/inventory/page.tsx (replaced stub)
+  - web/app/dashboard/inventory/new/page.tsx (new)
+  - web/app/dashboard/inventory/[id]/page.tsx (new)
+  - web/app/dashboard/inventory/[id]/edit/page.tsx (new)
+  - web/app/dashboard/layout.tsx (isAvailable: true for Inventory)
+- Verification:
+  - `get_errors` on all new/changed files — zero TypeScript errors
+  - Permissions wired to existing `PERMISSIONS` map (`inventory:view/create/edit/delete`)
+  - RLS confirmed: `inventory_super_admin_all`, `inventory_stock_manager_all`, `inventory_staff_all`, `inventory_technician_read` + equivalent stock policies cover all roles
+  - Negative stock guard in `stock.repository.ts` prevents invalid adjustments client-side and at repository level
+- Issues/bugs found:
+  - Zod v4 no longer accepts `invalid_type_error` in `.number()` options — fixed to use `error:` key
+- Next:
+  - Phase 2: Stock transactions log (running history of all adjustments with `created_by`)
+  - Phase 3: Digital Bag workflow (daily issuance to technicians)
+  - Manual test: log in as stock_manager, add an item, adjust stock, verify low-stock badge at reorder threshold
+
+
 
 - Summary: Super admin can now edit an existing bill — change visit/service charges, apply/remove GST, add new accessory items, remove existing accessories, and update payment mode. A live total preview recalculates as the form changes. All changes are applied atomically in one PUT request.
 - Work done:
