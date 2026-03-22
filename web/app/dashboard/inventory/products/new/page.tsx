@@ -1,5 +1,34 @@
 'use client';
 
+/**
+ * @file page.tsx
+ * @module app/dashboard/inventory/products/new
+ *
+ * @description
+ * Page for creating a new product in the inventory system.
+ *
+ * HOW THIS PAGE WORKS
+ * -------------------
+ * 1. Renders the reusable `<ProductForm>` component with no default values
+ *    (empty form = creating, pre-filled = editing).
+ * 2. When the form is submitted, calls `createMutation.mutateAsync(values)`.
+ * 3. On success, navigates back to the products list with `router.push()`.
+ * 4. On failure, the toast from the hook fires and the user stays on this page.
+ *    The error message is shown without page navigation.
+ *
+ * PERMISSION GUARD
+ * ----------------
+ * `can('inventory:create')` is checked before rendering the form.
+ * If the user navigates here without permission, they see a text error message.
+ * Note: the layout nav link may still be visible — permission enforcement
+ * is also done at this page level as a second layer of defense.
+ *
+ * NAVIGATION
+ * ----------
+ * - Back button (ArrowLeft) → navigates to /dashboard/inventory/products
+ * - On form success → router.push() to /dashboard/inventory/products
+ */
+
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';

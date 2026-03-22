@@ -1,5 +1,67 @@
 'use client';
 
+/**
+ * @file ProductForm.tsx
+ * @module components/inventory
+ *
+ * @description
+ * Reusable form component for creating and editing inventory products.
+ * Used by both the "Add Product" page and the "Edit Product" page.
+ *
+ * REUSABILITY DESIGN
+ * ------------------
+ * This form accepts an optional `defaultValues` prop of type `Partial<Product>`.
+ * When creating:  `defaultValues` is undefined → all fields start empty/default.
+ * When editing:   `defaultValues` is the existing product → fields pre-filled.
+ *
+ * The `useEffect` + `reset()` pattern handles the async edit case:
+ * The edit page uses `useProduct(id)` which fetches data asynchronously.
+ * Initially `defaultValues` is undefined (product still loading), then becomes
+ * the product object. The `useEffect` re-runs when `defaultValues` changes,
+ * resetting the form to the fetched values.
+ *
+ * ZODRESOLVER CAST
+ * ----------------
+ * `createProductSchema` uses `.refine()` (a ZodEffects wrapper) which breaks
+ * Zod's type inference for RHF. The cast:
+ *   `zodResolver(createProductSchema) as Resolver<CreateProductFormValues>`
+ * is required to satisfy TypeScript. This is a known RHF+Zod limitation.
+ * See product.validation.ts for more detail.
+ *
+ * TOGGLE SWITCH IMPLEMENTATION
+ * ----------------------------
+ * Both `is_refurbished` and `is_active` are implemented as custom toggle buttons
+ * using native `<button type="button" role="switch" aria-checked={value}>` elements.
+ * WHY: HTML `<input type="checkbox">` styling is browser-dependent and difficult
+ * to customise. The custom implementation gives full control over appearance.
+ * The `role="switch"` and `aria-checked` attributes maintain accessibility.
+ *
+ * CONDITIONAL REFURBISHED LABEL
+ * ------------------------------
+ * The refurbished label field is only shown when `is_refurbished` is true.
+ * `watch('is_refurbished')` subscribes to real-time changes and drives
+ * the conditional rendering. When the toggle flip from true → false, the
+ * field is hidden (and Zod's `.refine()` rule won't fire for it).
+ *
+ * FORM SECTIONS
+ * -------------
+ * The form is divided into 4 visual sections:
+ *  1. Basic Information: product_name, material_code, hsn_sac_code, description
+ *  2. Classification: category_id (dropdown), product_type_id (dropdown)
+ *  3. Refurbished Options: is_refurbished toggle + conditional refurbished_label
+ *  4. Availability: is_active toggle
+ *
+ * USAGE EXAMPLE
+ * -------------
+ * ```tsx
+ * // Create mode
+ * <ProductForm onSubmit={handleCreate} isSubmitting={isPending} submitLabel="Create" />
+ *
+ * // Edit mode
+ * <ProductForm defaultValues={product} onSubmit={handleUpdate} submitLabel="Save" />
+ * ```
+ */
+
 import { useEffect } from 'react';
 import { useForm, Controller, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,10 +71,17 @@ import { useProductTypes } from '@/hooks/product-types/useProductTypes';
 import { createProductSchema, type CreateProductFormValues } from '@/modules/products/product.validation';
 import type { Product } from '@/modules/products/product.types';
 
+/**
+ * Props for the ProductForm component.
+ */
 interface ProductFormProps {
+  /** Existing product data to pre-fill the form (omit for create mode) */
   defaultValues?: Partial<Product>;
+  /** Called with validated form values when the user submits */
   onSubmit: (values: CreateProductFormValues) => Promise<void>;
+  /** When true, the submit button shows "Saving…" and is disabled */
   isSubmitting?: boolean;
+  /** Submit button label text (defaults to 'Save') */
   submitLabel?: string;
 }
 
@@ -42,8 +111,14 @@ export function ProductForm({ defaultValues, onSubmit, isSubmitting, submitLabel
     },
   });
 
+  // Watch the checkbox-like toggle to conditionally show the refurbished label field
   const isRefurbished = watch('is_refurbished');
 
+  /**
+   * When the product data arrives asynchronously (edit mode),
+   * reset the form to the fetched values so the inputs show the correct data.
+   * This runs only when `defaultValues` changes (i.e. after the fetch completes).
+   */
   useEffect(() => {
     if (defaultValues) {
       reset({

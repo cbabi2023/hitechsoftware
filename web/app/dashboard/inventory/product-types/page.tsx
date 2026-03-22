@@ -1,5 +1,28 @@
 'use client';
 
+/**
+ * @file page.tsx
+ * @module app/dashboard/inventory/product-types
+ *
+ * @description
+ * Admin page for managing Product Types.
+ *
+ * Structurally identical to the Categories page. Uses the same:
+ *  - Inline edit state machine (editingId → name input in row → commitEdit)
+ *  - Delete confirmation UI (deleteConfirmId → confirm/cancel buttons)
+ *  - Permission guards (can('inventory:view/create/edit/delete'))
+ *  - Loading skeleton (Array.from({ length: N }) with animate-pulse)
+ *
+ * See `app/dashboard/inventory/categories/page.tsx` for a detailed
+ * explanation of these patterns.
+ *
+ * DIFFERENCE FROM CATEGORIES
+ * --------------------------
+ * Product Types use `useProductTypes` instead of `useProductCategories`.
+ * The permission scope is the same (`inventory:*`) since both are admin
+ * classification data that gate the same inventory workflows.
+ */
+
 import { useState } from 'react';
 import { Check, Pencil, Trash2, X, Plus } from 'lucide-react';
 import { useProductTypes } from '@/hooks/product-types/useProductTypes';

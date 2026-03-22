@@ -1,7 +1,7 @@
 -- ============================================================================
 -- Product Inventory Module
 -- Migration: 20260322_016_product_inventory.sql
--- Tables: product_categories, product_types, products, stock_entries, stock_entry_items
+-- Tables: product_categories, product_types, inventory_products, stock_entries, stock_entry_items
 -- ============================================================================
 
 -- --------------------------------------------------------------------------
@@ -93,10 +93,13 @@ CREATE POLICY product_types_write ON public.product_types
   );
 
 -- --------------------------------------------------------------------------
--- Products
+-- Inventory Products
+-- (Distinct from the service-module `products` table in migration 001, which
+--  tracks appliance types for service jobs/warranty/AMC. This table tracks
+--  physical stock items by material code for warehouse receiving.)
 -- --------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS public.products (
+CREATE TABLE IF NOT EXISTS public.inventory_products (
   id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   product_name      VARCHAR(255) NOT NULL,
   description       TEXT,
@@ -113,36 +116,36 @@ CREATE TABLE IF NOT EXISTS public.products (
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_products_material_code_unique
-  ON public.products (upper(material_code))
+CREATE UNIQUE INDEX IF NOT EXISTS idx_inventory_products_material_code_unique
+  ON public.inventory_products (upper(material_code))
   WHERE is_deleted = false;
 
-CREATE INDEX IF NOT EXISTS idx_products_category_id
-  ON public.products (category_id)
+CREATE INDEX IF NOT EXISTS idx_inventory_products_category_id
+  ON public.inventory_products (category_id)
   WHERE is_deleted = false;
 
-CREATE INDEX IF NOT EXISTS idx_products_product_type_id
-  ON public.products (product_type_id)
+CREATE INDEX IF NOT EXISTS idx_inventory_products_product_type_id
+  ON public.inventory_products (product_type_id)
   WHERE is_deleted = false;
 
-CREATE INDEX IF NOT EXISTS idx_products_active
-  ON public.products (is_active)
+CREATE INDEX IF NOT EXISTS idx_inventory_products_active
+  ON public.inventory_products (is_active)
   WHERE is_deleted = false;
 
-DROP TRIGGER IF EXISTS trg_products_updated_at ON public.products;
-CREATE TRIGGER trg_products_updated_at
-  BEFORE UPDATE ON public.products
+DROP TRIGGER IF EXISTS trg_inventory_products_updated_at ON public.inventory_products;
+CREATE TRIGGER trg_inventory_products_updated_at
+  BEFORE UPDATE ON public.inventory_products
   FOR EACH ROW EXECUTE FUNCTION public.update_timestamp();
 
-ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.inventory_products ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS products_read ON public.products;
-CREATE POLICY products_read ON public.products
+DROP POLICY IF EXISTS inventory_products_read ON public.inventory_products;
+CREATE POLICY inventory_products_read ON public.inventory_products
   FOR SELECT TO authenticated
   USING (is_deleted = false);
 
-DROP POLICY IF EXISTS products_write ON public.products;
-CREATE POLICY products_write ON public.products
+DROP POLICY IF EXISTS inventory_products_write ON public.inventory_products;
+CREATE POLICY inventory_products_write ON public.inventory_products
   FOR ALL TO authenticated
   USING (
     public.current_user_role() IN ('super_admin', 'office_staff', 'stock_manager')
@@ -203,7 +206,7 @@ CREATE POLICY stock_entries_write ON public.stock_entries
 CREATE TABLE IF NOT EXISTS public.stock_entry_items (
   id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   stock_entry_id  UUID        NOT NULL REFERENCES public.stock_entries(id) ON DELETE CASCADE,
-  product_id      UUID        REFERENCES public.products(id) ON DELETE SET NULL,
+  product_id      UUID        REFERENCES public.inventory_products(id) ON DELETE SET NULL,
   material_code   VARCHAR(100) NOT NULL,
   quantity        INTEGER     NOT NULL CHECK (quantity > 0),
   hsn_sac_code    VARCHAR(20),

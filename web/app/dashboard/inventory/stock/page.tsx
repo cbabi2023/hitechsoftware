@@ -1,5 +1,56 @@
 'use client';
 
+/**
+ * @file page.tsx
+ * @module app/dashboard/inventory/stock
+ *
+ * @description
+ * List page for all stock entries (goods receipts) against invoices.
+ *
+ * WHAT THIS PAGE SHOWS
+ * --------------------
+ * - A searchable, paginated list of stock entry headers (invoice + date + item count).
+ * - Each entry is expandable (accordion) to see the line items inside it.
+ * - Each expanded item shows: product name, material code, HSN/SAC, quantity.
+ *
+ * ACCORDION PATTERN
+ * -----------------
+ * `expandedId` tracks which entry is currently expanded (null = all collapsed).
+ * Clicking the chevron icon toggles that entry:
+ *  - if already expanded (expandedId === entry.id) → collapse (set to null)
+ *  - otherwise → expand (set to entry.id)
+ * Only ONE entry can be expanded at a time; opening a new one closes the previous.
+ *
+ * SUMMARY ROW METADATA
+ * --------------------
+ * The collapsed row shows:
+ *  - Invoice number (monospaced font)
+ *  - Entry date (formatted as "22 Mar 2026" via `toLocaleDateString`)
+ *  - Item count + total quantity (computed from `entry.items` array in-client)
+ *
+ * SEARCH
+ * ------
+ * Local state `searchValue` keeps the input controlled.
+ * On every change, `setSearch(value)` is called — this updates the hook's
+ * filter state and triggers a React Query re-fetch filtering by invoice number.
+ *
+ * NO EDIT BUTTON
+ * --------------
+ * Stock entries are intentionally immutable after creation. If an error was made,
+ * the entry must be deleted and re-created. This preserves accounting integrity.
+ *
+ * PERMISSION GUARDS
+ * -----------------
+ * - `can('stock:view')`:   False → access denied message
+ * - `can('stock:create')`: False → "Add Stock Entry" button hidden
+ * - `can('stock:delete')`: False → Delete button hidden per row
+ *
+ * RELATED FILES
+ * -------------
+ * - Hook: `hooks/stock-entries/useStockEntries.ts`
+ * - New entry page: `app/dashboard/inventory/stock/new/page.tsx`
+ */
+
 import { useState } from 'react';
 import Link from 'next/link';
 import { Plus, Search, Trash2, ChevronDown, ChevronRight, ClipboardList } from 'lucide-react';

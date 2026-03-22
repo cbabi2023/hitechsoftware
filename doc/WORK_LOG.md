@@ -3,6 +3,63 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-22 17:30:00 +05:30] Inventory Migration Fix + Comprehensive JSDoc Documentation
+
+- Summary: Fixed a SQL migration conflict (inventory `products` table renamed to `inventory_products` to avoid collision with the pre-existing service-module `products` table). Also completed comprehensive JSDoc documentation across all 30 inventory module files.
+- Work done:
+  - **Migration fix**: Migration 016 was creating `public.products` but `001_initial_schema.sql` already defined a `products` table for the service module (brand/model/warranty/AMC tracking). The `CREATE TABLE IF NOT EXISTS` silently no-oped, leaving `material_code` missing → index creation failed with `ERROR: 42703: column "material_code" does not exist`. Fixed by renaming the new inventory table from `products` to `inventory_products` throughout the migration (table, all 4 indexes, trigger, RLS policies, FK in stock_entry_items).
+  - **TypeScript repositories updated**: All `.from('products')` calls in `products.repository.ts`, `product-categories.repository.ts`, `product-types.repository.ts` → `.from('inventory_products')`. PostgREST join syntax in `stock-entries.repository.ts` updated from `product:products(...)` to `product:inventory_products(...)`.
+  - **JSDoc documentation**: Added comprehensive file-level headers, interface/type-level docs, and function-level JSDoc with `@param`/`@returns`/design-rationale comments to all 30 inventory module files:
+    - 4 repositories (product-categories, product-types, products, stock-entries)
+    - 13 module files (types×4, validation×4, service×4, constants×1)
+    - 5 hooks (useProductCategories, useProductTypes, useProducts, useProduct, useStockEntries)
+    - 8 pages (layout, categories, product-types, products, products/new, products/[id]/edit, stock, stock/new)
+    - 1 component (ProductForm)
+  - Documentation patterns applied: architecture layer diagram (`UI → Hook → Service → Repository → Supabase`), soft-delete pattern, ServiceResult discriminated union, Zod+RHF ZodEffects cast, two-step stock entry insert, `enabled: !!id` guard, `placeholderData` anti-flicker, toggle-switch accessibility pattern.
+- Files changed:
+  - supabase/migrations/20260322_016_product_inventory.sql
+  - web/repositories/products.repository.ts
+  - web/repositories/product-categories.repository.ts
+  - web/repositories/product-types.repository.ts
+  - web/repositories/stock-entries.repository.ts
+  - web/modules/product-categories/product-category.types.ts
+  - web/modules/product-categories/product-category.validation.ts
+  - web/modules/product-categories/product-category.service.ts
+  - web/modules/product-types/product-type.types.ts
+  - web/modules/product-types/product-type.validation.ts
+  - web/modules/product-types/product-type.service.ts
+  - web/modules/products/product.types.ts
+  - web/modules/products/product.constants.ts
+  - web/modules/products/product.validation.ts
+  - web/modules/products/product.service.ts
+  - web/modules/stock-entries/stock-entry.types.ts
+  - web/modules/stock-entries/stock-entry.validation.ts
+  - web/modules/stock-entries/stock-entry.service.ts
+  - web/hooks/product-categories/useProductCategories.ts
+  - web/hooks/product-types/useProductTypes.ts
+  - web/hooks/products/useProducts.ts
+  - web/hooks/products/useProduct.ts
+  - web/hooks/stock-entries/useStockEntries.ts
+  - web/app/dashboard/inventory/layout.tsx
+  - web/app/dashboard/inventory/categories/page.tsx
+  - web/app/dashboard/inventory/product-types/page.tsx
+  - web/app/dashboard/inventory/products/page.tsx
+  - web/app/dashboard/inventory/products/new/page.tsx
+  - web/app/dashboard/inventory/products/[id]/edit/page.tsx
+  - web/app/dashboard/inventory/stock/page.tsx
+  - web/app/dashboard/inventory/stock/new/page.tsx
+  - web/components/inventory/ProductForm.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - Migration grep confirms zero remaining `public.products` (without `_`) or `ON public.products` references in migration 016.
+  - All TypeScript repositories confirmed updated via grep showing `inventory_products` in all relevant `.from()` calls and PostgREST join strings.
+  - No TypeScript compile errors introduced (documentation-only changes to most files; table-name string changes are runtime-checked by Supabase).
+- Issues encountered:
+  - Migration name collision: `products` table already existed from migration 001 for the service module (different schema entirely — brand/model/warranty vs material_code/category_id). Fixed by rename to `inventory_products`.
+- Next:
+  - Apply the fixed migration to Supabase (local or remote) — should succeed now with `inventory_products` table name.
+  - Consider adding a comment in migration 001 clarifying that `products` is the appliance/service catalog, not the inventory stock product table.
+
 ## [2026-03-23 14:45:00 +05:30] Inventory Management Module — Full Implementation
 
 - Summary: Built a complete Inventory Management module with 3 sub-sections (Categories, Product Types, Products) plus a Stock Entry system. Integrated into dashboard sidebar as a collapsible sub-menu mirroring the Service Module pattern.

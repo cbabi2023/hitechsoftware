@@ -1,5 +1,55 @@
 'use client';
 
+/**
+ * @file page.tsx
+ * @module app/dashboard/inventory/products
+ *
+ * @description
+ * Main product catalogue list page with filtering and pagination.
+ *
+ * WHAT THIS PAGE DOES
+ * -------------------
+ * 1. Displays all inventory products in a data table with 8 columns.
+ * 2. Provides four filters: text search, category, product type, active status.
+ * 3. Paginated (20 items per page) with Prev/Next navigation.
+ * 4. Each row has an Edit link (→ /products/[id]/edit) and a soft-delete action.
+ *
+ * FILTER ARCHITECTURE
+ * -------------------
+ * All filter state lives in `useProducts()` (the hook), NOT in this component.
+ * This page just calls the setters:
+ *  - `setSearch(value)`      → triggers re-query with search filter
+ *  - `setCategoryFilter(id)` → triggers re-query with category_id filter
+ *  - `setTypeFilter(id)`     → triggers re-query with product_type_id filter
+ *  - `setStatusFilter(bool)` → triggers re-query with is_active filter
+ *
+ * All setters reset pagination to page 1 to prevent empty pages.
+ *
+ * LOADING SKELETON
+ * ----------------
+ * While loading: renders a 6-row × 8-cell skeleton with `animate-pulse` shimmer.
+ * This mirrors the table structure so the layout doesn't "jump" when data arrives.
+ *
+ * DELETE CONFIRMATION
+ * -------------------
+ * Clicking Delete shows "Delete? Yes / No" inline in the actions cell.
+ * `deleteConfirmId` tracks which row is in confirmation state (max 1 at a time).
+ * On "Yes" → `handleDelete()` → `deleteMutation.mutateAsync(id)` → toast → cache invalidated.
+ *
+ * PERMISSION GUARDS
+ * -----------------
+ * - `can('inventory:view')`:   False → access denied message (gate at page level)
+ * - `can('inventory:edit')`:   False → Edit link hidden
+ * - `can('inventory:delete')`: False → Delete button hidden
+ * - `can('inventory:create')`: False → "Add Product" button hidden
+ *
+ * RELATED FILES
+ * -------------
+ * - Hook: `hooks/products/useProducts.ts`
+ * - Edit page: `app/dashboard/inventory/products/[id]/edit/page.tsx`
+ * - New page: `app/dashboard/inventory/products/new/page.tsx`
+ */
+
 import Link from 'next/link';
 import { Plus, Search, Pencil, Trash2, RefreshCw, Package } from 'lucide-react';
 import { useProducts } from '@/hooks/products/useProducts';

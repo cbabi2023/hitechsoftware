@@ -1,5 +1,67 @@
 'use client';
 
+/**
+ * @file page.tsx
+ * @module app/dashboard/inventory/stock/new
+ *
+ * @description
+ * Page for recording a new stock entry (goods receipt against an invoice).
+ *
+ * TWO-LEVEL FORM STRUCTURE
+ * ------------------------
+ * A stock entry has two parts:
+ *  1. HEADER (invoice_number, entry_date, notes) — one set of fields at the top.
+ *  2. ITEMS (one or more line items) — dynamic list managed by `useFieldArray`.
+ *
+ * `useFieldArray` from React Hook Form manages the items array:
+ *  - `append(newItem)`  → adds a blank item row to the list
+ *  - `remove(index)`    → removes a specific item row
+ *  - At least one item is always required (min:1 validation)
+ *
+ * PRODUCT SELECTION vs MANUAL ENTRY
+ * ----------------------------------
+ * For each line item, the user can either:
+ *  a) Select from the product dropdown → auto-fills material_code and hsn_sac_code
+ *     via `handleProductSelect(index, productId)`.
+ *  b) Skip the dropdown and type material_code manually (product_id stays null).
+ * This supports ad-hoc entries for items not yet registered in the product catalogue.
+ *
+ * INLINE PRODUCT CREATION
+ * -----------------------
+ * If the product doesn't exist in the system yet, the user can click "New Product"
+ * on any item row. This renders the `<InlineProductForm>` sub-component directly
+ * inside that row. On successful creation:
+ *  1. The React Query products cache is invalidated (so the dropdown refreshes).
+ *  2. The newly created product's fields are auto-populated into the parent form.
+ *  3. The inline form closes automatically.
+ *
+ * Only one `InlineProductForm` is shown at a time. `inlineFormIndex` tracks
+ * which item row triggered it.
+ *
+ * INLINE PRODUCT FORM (sub-component)
+ * -------------------------------------
+ * `InlineProductForm` is defined in this same file (not exported separately)
+ * because it is only ever used here. It uses a separate `useForm` instance
+ * and calls `addProduct` (the service function) directly — bypassing the hook
+ * to keep the interaction local. It manually calls `queryClient.invalidateQueries`
+ * after a successful creation.
+ *
+ * today() HELPER
+ * --------------
+ * Returns today's date as `YYYY-MM-DD` (ISO format) for the date input default value.
+ *
+ * SUBMISSION FLOW
+ * ---------------
+ * `handleSubmit(onSubmit)` validates the entire form with Zod, then calls
+ * `createMutation.mutateAsync(values)`. On success → navigate to stock list.
+ * On error → toast (fired inside the hook's onSuccess callback) + stay on page.
+ *
+ * PERMISSION GUARD
+ * ----------------
+ * `can('stock:create')` is checked early. If false, shows access denied and returns.
+ * `can('inventory:create')` gates the "New Product" button within each item row.
+ */
+
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, Controller, type Resolver } from 'react-hook-form';
@@ -18,6 +80,10 @@ import { addProduct } from '@/modules/products/product.service';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
+/**
+ * Returns today's date as a `YYYY-MM-DD` string for use as the
+ * default value of the date input field.
+ */
 function today() {
   return new Date().toISOString().split('T')[0];
 }
