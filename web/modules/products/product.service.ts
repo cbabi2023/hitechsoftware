@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file product.service.ts
  * @module modules/products
  *
@@ -143,9 +143,6 @@ export async function removeProduct(id: string): Promise<ServiceResult<{ id: str
       ok: false,
       error: { message: result.error?.message ?? 'Failed to delete product', code: result.error?.code },
     };
-  }
-  return { ok: true, data: result.data };
-}
   }
   return { ok: true, data: result.data };
 }

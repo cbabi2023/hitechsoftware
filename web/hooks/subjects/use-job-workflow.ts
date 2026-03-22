@@ -1,4 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
+﻿// ─────────────────────────────────────────────────────────────────────────────
 // use-job-workflow.ts
 //
 // PURPOSE:
@@ -493,7 +493,27 @@ export function useJobWorkflow(subjectId: string) {
       onError: (err: Error) => toast.error(err.message),
   });
 
-  // \u2500\u2500 Return object \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n  //\n  // NAMING CONVENTION:\n  //   \u2022 verb-first (uploadPhoto, removePhoto, markComplete) for actions\n  //   \u2022 is/are-prefix (isUploadingPhoto, isMarkingIncomplete) for loading flags\n  //   \u2022 verbError suffix (uploadPhotoError, markCompleteError) for error states\n  //\n  // BOTH mutate AND mutateAsync ARE EXPOSED FOR PHOTO OPS:\n  //   Components using the file input directly (onClick handlers) use mutate.\n  //   Components that need to await the result (progress bars, optimistic UI)\n  //   use mutateAsync. Other mutations only expose mutate (fire-and-forget is fine).\n  //\n  // DEFAULTS:\n  //   requiredPhotos ?? [] prevents undefined spreading in PhotoUploadSection's\n  //   map() calls before the query resolves.\n  //   completionRequirements is undefined until the query resolves; components\n  //   should guard with optional chaining: completionRequirements?.canComplete.\n  return {\n    requiredPhotos: workflowRequirementsQuery.data?.requiredPhotos ?? [],\n    completionRequirements: workflowRequirementsQuery.data?.completionRequirements,\n    isLoadingRequirements: workflowRequirementsQuery.isLoading,
+  // \u2500\u2500 Return object \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  //
+  // NAMING CONVENTION:
+  //   \u2022 verb-first (uploadPhoto, removePhoto, markComplete) for actions
+  //   \u2022 is/are-prefix (isUploadingPhoto, isMarkingIncomplete) for loading flags
+  //   \u2022 verbError suffix (uploadPhotoError, markCompleteError) for error states
+  //
+  // BOTH mutate AND mutateAsync ARE EXPOSED FOR PHOTO OPS:
+  //   Components using the file input directly (onClick handlers) use mutate.
+  //   Components that need to await the result (progress bars, optimistic UI)
+  //   use mutateAsync. Other mutations only expose mutate (fire-and-forget is fine).
+  //
+  // DEFAULTS:
+  //   requiredPhotos ?? [] prevents undefined spreading in PhotoUploadSection's
+  //   map() calls before the query resolves.
+  //   completionRequirements is undefined until the query resolves; components
+  //   should guard with optional chaining: completionRequirements?.canComplete.
+  return {
+    requiredPhotos: workflowRequirementsQuery.data?.requiredPhotos ?? [],
+    completionRequirements: workflowRequirementsQuery.data?.completionRequirements,
+    isLoadingRequirements: workflowRequirementsQuery.isLoading,
 
     updateStatus: updateStatusMutation.mutate,
     isUpdatingStatus: updateStatusMutation.isPending,

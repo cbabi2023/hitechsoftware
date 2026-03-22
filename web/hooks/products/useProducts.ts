@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file useProducts.ts
  * @module hooks/products
  *
@@ -163,5 +163,4 @@ export function useProducts() {
     updateMutation,
     deleteMutation,
   };
-}
 }

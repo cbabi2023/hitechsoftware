@@ -1,4 +1,4 @@
-// ═════════════════════════════════════════════════════════════════════════════
+﻿// ═════════════════════════════════════════════════════════════════════════════
 // subject.types.ts
 //
 // ──────────────────────────────────────────────────────────────────────────────
@@ -1477,6 +1477,7 @@ export interface CreateSubjectInput extends SubjectFormValues {
   created_by: string; // UUID of the office staff / admin who raised this ticket
 }
 
+/**
  * @summary Payload for updating all editable fields of an existing subject.
  *
  * @description

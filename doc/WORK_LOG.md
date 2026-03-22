@@ -3,6 +3,35 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-22 14:00:00 +05:30] Fix Build Errors — Collapsed Literal \\n Sequences and Duplicate Code Blocks
+
+- Summary: Fixed all TypeScript/Turbopack build errors introduced by the prior documentation pass. Root cause was that multi-line JSDoc comment blocks were stored as single lines with literal `\n` escape sequences instead of real newlines, which caused parser failures. Additional issues were duplicate function implementations, an extra closing `}`, and a missing `/**` opener in a JSDoc block.
+- Work done:
+  - **use-job-workflow.ts**: Entire `// ── Return object ──` comment block (plus `return {` and first 3 return properties) was collapsed onto one line with literal `\\n` chars, commenting out `return {`. Fixed by replacing all literal `\\n` with actual newlines using PowerShell `[System.IO.File]` I/O.
+  - **useProducts.ts**: Extra duplicate `}` at end of the hook function — removed.
+  - **product.service.ts**: Duplicate `  }\n  return { ok: true, data: result.data };\n}` block appended after the real closing brace — removed.
+  - **subject.types.ts**: Missing `/**` JSDoc opener before the `UpdateSubjectInput` documentation block — added.
+  - **stock-entry.service.ts**: All 4 exported functions (`getStockEntries`, `getStockEntry`, `addStockEntry`, `removeStockEntry`) were duplicated in full as undocumented copies at the end of the file — removed the duplicate block.
+  - **.next/types/routes.d.ts**: Static Next.js generated routes file was missing `/dashboard/inventory` in `LayoutRoutes` and `LayoutSlotMap`, causing a TS2344 type mismatch with the dev routes — added the missing entry.
+- Files changed:
+  - web/hooks/subjects/use-job-workflow.ts
+  - web/hooks/products/useProducts.ts
+  - web/modules/products/product.service.ts
+  - web/modules/subjects/subject.types.ts
+  - web/modules/stock-entries/stock-entry.service.ts
+  - web/.next/types/routes.d.ts
+- Verification:
+  - `npx tsc --noEmit --skipLibCheck` exits with code 0 — zero errors.
+- Bugs/issues encountered:
+  - Turbopack build error: `Parsing ecmascript source code failed` at use-job-workflow.ts:499 — caused by literal `\\n` collapsing `return {` into a comment line.
+  - TS1128 (Declaration or statement expected) in useProducts.ts — extra `}`.
+  - TS1128 in product.service.ts — duplicate code block.
+  - TS1109/TS1005/TS1434 cascade in subject.types.ts — floating `* @summary` without `/**` opener.
+  - TS2323/TS2393 (Cannot redeclare, Duplicate function implementation) in stock-entry.service.ts — full duplicate of all 4 functions.
+  - TS2344 in .next/dev/types/validator.ts — static routes missing `/dashboard/inventory` in LayoutRoutes.
+- Next:
+  - None.
+
 ## [2026-03-22 00:00:00 +05:30] Fix Build Error in useSubjects.ts — Missing useMutation Declaration
 
 - Summary: Fixed a Turbopack build error caused by a missing `const createSubjectMutation = useMutation({` line in the subject list hook.
