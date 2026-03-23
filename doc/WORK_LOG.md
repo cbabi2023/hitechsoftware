@@ -3,6 +3,31 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-23 14:31:11 +05:30] Verify & Seed Categories + Product Types
+- Summary: Diagnosed "unable to add category/product type" issue. Root cause was the Zod v4 crash (already fixed in commit 9c5f7f5) which was crashing the entire app. Verified that database, RLS policies, and all frontend code (pages, hooks, services, repositories, validation) are correct and working. Seeded initial categories and product types into the database so the user can immediately add products.
+- Work done:
+  - Traced full data flow for both categories and product types: Page → Hook → Service → Repository → Supabase DB
+  - Validated Zod schemas (createProductCategorySchema, createProductTypeSchema) are correct
+  - Tested database inserts with service role key — works
+  - Tested database inserts with authenticated super_admin via anon key (RLS) — works (HTTP 201)
+  - Verified super_admin profile has role='super_admin' in profiles table
+  - Confirmed current_user_role() function and RLS policies correctly grant super_admin INSERT access
+  - Ran E2E test: login → insert category → read back → verify → clean up — PASS
+  - Seeded 6 categories: Electronics, Connectors, Cables & Wires, Brackets & Mounts, Tools, PCB Components
+  - Seeded 4 product types: Spare Parts, Accessories, Consumables, Refurbished
+  - Verified ProductForm component loads categories/product types into dropdowns
+- Files changed:
+  - doc/WORK_LOG.md (updated)
+  - Database: seeded product_categories (6 rows), product_types (4 rows)
+- Verification:
+  - Build passes cleanly
+  - Database INSERT via authenticated super_admin returns HTTP 201
+  - E2E test of add+read+delete cycle passes
+  - All code files reviewed and confirmed correct
+- Next:
+  - User should test adding categories and product types from the web UI
+  - User can now add products since categories and product types exist in dropdowns
+
 ## [2026-03-23 14:16:06 +05:30] Restrict Technician Sidebar Navigation
 - Summary: Restricted sidebar navigation for technician role — technicians now only see Dashboard, Service Module, My Bag, Payouts, and Settings. All other modules (Attendance, Customers, Team, Inventory, Digital Bag admin, Billing, Reports) are hidden from technicians. Also added technician to Payouts visibility so they can view their own payouts.
 - Work done:
