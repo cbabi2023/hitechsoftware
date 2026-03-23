@@ -3,6 +3,21 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-23 17:05:00 +05:30] Fix Login Hydration Mismatch Console Error
+- Summary: Resolved React hydration mismatch on the login page caused by styled-jsx class hash differences between server-rendered and client-rendered markup.
+- Work done:
+  - Removed inline `style jsx` block from the login client component
+  - Kept animation classes (`animate-blob`, delay utilities) sourced from global stylesheet only
+  - Preserved existing login UI and behavior while removing hash-based class divergence
+- Files changed:
+  - web/app/login/page.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - Next.js production build passed successfully
+  - Login route compiled without errors
+- Next:
+  - If the warning still appears in browser dev console, hard refresh once to clear stale client bundle
+
 ## [2026-03-23 16:45:00 +05:30] Verify & Harden Categories/Product-Types Add Flow
 - Summary: Thoroughly verified the entire add category/product-type flow (UI → hook → service → repository → DB). Database inserts confirmed working. Added error handling (onError callbacks + try-catch) to prevent silent failures.
 - Work done:
