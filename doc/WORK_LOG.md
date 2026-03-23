@@ -3,6 +3,25 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-23 14:34:36 +05:30] Restore Technician Calendar with Full Task Details
+- Summary: Restored the Attendance calendar sidebar item for technicians and enhanced it to show allocated task details for any selected day (not just today). Each day's tasks are now clickable links to the subject detail page.
+- Work done:
+  - Changed Attendance sidebar `allowedRoles` from admin-only back to `['technician']`
+  - Added `SubjectRef` type (id + subject_number) to attendance types
+  - Updated attendance service to populate `subjects` array with UUID ids alongside subject numbers
+  - Updated calendar day-detail panel to show clickable task badges for ALL days (previously only showed subject numbers for today)
+  - Task badges link to `/dashboard/subjects/{id}` using proper UUID routing
+- Files changed:
+  - web/app/dashboard/layout.tsx (Attendance allowedRoles → technician)
+  - web/modules/attendance/attendance.types.ts (added SubjectRef, added subjects to AttendanceDaySummary)
+  - web/modules/attendance/attendance.service.ts (populate subjects with id+subject_number)
+  - web/app/dashboard/attendance/page.tsx (show tasks for any day, use UUID links)
+  - doc/WORK_LOG.md (updated)
+- Verification:
+  - Build passes cleanly (npx next build)
+- Next:
+  - none
+
 ## [2026-03-23 14:31:11 +05:30] Verify & Seed Categories + Product Types
 - Summary: Diagnosed "unable to add category/product type" issue. Root cause was the Zod v4 crash (already fixed in commit 9c5f7f5) which was crashing the entire app. Verified that database, RLS policies, and all frontend code (pages, hooks, services, repositories, validation) are correct and working. Seeded initial categories and product types into the database so the user can immediately add products.
 - Work done:

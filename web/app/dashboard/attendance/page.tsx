@@ -208,16 +208,26 @@ export default function AttendancePage() {
               </button>
             </div>
             <p className="mt-2 text-sm text-slate-700">Service count: {selectedDay.service_count}</p>
-            {selectedDay.is_today && selectedDay.subject_numbers.length > 0 ? (
-              <p className="mt-1 text-xs text-slate-600">Subjects: {selectedDay.subject_numbers.join(', ')}</p>
-            ) : selectedDay.is_today ? (
-              <p className="mt-1 text-xs text-slate-500">No subjects assigned.</p>
+            {selectedDay.subjects.length > 0 ? (
+              <div className="mt-2 space-y-1">
+                <p className="text-xs font-medium text-slate-600">Allocated tasks:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedDay.subjects.map((s) => (
+                    <Link
+                      key={s.id}
+                      href={`${ROUTES.DASHBOARD_SUBJECTS}/${s.id}`}
+                      className="inline-flex rounded-md border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                    >
+                      {s.subject_number}
+                    </Link>
+                  ))}
+                </div>
+              </div>
             ) : (
-              <p className="mt-1 text-xs text-slate-500">Only count is shown for non-current dates.</p>
+              <p className="mt-1 text-xs text-slate-500">
+                {selectedDay.is_future ? 'No tasks allocated yet.' : 'No tasks were allocated for this day.'}
+              </p>
             )}
-            {!selectedDay.is_today ? (
-              <p className="mt-2 text-xs text-slate-500">Full service details are accessible only for today.</p>
-            ) : null}
           </div>
         ) : null}
       </section>

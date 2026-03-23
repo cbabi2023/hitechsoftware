@@ -39,7 +39,7 @@ interface DashboardLayoutProps {
 
 const NAV_ITEMS = [
   { icon: Home, label: 'Dashboard', href: ROUTES.DASHBOARD, isAvailable: true },
-  { icon: CalendarDays, label: 'Attendance', href: ROUTES.DASHBOARD_ATTENDANCE, isAvailable: true, allowedRoles: ['super_admin', 'office_staff', 'stock_manager'] as UserRole[] },
+  { icon: CalendarDays, label: 'Attendance', href: ROUTES.DASHBOARD_ATTENDANCE, isAvailable: true, allowedRoles: ['technician'] as UserRole[] },
   { icon: ClipboardList, label: 'Service Module', href: ROUTES.DASHBOARD_SUBJECTS, isAvailable: true },
   { icon: Users, label: 'Customers', href: ROUTES.DASHBOARD_CUSTOMERS, isAvailable: true, allowedRoles: ['super_admin', 'office_staff', 'stock_manager'] as UserRole[] },
   { icon: UserCog, label: 'Team', href: ROUTES.DASHBOARD_TEAM, isAvailable: true, allowedRoles: ['super_admin', 'office_staff', 'stock_manager'] as UserRole[] },

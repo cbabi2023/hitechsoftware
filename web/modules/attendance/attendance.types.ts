@@ -12,11 +12,17 @@ export interface AttendanceLog {
   updated_at: string;
 }
 
+export interface SubjectRef {
+  id: string;
+  subject_number: string;
+}
+
 export interface AttendanceDaySummary {
   date: string;
   status: AttendanceStatus;
   service_count: number;
   subject_numbers: string[];
+  subjects: SubjectRef[];
   is_today: boolean;
   is_future: boolean;
 }

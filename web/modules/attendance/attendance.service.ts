@@ -103,7 +103,7 @@ export async function getAttendanceSummary(technicianId: string, month: number, 
   const logs = (logsResult.data ?? []) as AttendanceLog[];
   const logsByDate = new Map(logs.map((log) => [log.date, log]));
 
-  const servicesByDate = new Map<string, string[]>();
+  const servicesByDate = new Map<string, Array<{ id: string; subject_number: string }>>();
   for (const row of subjectsResult.data ?? []) {
     const serviceDate = row.technician_allocated_date;
     if (!serviceDate) {
@@ -111,7 +111,7 @@ export async function getAttendanceSummary(technicianId: string, month: number, 
     }
 
     const items = servicesByDate.get(serviceDate) ?? [];
-    items.push(row.subject_number);
+    items.push({ id: row.id, subject_number: row.subject_number });
     servicesByDate.set(serviceDate, items);
   }
 
@@ -140,7 +140,8 @@ export async function getAttendanceSummary(technicianId: string, month: number, 
       date: dateKey,
       status,
       service_count: subjectNumbers.length,
-      subject_numbers: subjectNumbers,
+      subject_numbers: subjectNumbers.map((s) => s.subject_number),
+      subjects: subjectNumbers,
       is_today: dateKey === todayString,
       is_future: dateKey > todayString,
     });
