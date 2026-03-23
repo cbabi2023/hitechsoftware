@@ -13,6 +13,7 @@ import { ROUTES } from '@/lib/constants/routes';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { getSubjects } from '@/modules/subjects/subject.service';
 import { SUBJECT_QUERY_KEYS } from '@/modules/subjects/subject.constants';
+import { createClient } from '@/lib/supabase/client';
 
 function formatTime(value: string | null) {
   if (!value) {
@@ -25,6 +26,7 @@ function formatTime(value: string | null) {
 export default function DashboardPage() {
   const { user, userRole } = useAuth();
   const [showTechnicianList, setShowTechnicianList] = useState(false);
+  const supabase = createClient();
 
   const todayAttendanceQuery = useTodayAttendance(user?.id ?? '');
   const toggleAttendanceMutation = useToggleAttendance();
@@ -80,29 +82,33 @@ export default function DashboardPage() {
   });
 
   const adminPendingSubjectsCountQuery = useQuery({
-    queryKey: [...SUBJECT_QUERY_KEYS.list, 'admin-dashboard-pending-count'],
+    queryKey: ['admin-dashboard-pending-summary'],
     queryFn: async () => {
-      const result = await getSubjects({ pending_only: true, page: 1, page_size: 1 });
-      if (!result.ok) {
-        throw new Error(result.error.message);
-      }
-      return result.data.total;
+      const result = await supabase
+        .from('daily_service_summary')
+        .select('total_pending');
+      if (result.error) throw new Error(result.error.message);
+      return (result.data ?? []).reduce(
+        (sum, row) => sum + Number((row as { total_pending: number }).total_pending || 0),
+        0,
+      );
     },
     enabled: userRole !== 'technician',
-    staleTime: 30 * 1000,
+    staleTime: 300_000,
   });
 
   const adminOverduePendingCountQuery = useQuery({
-    queryKey: [...SUBJECT_QUERY_KEYS.list, 'admin-dashboard-overdue-pending-count'],
+    queryKey: ['admin-dashboard-overdue-count'],
     queryFn: async () => {
-      const result = await getSubjects({ overdue_only: true, page: 1, page_size: 1 });
-      if (!result.ok) {
-        throw new Error(result.error.message);
-      }
-      return result.data.total;
+      const result = await supabase
+        .from('overdue_subjects')
+        .select('id', { count: 'exact', head: true })
+        .eq('is_deleted', false);
+      if (result.error) throw new Error(result.error.message);
+      return result.count ?? 0;
     },
     enabled: userRole !== 'technician',
-    staleTime: 30 * 1000,
+    staleTime: 300_000,
   });
 
   const customerCountQuery = useQuery({

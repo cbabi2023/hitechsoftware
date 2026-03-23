@@ -1,7 +1,7 @@
 {
-  "framework": "nextjs",
+  "buildCommand": "cd web && npm run build",
   "installCommand": "npm install",
-  "buildCommand": "npm run build",
+  "framework": "nextjs",
   "outputDirectory": "web/.next",
   "crons": [
     { "path": "/api/cron/attendance-reset", "schedule": "0 0 * * *" },

@@ -39,8 +39,19 @@ export async function listSubjects(filters: SubjectListFilters) {
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
+  // Choose source table/view based on filter context.
+  // Migration 017 views pre-filter rows, removing the need for inline conditions.
+  let source: string = 'subjects';
+  if (filters.overdue_only) {
+    source = 'overdue_subjects';
+  } else if (filters.technician_pending_only) {
+    source = 'active_subjects_today';
+  } else if (filters.pending_only && !filters.assigned_technician_id) {
+    source = 'pending_unassigned_subjects';
+  }
+
   let query = supabase
-    .from('subjects')
+    .from(source)
     .select(
       `
       id,
@@ -82,8 +93,10 @@ export async function listSubjects(filters: SubjectListFilters) {
     .order('created_at', { ascending: false });
 
   if (filters.search?.trim()) {
-    const escaped = filters.search.trim().replaceAll(',', ' ');
-    query = query.or(`subject_number.ilike.%${escaped}%,customer_phone.ilike.%${escaped}%,customer_name.ilike.%${escaped}%`);
+    const terms = filters.search.trim().replaceAll(',', ' ');
+    query = query.or(
+      `subject_number.plfts(simple).${terms},customer_phone.plfts(simple).${terms},customer_name.plfts(simple).${terms}`,
+    );
   }
 
   if (filters.source_type && filters.source_type !== 'all') {
@@ -98,12 +111,12 @@ export async function listSubjects(filters: SubjectListFilters) {
     query = query.eq('status', filters.status.trim().toUpperCase());
   }
 
-  if (filters.pending_only || filters.technician_pending_only) {
-    // Schema-safe pending filter: unfinished work has no completion timestamp.
+  // When using a view, skip filters the view already applies.
+  if (source === 'subjects' && (filters.pending_only || filters.technician_pending_only)) {
     query = query.is('completed_at', null);
   }
 
-  if (filters.overdue_only) {
+  if (source === 'subjects' && filters.overdue_only) {
     const today = new Date().toISOString().split('T')[0];
     query = query
       .is('completed_at', null)

@@ -18,6 +18,15 @@ type BillRow = {
   subjects: { subject_number: string } | { subject_number: string }[] | null;
 };
 
+type BrandFinancialSummary = {
+  brand_id: string;
+  brand_name: string;
+  total_services: number;
+  total_invoiced: number;
+  total_due: number;
+  total_paid: number;
+};
+
 function formatMoney(value: number) {
   return value.toLocaleString('en-IN', {
     minimumFractionDigits: 2,
@@ -59,18 +68,29 @@ export default function BrandBillingDetailPage() {
     },
   });
 
-  const summary = useMemo(() => {
-    const rows = billsQuery.data ?? [];
-    const total = rows.reduce((sum, row) => sum + Number(row.grand_total || 0), 0);
-    const dueRows = rows.filter((row) => row.payment_status === 'due');
-    const dueTotal = dueRows.reduce((sum, row) => sum + Number(row.grand_total || 0), 0);
-    return {
-      totalBills: rows.length,
-      dueCount: dueRows.length,
-      total,
-      dueTotal,
-    };
+  const financialSummaryQuery = useQuery({
+    queryKey: ['brand-financial-summary', id],
+    queryFn: async () => {
+      const result = await supabase
+        .from('brand_financial_summary')
+        .select('brand_id,brand_name,total_services,total_invoiced,total_due,total_paid')
+        .eq('brand_id', id)
+        .maybeSingle();
+      if (result.error) throw new Error(result.error.message);
+      return result.data as BrandFinancialSummary | null;
+    },
+  });
+
+  const dueCount = useMemo(() => {
+    return (billsQuery.data ?? []).filter((row) => row.payment_status === 'due').length;
   }, [billsQuery.data]);
+
+  const summary = {
+    totalBills: Number(financialSummaryQuery.data?.total_services ?? 0),
+    total: Number(financialSummaryQuery.data?.total_invoiced ?? 0),
+    dueTotal: Number(financialSummaryQuery.data?.total_due ?? 0),
+    dueCount,
+  };
 
   if (brandQuery.isLoading) {
     return (

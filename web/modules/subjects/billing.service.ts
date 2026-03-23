@@ -857,5 +857,9 @@ export async function updateBillPaymentStatus(
     return { ok: false, error: { message: updated.error?.message ?? 'Failed to update payment status' } };
   }
 
+  // Refresh brand/dealer financial summary materialized views so dashboard
+  // totals stay current after a payment status change.
+  await supabase.rpc('refresh_financial_summaries');
+
   return { ok: true, data: updated.data };
 }

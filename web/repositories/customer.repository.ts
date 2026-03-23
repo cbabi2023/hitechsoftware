@@ -44,8 +44,10 @@ export async function findAll(filters: CustomerFilters) {
   }
 
   if (filters.search?.trim()) {
-    const escaped = filters.search.trim().replaceAll(',', ' ');
-    query = query.or(`customer_name.ilike.%${escaped}%,phone_number.ilike.%${escaped}%`);
+    const terms = filters.search.trim().replaceAll(',', ' ');
+    query = query.or(
+      `customer_name.plfts(simple).${terms},phone_number.plfts(simple).${terms}`,
+    );
   }
 
   const result = await query.order('created_at', { ascending: false }).range(from, to).returns<Customer[]>();

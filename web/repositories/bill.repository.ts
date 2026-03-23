@@ -29,32 +29,46 @@ export function findByDealerId(dealerId: string) {
 
 export async function getBrandDueSummary(brandId: string) {
   const result = await supabase
-    .from('subject_bills')
-    .select('grand_total')
+    .from('brand_financial_summary')
+    .select('total_services,total_invoiced,total_due,total_paid')
     .eq('brand_id', brandId)
-    .eq('payment_status', 'due');
+    .maybeSingle();
 
   if (result.error) {
     return { data: null, error: result.error };
   }
 
-  const totalDue = (result.data ?? []).reduce((sum, row) => sum + Number((row as { grand_total: number }).grand_total || 0), 0);
-  return { data: { totalDue, dueCount: (result.data ?? []).length }, error: null };
+  return {
+    data: {
+      totalDue: Number(result.data?.total_due ?? 0),
+      dueCount: Number(result.data?.total_services ?? 0),
+      totalInvoiced: Number(result.data?.total_invoiced ?? 0),
+      totalPaid: Number(result.data?.total_paid ?? 0),
+    },
+    error: null,
+  };
 }
 
 export async function getDealerDueSummary(dealerId: string) {
   const result = await supabase
-    .from('subject_bills')
-    .select('grand_total')
+    .from('dealer_financial_summary')
+    .select('total_services,total_invoiced,total_due,total_paid')
     .eq('dealer_id', dealerId)
-    .eq('payment_status', 'due');
+    .maybeSingle();
 
   if (result.error) {
     return { data: null, error: result.error };
   }
 
-  const totalDue = (result.data ?? []).reduce((sum, row) => sum + Number((row as { grand_total: number }).grand_total || 0), 0);
-  return { data: { totalDue, dueCount: (result.data ?? []).length }, error: null };
+  return {
+    data: {
+      totalDue: Number(result.data?.total_due ?? 0),
+      dueCount: Number(result.data?.total_services ?? 0),
+      totalInvoiced: Number(result.data?.total_invoiced ?? 0),
+      totalPaid: Number(result.data?.total_paid ?? 0),
+    },
+    error: null,
+  };
 }
 
 export async function createBill(bill: Omit<SubjectBill, 'id' | 'generated_at'>) {

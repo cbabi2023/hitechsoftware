@@ -1,6 +1,1 @@
-{
-  "crons": [
-    { "path": "/api/cron/attendance-reset", "schedule": "0 0 * * *" },
-    { "path": "/api/cron/attendance-absent-flag", "schedule": "30 10 * * *" }
-  ]
-}
+{}
