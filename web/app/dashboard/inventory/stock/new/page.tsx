@@ -621,6 +621,17 @@ export default function NewStockEntryPage() {
                           {errors.items[index].mrp?.message}
                         </p>
                       )}
+                      {(() => {
+                        const mrpVal = watchItems[index]?.mrp;
+                        if (!mrpVal || mrpVal <= 0) return null;
+                        const base = mrpVal / 1.18;
+                        const gst = mrpVal - base;
+                        return (
+                          <p className="mt-1 text-xs text-slate-500">
+                            Base: ₹{base.toFixed(2)} + GST 18%: ₹{gst.toFixed(2)}
+                          </p>
+                        );
+                      })()}
                     </div>
 
                     {/* HSN/SAC */}

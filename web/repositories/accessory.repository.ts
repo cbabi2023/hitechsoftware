@@ -3,10 +3,12 @@ import type { AddAccessoryInput } from '@/modules/subjects/subject.types';
 
 const supabase = createClient();
 
+const ACCESSORY_COLUMNS = 'id,subject_id,item_name,quantity,mrp,discount_type,discount_value,discount_amount,discounted_mrp,base_price,gst_amount,line_total,line_base_total,line_gst_total,added_by,created_at';
+
 export function findBySubjectId(subjectId: string) {
   return supabase
     .from('subject_accessories')
-    .select('id,subject_id,item_name,quantity,unit_price,total_price,added_by,created_at')
+    .select(ACCESSORY_COLUMNS)
     .eq('subject_id', subjectId)
     .order('created_at', { ascending: true });
 }
@@ -18,10 +20,12 @@ export function createAccessory(subjectId: string, addedBy: string, input: AddAc
       subject_id: subjectId,
       item_name: input.item_name,
       quantity: input.quantity,
-      unit_price: input.unit_price,
+      mrp: input.mrp,
+      discount_type: input.discount_type ?? 'percentage',
+      discount_value: input.discount_value ?? 0,
       added_by: addedBy,
     })
-    .select('id,subject_id,item_name,quantity,unit_price,total_price,added_by,created_at')
+    .select(ACCESSORY_COLUMNS)
     .single();
 }
 
@@ -33,11 +37,13 @@ export function createManyAccessories(subjectId: string, addedBy: string, items:
         subject_id: subjectId,
         item_name: item.item_name,
         quantity: item.quantity,
-        unit_price: item.unit_price,
+        mrp: item.mrp,
+        discount_type: item.discount_type ?? 'percentage',
+        discount_value: item.discount_value ?? 0,
         added_by: addedBy,
       })),
     )
-    .select('id,subject_id,item_name,quantity,unit_price,total_price,added_by,created_at');
+    .select(ACCESSORY_COLUMNS);
 }
 
 export function deleteBySubjectId(subjectId: string) {
@@ -50,6 +56,6 @@ export function deleteBySubjectId(subjectId: string) {
 export function calculateAccessoriesTotal(subjectId: string) {
   return supabase
     .from('subject_accessories')
-    .select('total_price')
+    .select('line_total,line_base_total,line_gst_total,discount_amount,quantity')
     .eq('subject_id', subjectId);
 }

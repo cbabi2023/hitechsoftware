@@ -54,7 +54,6 @@ export function BillingSection({ subject, userRole, userId }: Props) {
 
   const [visitCharge, setVisitCharge] = useState(subject.visit_charge ?? 0);
   const [serviceCharge, setServiceCharge] = useState(subject.service_charge ?? 0);
-  const [applyGst, setApplyGst] = useState(false);
   const [paymentMode, setPaymentMode] = useState<PaymentMode | ''>('');
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [imagePreviewErrors, setImagePreviewErrors] = useState<Record<string, string>>({});
@@ -169,18 +168,28 @@ export function BillingSection({ subject, userRole, userId }: Props) {
     },
   });
 
-  const subtotal = useMemo(() => {
-    return Number(visitCharge || 0) + Number(serviceCharge || 0) + Number(accessoriesTotal || 0);
-  }, [visitCharge, serviceCharge, accessoriesTotal]);
+  // Accessories GST breakdown from individual items
+  const accessoriesBaseTotal = useMemo(() => {
+    return accessories.reduce((sum, item) => sum + Number(item.line_base_total || 0), 0);
+  }, [accessories]);
 
-  const gstAmount = useMemo(() => {
-    if (!applyGst) {
-      return 0;
-    }
-    return subtotal * 0.18;
-  }, [applyGst, subtotal]);
+  const accessoriesGstTotal = useMemo(() => {
+    return accessories.reduce((sum, item) => sum + Number(item.line_gst_total || 0), 0);
+  }, [accessories]);
 
-  const grandTotal = useMemo(() => subtotal + gstAmount, [subtotal, gstAmount]);
+  const accessoriesDiscountTotal = useMemo(() => {
+    return accessories.reduce((sum, item) => sum + Number(item.discount_amount || 0) * Number(item.quantity || 0), 0);
+  }, [accessories]);
+
+  // Visit/Service charges are also GST-inclusive — split them
+  const visitChargeBase = useMemo(() => Math.round(Number(visitCharge || 0) / 1.18 * 100) / 100, [visitCharge]);
+  const visitChargeGst = useMemo(() => Math.round((Number(visitCharge || 0) - visitChargeBase) * 100) / 100, [visitCharge, visitChargeBase]);
+  const serviceChargeBase = useMemo(() => Math.round(Number(serviceCharge || 0) / 1.18 * 100) / 100, [serviceCharge]);
+  const serviceChargeGst = useMemo(() => Math.round((Number(serviceCharge || 0) - serviceChargeBase) * 100) / 100, [serviceCharge, serviceChargeBase]);
+
+  const totalBaseAmount = useMemo(() => accessoriesBaseTotal + visitChargeBase + serviceChargeBase, [accessoriesBaseTotal, visitChargeBase, serviceChargeBase]);
+  const totalGstAmount = useMemo(() => accessoriesGstTotal + visitChargeGst + serviceChargeGst, [accessoriesGstTotal, visitChargeGst, serviceChargeGst]);
+  const grandTotal = useMemo(() => Number(visitCharge || 0) + Number(serviceCharge || 0) + Number(accessoriesTotal || 0), [visitCharge, serviceCharge, accessoriesTotal]);
 
   return (
     <div className={`rounded-xl border p-5 ${isCustomerChargeable ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-white'}`}>
@@ -418,30 +427,24 @@ export function BillingSection({ subject, userRole, userId }: Props) {
           )}
 
           {!canMaintainCompletedMedia && (
-          <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
-            <input
-              type="checkbox"
-              checked={applyGst}
-              onChange={(event) => setApplyGst(event.target.checked)}
-              className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-            />
-            <span className="font-medium">Apply GST (18%)</span>
-          </label>
-          )}
-
-          {!canMaintainCompletedMedia && (
           <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
             <div className="flex items-center justify-between text-slate-700">
               <span>Accessories Total</span>
               <span>INR {formatMoney(accessoriesTotal)}</span>
             </div>
-            <div className="mt-1 flex items-center justify-between text-slate-700">
-              <span>Subtotal</span>
-              <span>INR {formatMoney(subtotal)}</span>
+            {accessoriesDiscountTotal > 0 && (
+              <div className="mt-1 flex items-center justify-between text-slate-500">
+                <span>Total Discount</span>
+                <span>−INR {formatMoney(accessoriesDiscountTotal)}</span>
+              </div>
+            )}
+            <div className="mt-1 flex items-center justify-between text-slate-500">
+              <span>Base Amount (excl. GST)</span>
+              <span>INR {formatMoney(totalBaseAmount)}</span>
             </div>
-            <div className="mt-1 flex items-center justify-between text-slate-700">
-              <span>GST (18%)</span>
-              <span>INR {formatMoney(gstAmount)}</span>
+            <div className="mt-1 flex items-center justify-between text-slate-500">
+              <span>GST 18%</span>
+              <span>INR {formatMoney(totalGstAmount)}</span>
             </div>
             <div className="mt-1 flex items-center justify-between font-semibold text-slate-900">
               <span>Grand Total</span>
@@ -468,12 +471,14 @@ export function BillingSection({ subject, userRole, userId }: Props) {
               generateMutation.mutate({
                 visit_charge: visitCharge,
                 service_charge: serviceCharge,
-                apply_gst: applyGst,
+                apply_gst: true,
                 payment_mode: isOutOfWarranty && paymentMode ? paymentMode : undefined,
                 accessories: accessories.map((item) => ({
                   item_name: item.item_name,
                   quantity: item.quantity,
-                  unit_price: item.unit_price,
+                  mrp: item.mrp,
+                  discount_type: item.discount_type,
+                  discount_value: item.discount_value,
                 })),
               });
             }}

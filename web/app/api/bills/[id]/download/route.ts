@@ -73,7 +73,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
       : Promise.resolve({ data: null, error: null } as { data: { display_name: string } | null; error: null }),
     admin
       .from('subject_accessories')
-      .select('item_name,quantity,unit_price,total_price')
+      .select('item_name,quantity,mrp,discount_type,discount_value,discount_amount,discounted_mrp,base_price,gst_amount,line_total,line_base_total,line_gst_total')
       .eq('subject_id', subjectResult.data.id),
   ]);
 
@@ -84,7 +84,12 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     technician_name: tech.data?.display_name ?? null,
     customer_name: subjectResult.data.customer_name,
     customer_address: subjectResult.data.customer_address,
-    accessories: (accessories.data ?? []) as Array<{ item_name: string; quantity: number; unit_price: number; total_price: number }>,
+    accessories: (accessories.data ?? []) as Array<{
+      item_name: string; quantity: number; mrp: number;
+      discount_type: 'percentage' | 'flat'; discount_value: number; discount_amount: number;
+      discounted_mrp: number; base_price: number; gst_amount: number;
+      line_total: number; line_base_total: number; line_gst_total: number;
+    }>,
   });
 
   const buffer = await pdfBlob.arrayBuffer();

@@ -3,6 +3,45 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-23 17:19:33 +05:30] GST Calculation & Per-Product Discount System
+- Summary: Comprehensive GST (18% flat) and per-product discount system for billing, stock entries, and PDF bill generation. MRP is always GST-inclusive; system splits into base_price + gst_amount via /1.18 divisor. Discounts can be percentage or flat amount, applied before GST split.
+- Work done:
+  - **Migration 023** (`20260323_023_gst_discount_billing.sql`):
+    - Dropped `total_price` generated column, renamed `unit_price` → `mrp` on `subject_accessories`
+    - Added `discount_type` (percentage/flat), `discount_value`, and 7 GENERATED columns: `discount_amount`, `discounted_mrp`, `base_price`, `gst_amount`, `line_total`, `line_base_total`, `line_gst_total`
+    - Added `total_base_amount`, `total_gst_amount`, `total_discount` to `subject_bills`
+    - Created `calculate_bill_totals(p_subject_id)` PostgreSQL function
+  - **Types** (`subject.types.ts`): Updated `SubjectAccessory`, `SubjectBill`, `AddAccessoryInput` with all new GST/discount fields
+  - **Repository** (`accessory.repository.ts`): Updated columns constant, insert logic, and totals query for new fields
+  - **Service** (`billing.service.ts`): Added discount validation (% ≤ 100, flat ≤ MRP), updated `addAccessory`, `getAccessoriesBySubject`, `generateBill` for GST totals
+  - **API Route** (`subjects/[id]/billing/route.ts`): Updated `add_accessory` and `edit_bill` actions for `mrp`/`discount_type`/`discount_value`, recalculate totals with GST breakdown
+  - **Hook** (`useBilling.ts`): Updated response type from `unit_price` to `mrp`
+  - **AccessoriesSection.tsx**: Full rewrite — MRP input, discount type toggle (% vs ₹), discount value, live GST split preview, 8-column table
+  - **BillingSection.tsx**: Removed GST toggle checkbox, added GST breakdown summary (discount total, base amount, GST 18%, grand total)
+  - **BillPDF.tsx**: Full rewrite — 7-column table (Item Name, MRP, Discount, Qty, Base Price, GST 18%, Amount), visit/service charge GST split, PAID/DUE stamps
+  - **Download route** (`bills/[id]/download/route.ts`): Updated accessories SELECT and type cast for new columns
+  - **BillEditPanel.tsx**: Removed `inferGstApplied` and `applyGst` state, updated new-item form (MRP + discount type + discount value), live total preview with GST breakdown
+  - **Stock entry form** (`stock/new/page.tsx`): Added GST split display below MRP field showing "Base: ₹X + GST 18%: ₹X"
+- Files changed:
+  - supabase/migrations/20260323_023_gst_discount_billing.sql (new)
+  - web/modules/subjects/subject.types.ts
+  - web/repositories/accessory.repository.ts
+  - web/modules/subjects/billing.service.ts
+  - web/app/api/subjects/[id]/billing/route.ts
+  - web/hooks/subjects/useBilling.ts
+  - web/components/subjects/AccessoriesSection.tsx
+  - web/components/subjects/BillingSection.tsx
+  - web/lib/pdf/BillPDF.tsx
+  - web/app/api/bills/[id]/download/route.ts
+  - web/components/subjects/BillEditPanel.tsx
+  - web/app/dashboard/inventory/stock/new/page.tsx
+- Verification:
+  - `npx next build` — compiled successfully, 0 TypeScript errors, all 30 pages generated
+- Bugs/Issues: none
+- Next:
+  - Run migration 023 on Supabase
+  - End-to-end test billing flow with discount scenarios
+
 ## [2026-03-23 16:37:00 +05:30] Simplified Pricing System — Purchase Price + MRP Only
 - Summary: Comprehensive overhaul of the stock and inventory pricing system. Simplified from 3 prices (purchase_price, MRP, selling_price) to just 2 (purchase_price + MRP). Added mrp_change_log audit table, auto-update of product MRP from latest stock entry, and profit margin column on products list.
 - Work done:

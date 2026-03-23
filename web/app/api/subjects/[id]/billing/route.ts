@@ -402,9 +402,11 @@ export async function POST(
         subject_id: subjectId,
         item_name: input.item_name.trim(),
         quantity: toNumber(input.quantity),
-        unit_price: toNumber(input.unit_price),
+        mrp: toNumber(input.mrp),
+        discount_type: input.discount_type ?? 'percentage',
+        discount_value: toNumber(input.discount_value ?? 0),
       })
-      .select('id,subject_id,item_name,quantity,unit_price')
+      .select('id,subject_id,item_name,quantity,mrp')
       .single();
 
     if (accessoryResult.error) {
@@ -426,7 +428,7 @@ export async function POST(
         id: accessoryResult.data.id,
         item_name: accessoryResult.data.item_name,
         quantity: accessoryResult.data.quantity,
-        unit_price: accessoryResult.data.unit_price,
+        mrp: accessoryResult.data.mrp,
       },
     });
   }
@@ -1175,7 +1177,9 @@ export async function PUT(
         subject_id: subjectId,
         item_name: acc.item_name.trim(),
         quantity: Math.max(1, Math.floor(toNumber(acc.quantity))),
-        unit_price: Math.max(0, toNumber(acc.unit_price)),
+        mrp: Math.max(0, toNumber(acc.mrp)),
+        discount_type: acc.discount_type ?? 'percentage',
+        discount_value: Math.max(0, toNumber(acc.discount_value ?? 0)),
         added_by: userId,
       }));
 
@@ -1197,11 +1201,29 @@ export async function PUT(
   // ── Recalculate totals ────────────────────────────────────────────────────
   const accessoriesResult = await admin
     .from('subject_accessories')
-    .select('total_price')
+    .select('line_total,line_base_total,line_gst_total,discount_amount,quantity')
     .eq('subject_id', subjectId);
 
   const accessories_total = (accessoriesResult.data ?? []).reduce(
-    (sum, row) => sum + toNumber((row as { total_price: number }).total_price),
+    (sum, row) => sum + toNumber((row as { line_total: number }).line_total),
+    0,
+  );
+
+  const total_base_amount = (accessoriesResult.data ?? []).reduce(
+    (sum, row) => sum + toNumber((row as { line_base_total: number }).line_base_total),
+    0,
+  );
+
+  const total_gst_amount = (accessoriesResult.data ?? []).reduce(
+    (sum, row) => sum + toNumber((row as { line_gst_total: number }).line_gst_total),
+    0,
+  );
+
+  const total_discount = (accessoriesResult.data ?? []).reduce(
+    (sum, row) => {
+      const r = row as { discount_amount: number; quantity: number };
+      return sum + toNumber(r.discount_amount) * toNumber(r.quantity);
+    },
     0,
   );
 
@@ -1225,6 +1247,9 @@ export async function PUT(
       service_charge,
       accessories_total,
       grand_total,
+      total_base_amount,
+      total_gst_amount,
+      total_discount,
       payment_mode: updatedPaymentMode,
     })
     .eq('id', existingBill.id)

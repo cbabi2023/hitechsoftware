@@ -266,8 +266,21 @@ export async function addAccessory(
   if (input.quantity < 1) {
     return { ok: false, error: { message: 'Quantity must be at least 1' } };
   }
-  if (input.unit_price < 0) {
-    return { ok: false, error: { message: 'Unit price must be at least 0' } };
+  if (input.mrp < 0) {
+    return { ok: false, error: { message: 'MRP must be at least 0' } };
+  }
+
+  // Discount validation
+  const discountType = input.discount_type ?? 'percentage';
+  const discountValue = input.discount_value ?? 0;
+  if (discountValue < 0) {
+    return { ok: false, error: { message: 'Discount value must be at least 0' } };
+  }
+  if (discountType === 'percentage' && discountValue > 100) {
+    return { ok: false, error: { message: 'Discount percentage cannot exceed 100%' } };
+  }
+  if (discountType === 'flat' && discountValue > input.mrp) {
+    return { ok: false, error: { message: 'Flat discount cannot exceed MRP' } };
   }
 
   const subjectCheck = await supabase
@@ -292,7 +305,9 @@ export async function addAccessory(
   const result = await createAccessory(subjectId, technicianId, {
     item_name: input.item_name.trim(),
     quantity: input.quantity,
-    unit_price: input.unit_price,
+    mrp: input.mrp,
+    discount_type: input.discount_type,
+    discount_value: input.discount_value,
   });
 
   if (result.error || !result.data) {
@@ -478,7 +493,7 @@ export async function getAccessoriesBySubject(
   }
 
   const items = (rows.data ?? []) as SubjectAccessory[];
-  const total = items.reduce((sum, item) => sum + toNumber(item.total_price), 0);
+  const total = items.reduce((sum, item) => sum + toNumber(item.line_total), 0);
 
   return { ok: true, data: { items, total } };
 }
@@ -655,8 +670,8 @@ export async function generateBill(
     if (item.quantity < 1) {
       return { ok: false, error: { message: 'Accessory quantity must be at least 1' } };
     }
-    if (item.unit_price < 0) {
-      return { ok: false, error: { message: 'Accessory unit price must be at least 0' } };
+    if (item.mrp < 0) {
+      return { ok: false, error: { message: 'Accessory MRP must be at least 0' } };
     }
   }
 
@@ -680,7 +695,25 @@ export async function generateBill(
   }
 
   const accessories_total = (accessoriesTotalResult.data ?? []).reduce(
-    (sum, row) => sum + toNumber((row as { total_price: number }).total_price),
+    (sum, row) => sum + toNumber((row as { line_total: number }).line_total),
+    0,
+  );
+
+  const total_base_amount = (accessoriesTotalResult.data ?? []).reduce(
+    (sum, row) => sum + toNumber((row as { line_base_total: number }).line_base_total),
+    0,
+  );
+
+  const total_gst_amount = (accessoriesTotalResult.data ?? []).reduce(
+    (sum, row) => sum + toNumber((row as { line_gst_total: number }).line_gst_total),
+    0,
+  );
+
+  const total_discount = (accessoriesTotalResult.data ?? []).reduce(
+    (sum, row) => {
+      const r = row as { discount_amount: number; quantity: number };
+      return sum + toNumber(r.discount_amount) * toNumber(r.quantity);
+    },
     0,
   );
 
@@ -717,6 +750,9 @@ export async function generateBill(
     service_charge,
     accessories_total,
     grand_total,
+    total_base_amount,
+    total_gst_amount,
+    total_discount,
     payment_mode: isBrandDealerBill ? null : (input.payment_mode ?? null),
     payment_status: isBrandDealerBill ? 'due' : 'paid',
     payment_collected_at: isBrandDealerBill ? null : new Date().toISOString(),

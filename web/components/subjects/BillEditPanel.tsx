@@ -10,8 +10,7 @@
 // Totals are derived live in JS rather than re-fetching from the DB so the
 // panel shows an instant preview while the admin edits charges.
 //
-// inferGstApplied: reverse-engineers whether GST was applied to the original
-// bill (ratio ≈ 18% implies GST was included) to pre-populate the checkbox.
+// GST 18% is always applied. MRP values are GST-inclusive.
 // ─────────────────────────────────────────────────────────────────────────────
 'use client';
 
@@ -35,13 +34,6 @@ const PAYMENT_MODE_OPTIONS = [
   { value: 'cheque', label: 'Cheque' },
 ];
 
-function inferGstApplied(bill: SubjectBill): boolean {
-  const rawSubtotal = bill.visit_charge + bill.service_charge + bill.accessories_total;
-  if (rawSubtotal === 0) return false;
-  const ratio = (bill.grand_total - rawSubtotal) / rawSubtotal;
-  return ratio > 0.17;
-}
-
 function toPositiveNumber(value: string): number {
   const n = parseFloat(value);
   return Number.isFinite(n) && n >= 0 ? n : 0;
@@ -50,7 +42,6 @@ function toPositiveNumber(value: string): number {
 export function BillEditPanel({ bill, accessories, isSaving, onSave, onCancel }: Props) {
   const [visitCharge, setVisitCharge] = useState(String(bill.visit_charge));
   const [serviceCharge, setServiceCharge] = useState(String(bill.service_charge));
-  const [applyGst, setApplyGst] = useState(inferGstApplied(bill));
   const [paymentMode, setPaymentMode] = useState<string>(bill.payment_mode ?? '');
 
   // Accessories that will be removed on save (marked locally, not sent yet)
@@ -58,7 +49,7 @@ export function BillEditPanel({ bill, accessories, isSaving, onSave, onCancel }:
   // New accessories to add on save
   const [toAdd, setToAdd] = useState<AddAccessoryInput[]>([]);
   // New-accessory input row
-  const [newItem, setNewItem] = useState({ item_name: '', quantity: '1', unit_price: '0' });
+  const [newItem, setNewItem] = useState({ item_name: '', quantity: '1', mrp: '0', discount_type: 'percentage' as 'percentage' | 'flat', discount_value: '0' });
   const [newItemError, setNewItemError] = useState<string | null>(null);
 
   const isCustomer = bill.bill_type === 'customer_receipt';
@@ -66,12 +57,18 @@ export function BillEditPanel({ bill, accessories, isSaving, onSave, onCancel }:
   // Derive live totals for preview
   const existingAccessoriesTotal = accessories
     .filter((a) => !toRemove.has(a.id))
-    .reduce((s, a) => s + a.total_price, 0);
-  const pendingAccessoriesTotal = toAdd.reduce((s, a) => s + a.unit_price * a.quantity, 0);
+    .reduce((s, a) => s + a.line_total, 0);
+  const pendingAccessoriesTotal = toAdd.reduce((s, a) => {
+    const mrpVal = a.mrp;
+    const discVal = a.discount_value ?? 0;
+    const discountedMrp = a.discount_type === 'percentage'
+      ? mrpVal - (mrpVal * discVal / 100)
+      : Math.max(mrpVal - discVal, 0);
+    return s + discountedMrp * a.quantity;
+  }, 0);
   const accessoriesTotal = existingAccessoriesTotal + pendingAccessoriesTotal;
   const subtotal = toPositiveNumber(visitCharge) + toPositiveNumber(serviceCharge) + accessoriesTotal;
-  const gstAmount = applyGst ? subtotal * 0.18 : 0;
-  const grandTotal = subtotal + gstAmount;
+  const grandTotal = subtotal;
 
   function handleAddPendingItem() {
     if (!newItem.item_name.trim()) {
@@ -83,10 +80,12 @@ export function BillEditPanel({ bill, accessories, isSaving, onSave, onCancel }:
       {
         item_name: newItem.item_name.trim(),
         quantity: Math.max(1, Math.floor(toPositiveNumber(newItem.quantity))),
-        unit_price: toPositiveNumber(newItem.unit_price),
+        mrp: toPositiveNumber(newItem.mrp),
+        discount_type: newItem.discount_type,
+        discount_value: toPositiveNumber(newItem.discount_value),
       },
     ]);
-    setNewItem({ item_name: '', quantity: '1', unit_price: '0' });
+    setNewItem({ item_name: '', quantity: '1', mrp: '0', discount_type: 'percentage', discount_value: '0' });
     setNewItemError(null);
   }
 
@@ -110,7 +109,7 @@ export function BillEditPanel({ bill, accessories, isSaving, onSave, onCancel }:
     onSave({
       visit_charge: toPositiveNumber(visitCharge),
       service_charge: toPositiveNumber(serviceCharge),
-      apply_gst: applyGst,
+      apply_gst: true,
       payment_mode: isCustomer && paymentMode ? paymentMode as PaymentMode : null,
       accessories_to_add: toAdd,
       accessories_to_remove: [...toRemove],
@@ -177,17 +176,10 @@ export function BillEditPanel({ bill, accessories, isSaving, onSave, onCancel }:
         </label>
       )}
 
-      {/* GST toggle */}
-      <label className="mt-3 flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
-        <input
-          type="checkbox"
-          checked={applyGst}
-          onChange={(e) => setApplyGst(e.target.checked)}
-          disabled={isSaving}
-          className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
-        />
-        <span className="font-medium">Apply GST (18%)</span>
-      </label>
+      {/* GST info */}
+      <div className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+        GST 18% is always applied. MRP is GST-inclusive.
+      </div>
 
       {/* Accessories */}
       <div className="mt-4">
@@ -214,7 +206,11 @@ export function BillEditPanel({ bill, accessories, isSaving, onSave, onCancel }:
               <div>
                 <span className="font-medium text-slate-800">{acc.item_name}</span>
                 <span className="ml-2 text-xs text-slate-500">
-                  {acc.quantity} × INR {formatMoney(acc.unit_price)} = INR {formatMoney(acc.total_price)}
+                  {acc.quantity} × ₹{formatMoney(acc.mrp)}
+                  {acc.discount_value > 0 && (
+                    <> (Disc: {acc.discount_type === 'percentage' ? `${acc.discount_value}%` : `₹${formatMoney(acc.discount_value)}`})</>
+                  )}
+                  {' '}= ₹{formatMoney(acc.line_total)}
                 </span>
               </div>
               <button
@@ -243,7 +239,10 @@ export function BillEditPanel({ bill, accessories, isSaving, onSave, onCancel }:
             <div>
               <span className="font-medium text-slate-800">{acc.item_name}</span>
               <span className="ml-2 text-xs text-slate-500">
-                {acc.quantity} × INR {formatMoney(acc.unit_price)} = INR {formatMoney(acc.quantity * acc.unit_price)}
+                {acc.quantity} × ₹{formatMoney(acc.mrp)}
+                {(acc.discount_value ?? 0) > 0 && (
+                  <> (Disc: {acc.discount_type === 'percentage' ? `${acc.discount_value}%` : `₹${formatMoney(acc.discount_value ?? 0)}`})</>
+                )}
               </span>
               <span className="ml-2 rounded-full bg-emerald-200 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800">New</span>
             </div>
@@ -262,7 +261,7 @@ export function BillEditPanel({ bill, accessories, isSaving, onSave, onCancel }:
         {/* Add new accessory row */}
         <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
           <p className="mb-2 text-xs font-semibold text-slate-600">Add New Item</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2 md:grid-cols-5">
             <input
               type="text"
               placeholder="Item name"
@@ -283,11 +282,30 @@ export function BillEditPanel({ bill, accessories, isSaving, onSave, onCancel }:
             />
             <input
               type="number"
-              placeholder="Unit price"
+              placeholder="MRP (incl. GST)"
               min={0}
               step="0.01"
-              value={newItem.unit_price}
-              onChange={(e) => setNewItem((p) => ({ ...p, unit_price: e.target.value }))}
+              value={newItem.mrp}
+              onChange={(e) => setNewItem((p) => ({ ...p, mrp: e.target.value }))}
+              disabled={isSaving}
+              className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-violet-400 focus:outline-none"
+            />
+            <select
+              value={newItem.discount_type}
+              onChange={(e) => setNewItem((p) => ({ ...p, discount_type: e.target.value as 'percentage' | 'flat' }))}
+              disabled={isSaving}
+              className="rounded-lg border border-slate-300 px-1 py-1.5 text-sm focus:border-violet-400 focus:outline-none"
+            >
+              <option value="percentage">%</option>
+              <option value="flat">₹</option>
+            </select>
+            <input
+              type="number"
+              placeholder="Disc."
+              min={0}
+              step="0.01"
+              value={newItem.discount_value}
+              onChange={(e) => setNewItem((p) => ({ ...p, discount_value: e.target.value }))}
               disabled={isSaving}
               className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-violet-400 focus:outline-none"
             />
@@ -312,15 +330,13 @@ export function BillEditPanel({ bill, accessories, isSaving, onSave, onCancel }:
           <span>INR {formatMoney(accessoriesTotal)}</span>
         </div>
         <div className="mt-1 flex items-center justify-between text-slate-700">
-          <span>Subtotal</span>
-          <span>INR {formatMoney(subtotal)}</span>
+          <span>Base Amount (excl. GST)</span>
+          <span>INR {formatMoney(subtotal / 1.18)}</span>
         </div>
-        {applyGst && (
-          <div className="mt-1 flex items-center justify-between text-slate-700">
-            <span>GST (18%)</span>
-            <span>INR {formatMoney(gstAmount)}</span>
-          </div>
-        )}
+        <div className="mt-1 flex items-center justify-between text-slate-700">
+          <span>GST 18%</span>
+          <span>INR {formatMoney(subtotal - subtotal / 1.18)}</span>
+        </div>
         <div className="mt-1 flex items-center justify-between font-semibold text-slate-900">
           <span>New Grand Total</span>
           <span>INR {formatMoney(grandTotal)}</span>

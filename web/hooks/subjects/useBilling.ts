@@ -197,7 +197,7 @@ export function useAddAccessory(subjectId: string) {
       
       const json = await res.json() as { 
         ok: boolean
-        data?: { id: string; item_name: string; quantity: number; unit_price: number }
+        data?: { id: string; item_name: string; quantity: number; mrp: number }
         error?: { userMessage: string }
       };
       

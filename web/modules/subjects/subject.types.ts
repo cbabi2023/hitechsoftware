@@ -1901,8 +1901,26 @@ export interface SubjectAccessory {
   subject_id: string;
   item_name: string;
   quantity: number;
-  unit_price: number;
-  total_price: number;
+  /** MRP (GST-inclusive price per unit). Renamed from unit_price. */
+  mrp: number;
+  /** 'percentage' or 'flat' discount type. */
+  discount_type: 'percentage' | 'flat';
+  /** Discount value (percentage 0-100, or flat amount in INR). */
+  discount_value: number;
+  /** Calculated: discount in rupees per unit. */
+  discount_amount: number;
+  /** Calculated: MRP after discount per unit. */
+  discounted_mrp: number;
+  /** Calculated: base price excl GST per unit (discounted_mrp / 1.18). */
+  base_price: number;
+  /** Calculated: GST amount per unit (discounted_mrp - base_price). */
+  gst_amount: number;
+  /** Calculated: qty * discounted_mrp. */
+  line_total: number;
+  /** Calculated: qty * base_price. */
+  line_base_total: number;
+  /** Calculated: qty * gst_amount. */
+  line_gst_total: number;
   added_by: string | null;
   created_at: string;
 }
@@ -2003,6 +2021,9 @@ export interface SubjectBill {
   service_charge: number;
   accessories_total: number;
   grand_total: number;
+  total_base_amount: number;
+  total_gst_amount: number;
+  total_discount: number;
   payment_mode: PaymentMode | null;
   payment_status: 'paid' | 'due' | 'waived';
   payment_collected_at: string | null;
@@ -2048,7 +2069,12 @@ export interface SubjectBill {
 export interface AddAccessoryInput {
   item_name: string;
   quantity: number;
-  unit_price: number;
+  /** MRP (GST-inclusive price per unit). */
+  mrp: number;
+  /** 'percentage' or 'flat'. Defaults to 'percentage'. */
+  discount_type?: 'percentage' | 'flat';
+  /** Discount value. 0 = no discount. */
+  discount_value?: number;
 }
 
 /**
