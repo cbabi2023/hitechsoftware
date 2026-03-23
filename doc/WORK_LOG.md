@@ -3,6 +3,18 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-23 11:44:01 +05:30] Fix Vercel Monorepo Framework Detection
+- Summary: Added `framework: "nextjs"` to `web/vercel.json` so Vercel auto-detects Next.js when Root Directory is set to `web`.
+- Work done:
+  - Updated `web/vercel.json` to include `framework: "nextjs"` alongside the existing `installCommand`
+- Files changed:
+  - web/vercel.json
+- Bugs/Issues: none
+- Verification:
+  - Local build passes: 0 errors
+- Next:
+  - In Vercel dashboard: Project Settings > General > Root Directory → set to `web`, then redeploy
+
 ## [2026-03-23 11:42:09 +05:30] Fix Vercel "No Output Directory named public" Error
 - Summary: Fixed Vercel deployment error caused by `framework: "nextjs"` in root vercel.json conflicting with monorepo layout. Next.js framework adapter expects `.next` at project root, but the app lives in `web/`.
 - Work done:
