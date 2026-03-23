@@ -12,9 +12,9 @@
     "test": "turbo test"
   },
   "engines": {
-    "node": "22.x"
+    "node": ">=22"
   },
-  "packageManager": "npm@10.9.2",
+  "packageManager": "npm@11.6.2",
   "dependencies": {
     "@supabase/supabase-js": "^2.99.1"
   },

@@ -3,6 +3,29 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-23 12:37:08 +05:30] Fix npm run dev ENOWORKSPACES Errors
+- Summary: Fixed repeated `npm error code ENOWORKSPACES` errors that appeared when running `npm run dev`. Root cause was Next.js trying to auto-patch SWC dependencies by running `npm install` from within the `web/` workspace member, which npm blocks in workspace monorepo setups.
+- Work done:
+  - Diagnosed root cause: Next.js `patchIncorrectLockfile()` function detects missing SWC platform binaries in lockfile, attempts `npm install` from `web/` directory, which fails with ENOWORKSPACES because npm does not support `install` from workspace members
+  - Found `NEXT_IGNORE_INCORRECT_LOCKFILE` env var in Next.js source (`patch-incorrect-lockfile.js` line 85) that skips the lockfile patching
+  - Added `NEXT_IGNORE_INCORRECT_LOCKFILE=1` to `web/.env.local` to skip the unnecessary SWC lockfile patching (SWC binary is already installed correctly)
+  - Added the same env var to `web/.env.example` for documentation
+  - Updated Node engine version from `"22.x"` to `">=22"` in both root and web `package.json` to support Node 22 (Vercel) and Node 24 (local dev), eliminating EBADENGINE warnings
+  - Updated `packageManager` in root `package.json` from `npm@10.9.2` to `npm@11.6.2` to match installed npm version
+- Files changed:
+  - web/.env.local (added NEXT_IGNORE_INCORRECT_LOCKFILE=1)
+  - web/.env.example (added NEXT_IGNORE_INCORRECT_LOCKFILE=1 with comment)
+  - package.json (engines: ">=22", packageManager: npm@11.6.2)
+  - web/package.json (engines: ">=22")
+- Verification:
+  - Dev server started without any ENOWORKSPACES errors (confirmed zero SWC patching messages)
+  - Build passes: all 28 pages compiled successfully
+  - `npm install` shows zero EBADENGINE warnings
+- Bugs/Issues:
+  - Stale `next dev` process (PID 25004) from previous session blocked port 3000 and held locks on `.next` directory — user needs to close old terminals manually
+- Next:
+  - Close old terminal windows running dev server, then run `npm run dev` for clean startup
+
 ## [2026-03-23 14:30:00 +05:30] Inventory Module Cleanup — Remove Old System & Complete New System
 - Summary: Removed the entire old inventory system (Migration 001 tables/code) and enhanced the new system (Migration 016) with stock level tracking, minimum stock level, stock classification, and a new Stock Balance dashboard page.
 - Work done:
