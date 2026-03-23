@@ -3,6 +3,30 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-23 10:38:32 +05:30] Fix Vercel Deploy Error — Missing Output Directory "public"
+
+- Summary: Fixed Vercel deployment failure `No Output Directory named "public" found after the Build completed` by adding explicit monorepo Next.js build/output settings in root `vercel.json`.
+- Work done:
+  - Updated root `vercel.json` with explicit Vercel settings for repo-root builds:
+    - `framework: "nextjs"`
+    - `installCommand: "npm install"`
+    - `buildCommand: "npm run build"`
+    - `outputDirectory: "web/.next"`
+  - Kept existing cron schedule entries intact.
+  - Confirmed repository already uses Node `22.x` in root `package.json` (the deployment log showing `>=24.0.0` came from an older deployed commit, not current `main`).
+- Files changed:
+  - vercel.json
+  - doc/WORK_LOG.md
+- Verification:
+  - Build check: `npm run build` in `web` passed successfully after the `vercel.json` update.
+  - Static generation completes locally through `Generating static pages (27/27)`.
+  - Runtime check: `npm run dev` still fails only due to existing local `.next/dev/lock` conflict from another running Next process.
+- Bugs/issues encountered:
+  - Vercel log was deploying commit `0c54eaf`, while repository current `main` is newer; this caused stale Node-engine warning (`>=24.0.0`) to appear in logs.
+- Next:
+  - Push this commit and trigger a fresh Vercel redeploy from latest `main`.
+  - In Vercel Project Settings, verify Output Directory is cleared or matches `web/.next` and Root Directory matches your intended build strategy.
+
 ## [2026-03-23 10:30:41 +05:30] Push Current Updates to GitHub Main
 
 - Summary: Verified the current working tree, confirmed build health, and prepared all current updates on `main` to be pushed to `origin/main`.
