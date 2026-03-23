@@ -78,9 +78,13 @@ export default function ProductCategoriesPage() {
   const handleCreate = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!newName.trim()) return; // Ignore empty submission
-    const result = await createMutation.mutateAsync({ name: newName });
-    // Clear the input only on success; keep it on error so the user doesn't lose their text
-    if (result.ok) setNewName('');
+    try {
+      const result = await createMutation.mutateAsync({ name: newName });
+      // Clear the input only on success; keep it on error so the user doesn't lose their text
+      if (result.ok) setNewName('');
+    } catch {
+      // onError callback in the hook shows the toast
+    }
   };
 
   /**

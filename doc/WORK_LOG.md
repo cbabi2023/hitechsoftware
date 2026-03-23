@@ -3,6 +3,20 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-23 16:30:00 +05:30] Analysis — Inventory Categories & Product Types Add Button
+- Summary: Explored categories and product-types pages to fully document the "Add" button functionality, permission guards, mutation chain, and service/repository layers.
+- Work done:
+  - Read both page files, hooks, services, repositories, and permissions config
+  - Documented that both pages use identical inline form pattern with `can('inventory:create')` guard
+  - Confirmed allowed roles: super_admin, office_staff, stock_manager
+  - Traced full mutation chain: Page → Hook (React Query) → Service (Zod validation) → Repository (Supabase insert)
+  - Documented disabled conditions (isPending, empty input) and duplicate-name DB guard
+- Files changed: none
+- Verification:
+  - All source files read and cross-referenced for accuracy
+- Next:
+  - None specified
+
 ## [2026-03-23 15:05:00 +05:30] Code Review & Bug Fixes — Digital Bag Module
 - Summary: Ran full build + code review. Found and fixed 1 critical bug, 3 medium bugs, and 2 low issues in the Digital Bag module.
 - Work done:

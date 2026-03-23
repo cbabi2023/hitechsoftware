@@ -49,8 +49,12 @@ export default function ProductTypesPage() {
   const handleCreate = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!newName.trim()) return;
-    const result = await createMutation.mutateAsync({ name: newName });
-    if (result.ok) setNewName('');
+    try {
+      const result = await createMutation.mutateAsync({ name: newName });
+      if (result.ok) setNewName('');
+    } catch {
+      // onError callback in the hook shows the toast
+    }
   };
 
   const startEdit = (id: string, currentName: string) => {

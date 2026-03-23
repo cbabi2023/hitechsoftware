@@ -79,6 +79,7 @@ export function useProductCategories() {
       // Invalidate the cache so the list refetches and shows the new item
       await queryClient.invalidateQueries({ queryKey: KEY });
     },
+    onError: (err) => { toast.error(err instanceof Error ? err.message : 'Failed to add category'); },
   });
 
   // ---- WRITE: Update an existing category (name or active status) ----

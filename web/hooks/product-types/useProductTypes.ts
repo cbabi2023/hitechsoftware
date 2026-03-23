@@ -51,6 +51,7 @@ export function useProductTypes() {
       toast.success('Product type added');
       await queryClient.invalidateQueries({ queryKey: KEY });
     },
+    onError: (err) => { toast.error(err instanceof Error ? err.message : 'Failed to add product type'); },
   });
 
   // Update name and/or active status of an existing type
