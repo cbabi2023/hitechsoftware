@@ -3,6 +3,34 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-23 18:30:00 +05:30] Stock Entry Form — Profit Margin Display & Pricing Validation
+- Summary: Added real-time profit margin calculation, MRP vs purchase price validation (blocks submission), selling price vs MRP validation, and inline pricing alerts to the stock entry form.
+- Work done:
+  - Updated Zod validation schema (`stock-entry.validation.ts`):
+    - Added `.refine()` to enforce MRP > purchase_price when both are > 0 — blocks form submission with error
+    - Added `.refine()` to enforce selling_price >= MRP when selling_price is provided — blocks form submission
+  - Updated stock entry form (`stock/new/page.tsx`):
+    - Added `AlertTriangle` and `TrendingUp` icon imports from lucide-react
+    - RED alert: MRP ≤ purchase price — "Loss Alert" with exact values shown, blocks submission via Zod
+    - ORANGE alert: Profit margin < 10% — warning with exact percentage, does not block submission
+    - RED alert: Selling price < MRP — "cannot sell below MRP" warning, blocks submission via Zod
+    - GREEN margin display: Shows profit margin %, profit per unit (₹), and line total inline
+    - Selling price field now shows Zod validation errors (previously had no error display)
+    - Margin formula: `(MRP - purchase_price) / purchase_price × 100`
+    - Profit/unit: `effective_selling_price - purchase_price` (uses selling_price if set, otherwise MRP)
+  - Replaced the old static "Total Purchase Value" display with the new combined margin+total display
+- Files changed:
+  - web/modules/stock-entries/stock-entry.validation.ts
+  - web/app/dashboard/inventory/stock/new/page.tsx
+  - doc/WORK_LOG.md
+- Verification:
+  - `npx next build` compiled successfully in 17.3s — zero TypeScript errors
+  - All 44 routes generated successfully
+- Bugs/Issues: none
+- Next:
+  - Update INVENTORY_API_DOCUMENTATION.md with new validation rules
+  - Consider adding same margin display to stock entries list page (expanded view)
+
 ## [2026-03-23 17:45:00 +05:30] Inventory Management Module — API Documentation for Flutter Developers
 - Summary: Created comprehensive API documentation for the entire inventory management module, targeting Flutter developers working on hitech_admin and hitech_technician apps.
 - Work done:

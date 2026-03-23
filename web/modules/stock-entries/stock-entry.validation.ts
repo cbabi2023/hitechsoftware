@@ -61,7 +61,25 @@ export const stockEntryItemSchema = z.object({
   mrp: z.number().min(0, 'MRP must be 0 or more'),
   selling_price: z.number().min(0, 'Selling price must be 0 or more').nullish(),
   hsn_sac_code: z.string().max(20).trim().nullish(),
-});
+}).refine(
+  (item) => {
+    // Only enforce when both prices are meaningfully entered (> 0)
+    if (item.purchase_price > 0 && item.mrp > 0) {
+      return item.mrp > item.purchase_price;
+    }
+    return true;
+  },
+  { message: 'MRP must be greater than purchase price — selling at or below cost will result in a loss', path: ['mrp'] },
+).refine(
+  (item) => {
+    // Selling price, if provided, must be at least MRP
+    if (item.selling_price != null && item.selling_price > 0 && item.mrp > 0) {
+      return item.selling_price >= item.mrp;
+    }
+    return true;
+  },
+  { message: 'Selling price cannot be less than MRP', path: ['selling_price'] },
+);
 
 /**
  * Validates the full stock entry creation payload.

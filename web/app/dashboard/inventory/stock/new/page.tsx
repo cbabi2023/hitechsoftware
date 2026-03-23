@@ -66,7 +66,7 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, Controller, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowLeft, Plus, Trash2, PackagePlus, X } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, PackagePlus, X, AlertTriangle, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { useStockEntries } from '@/hooks/stock-entries/useStockEntries';
 import { usePermission } from '@/hooks/auth/usePermission';
@@ -636,8 +636,17 @@ export default function NewStockEntryPage() {
                           setValueAs: (value: string) => value === '' ? null : Number(value),
                         })}
                         placeholder="Defaults to MRP if not set"
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                          errors.items?.[index]?.selling_price
+                            ? 'border-rose-400'
+                            : 'border-slate-200 focus:border-blue-500'
+                        }`}
                       />
+                      {errors.items?.[index]?.selling_price && (
+                        <p className="mt-0.5 text-xs text-rose-600">
+                          {errors.items[index].selling_price?.message}
+                        </p>
+                      )}
                     </div>
 
                     {/* HSN/SAC */}
@@ -653,18 +662,96 @@ export default function NewStockEntryPage() {
                     </div>
                   </div>
 
-                  {/* Per-line Total Purchase Value */}
+                  {/* Profit Margin & Pricing Alerts */}
                   {(() => {
-                    const qty = watchItems[index]?.quantity ?? 0;
                     const pp = watchItems[index]?.purchase_price ?? 0;
+                    const mrp = watchItems[index]?.mrp ?? 0;
+                    const sp = watchItems[index]?.selling_price;
+                    const qty = watchItems[index]?.quantity ?? 0;
                     const lineTotal = qty * pp;
-                    return lineTotal > 0 ? (
-                      <div className="mt-3 flex items-center justify-end rounded-lg bg-blue-50 px-3 py-2">
-                        <span className="text-xs font-medium text-blue-700">
-                          Total Purchase Value: ₹{lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
+
+                    // MRP vs Purchase Price check
+                    const isMrpBelowCost = pp > 0 && mrp > 0 && mrp <= pp;
+                    const margin = pp > 0 && mrp > 0 ? ((mrp - pp) / pp) * 100 : null;
+                    const isLowMargin = margin !== null && margin > 0 && margin < 10;
+
+                    // Selling price vs MRP check
+                    const isSPBelowMRP = sp != null && sp > 0 && mrp > 0 && sp < mrp;
+
+                    // Profit per unit (selling price or MRP as floor)
+                    const effectiveSP = (sp != null && sp > 0) ? sp : mrp;
+                    const profitPerUnit = pp > 0 && effectiveSP > 0 ? effectiveSP - pp : null;
+
+                    return (
+                      <div className="mt-3 space-y-2">
+                        {/* RED: MRP ≤ Purchase Price — blocks submission via Zod */}
+                        {isMrpBelowCost && (
+                          <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2">
+                            <AlertTriangle size={14} className="mt-0.5 flex-shrink-0 text-rose-600" />
+                            <div>
+                              <p className="text-xs font-semibold text-rose-700">Loss Alert — MRP ≤ Purchase Price</p>
+                              <p className="text-xs text-rose-600">
+                                MRP (₹{mrp.toFixed(2)}) is not higher than purchase price (₹{pp.toFixed(2)}).
+                                This will result in a loss. Correct the MRP before saving.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* ORANGE: Low margin warning (0% < margin < 10%) */}
+                        {isLowMargin && !isMrpBelowCost && (
+                          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                            <AlertTriangle size={14} className="mt-0.5 flex-shrink-0 text-amber-600" />
+                            <p className="text-xs text-amber-700">
+                              <span className="font-semibold">Low margin warning:</span> Profit margin is only {margin!.toFixed(1)}%.
+                              Consider verifying the MRP.
+                            </p>
+                          </div>
+                        )}
+
+                        {/* RED: Selling Price < MRP */}
+                        {isSPBelowMRP && (
+                          <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2">
+                            <AlertTriangle size={14} className="mt-0.5 flex-shrink-0 text-rose-600" />
+                            <p className="text-xs text-rose-600">
+                              <span className="font-semibold">Selling price (₹{sp!.toFixed(2)}) is below MRP (₹{mrp.toFixed(2)}).</span>{' '}
+                              Technicians cannot sell below MRP. This will be blocked on submission.
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Profit Margin & Line Total — shown when margin is valid */}
+                        {margin !== null && margin > 0 && !isMrpBelowCost && (
+                          <div className="flex items-center gap-3 rounded-lg bg-emerald-50 px-3 py-2">
+                            <TrendingUp size={14} className="flex-shrink-0 text-emerald-600" />
+                            <div className="flex flex-1 flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                              <span className="font-medium text-emerald-700">
+                                Margin: {margin.toFixed(1)}%
+                              </span>
+                              {profitPerUnit !== null && (
+                                <span className="text-emerald-600">
+                                  Profit/unit: ₹{profitPerUnit.toFixed(2)}
+                                </span>
+                              )}
+                              {lineTotal > 0 && (
+                                <span className="ml-auto font-medium text-blue-700">
+                                  Line Total: ₹{lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Line total only — when margin is not calculable but total exists */}
+                        {(margin === null || isMrpBelowCost) && lineTotal > 0 && (
+                          <div className="flex items-center justify-end rounded-lg bg-blue-50 px-3 py-2">
+                            <span className="text-xs font-medium text-blue-700">
+                              Total Purchase Value: ₹{lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    ) : null;
+                    );
                   })()}
                 </div>
               );
