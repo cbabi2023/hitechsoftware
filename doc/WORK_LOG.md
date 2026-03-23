@@ -3,6 +3,29 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-23 16:45:00 +05:30] Verify & Harden Categories/Product-Types Add Flow
+- Summary: Thoroughly verified the entire add category/product-type flow (UI → hook → service → repository → DB). Database inserts confirmed working. Added error handling (onError callbacks + try-catch) to prevent silent failures.
+- Work done:
+  - Traced full chain: page form → useProductCategories/useProductTypes hooks → service (Zod validation) → repository (Supabase insert) → database
+  - Tested Supabase INSERT as super_admin via Node.js script — both category and product-type inserts succeed
+  - Verified RLS policies allow super_admin to insert into product_categories and product_types
+  - Confirmed permission config grants inventory:create to super_admin, office_staff, stock_manager
+  - Added `onError` callbacks to createMutation in both useProductCategories and useProductTypes hooks
+  - Added try-catch around `handleCreate` in both categories and product-types pages
+  - Verified existing data: 6 categories and 4 product types present in DB
+- Files changed:
+  - web/hooks/product-categories/useProductCategories.ts (added onError to createMutation)
+  - web/hooks/product-types/useProductTypes.ts (added onError to createMutation)
+  - web/app/dashboard/inventory/categories/page.tsx (try-catch around handleCreate)
+  - web/app/dashboard/inventory/product-types/page.tsx (try-catch around handleCreate)
+  - doc/WORK_LOG.md (updated)
+- Verification:
+  - Database INSERT test passed for both tables
+  - Next.js production build passed with zero errors
+  - No TypeScript/lint errors
+- Next:
+  - If add button still not visible: clear browser cache or restart dev server (stale processes hold ports 3000/3001/3005/3010)
+
 ## [2026-03-23 16:30:00 +05:30] Analysis — Inventory Categories & Product Types Add Button
 - Summary: Explored categories and product-types pages to fully document the "Add" button functionality, permission guards, mutation chain, and service/repository layers.
 - Work done:
