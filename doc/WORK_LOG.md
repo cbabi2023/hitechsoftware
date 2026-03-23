@@ -3,6 +3,37 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-23 17:45:00 +05:30] Inventory Management Module — API Documentation for Flutter Developers
+- Summary: Created comprehensive API documentation for the entire inventory management module, targeting Flutter developers working on hitech_admin and hitech_technician apps.
+- Work done:
+  - Created `doc/INVENTORY_API_DOCUMENTATION.md` covering:
+    - Supabase Flutter SDK setup and authentication
+    - Role-based access control matrix (super_admin, office_staff, stock_manager, technician)
+    - Full CRUD documentation for: Product Categories, Product Types, Products, Stock Entries
+    - Read-only Stock Levels view documentation
+    - Complete pricing system explanation (purchase price, MRP, selling price, weighted average cost, minimum selling price)
+    - Database schema with column types, constraints, and relationships
+    - Validation rules reference for all entities
+    - Error handling with PostgreSQL error codes and Dart exception handling
+    - Real-time Supabase subscription examples
+    - Complete ready-to-use Dart model classes: ProductCategory, ProductType, Product, StockEntry, StockEntryItem, StockLevel
+    - Quick reference select strings for common queries
+    - Material code format rules and normalization
+    - Soft delete pattern documentation
+    - Two-step stock entry creation workflow
+    - Ad-hoc (unlinked) stock entry items support
+- Files changed:
+  - doc/INVENTORY_API_DOCUMENTATION.md (new)
+  - doc/WORK_LOG.md
+- Verification:
+  - Reviewed against actual codebase: repositories, types, validation schemas, migrations, hooks, services
+  - All Dart code examples use correct Supabase SDK syntax
+  - All table schemas match current database state including latest pricing migrations
+- Bugs/Issues: none
+- Next:
+  - Flutter developers can start integrating inventory module using this documentation
+  - Apply migration 20260323_021_stock_pricing.sql to Supabase database
+
 ## [2026-03-23 17:15:00 +05:30] Fix Vercel Deployment Build Failure
 - Summary: Fixed Vercel build failure caused by `cd web && npx turbo build` command failing with "No such file or directory" error on Vercel's build environment.
 - Work done:
