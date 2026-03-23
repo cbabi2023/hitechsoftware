@@ -3,6 +3,20 @@
 This file tracks completed work items with timestamped entries.
 Newest entries must be added at the top.
 
+## [2026-03-23 17:22:04 +05:30] Fix Vercel Deployment — Output Directory Double-Path
+- Summary: Fixed Vercel build failing with "output directory web/.next not found at web/web/.next" caused by root vercel.json `outputDirectory: "web/.next"` stacking on top of Vercel project's Root Directory (`web`). Also resolved turbo.json env var warning.
+- Work done:
+  - Root `vercel.json`: removed `buildCommand`, `installCommand`, `framework`, `outputDirectory` overrides (Vercel auto-detects all of these for Turborepo + Next.js)
+  - `turbo.json`: added `globalEnv` array with `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` so env vars are available to the build task
+- Files changed:
+  - vercel.json
+  - turbo.json
+- Verification:
+  - `npx next build` — compiled successfully, 0 errors
+- Bugs/Issues: The double-path was caused by Vercel project Root Directory being set to `web` on the dashboard, while root vercel.json redundantly set `outputDirectory: "web/.next"`. Vercel resolved this as `web/` + `web/.next` = `web/web/.next`.
+- Next:
+  - Redeploy on Vercel to confirm fix
+
 ## [2026-03-23 17:19:33 +05:30] GST Calculation & Per-Product Discount System
 - Summary: Comprehensive GST (18% flat) and per-product discount system for billing, stock entries, and PDF bill generation. MRP is always GST-inclusive; system splits into base_price + gst_amount via /1.18 divisor. Discounts can be percentage or flat amount, applied before GST split.
 - Work done:
